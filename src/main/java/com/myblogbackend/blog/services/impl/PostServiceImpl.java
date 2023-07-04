@@ -5,7 +5,6 @@ import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.models.CategoryEntity;
 import com.myblogbackend.blog.models.PostEntity;
-import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.OffsetPageRequest;
 import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.CategoryRepository;
@@ -14,6 +13,7 @@ import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.services.PostService;
+import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ public class PostServiceImpl implements PostService {
     public PostResponse createPost(final PostRequest postRequest) {
         try {
             // Get the signed-in user from the JWT token
-//            var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+            var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
             // Validate the category ID and return the corresponding category
             var category = validateCategory(postRequest.getCategoryId());
             // Map the post request to a post entity and set its category
@@ -46,9 +46,8 @@ public class PostServiceImpl implements PostService {
             postEntity.setCategory(category);
             postEntity.setStatus("active");
             postEntity.setApproved(Boolean.TRUE);
-            postEntity.setUser(UserEntity.builder().id(UUID.fromString("f5a2d5f5-d78c-458f-835a-22f19b931184")).build());
             // Set the post's owner to the signed-in user
-//            postEntity.setUser(usersRepository.findById(signedInUser.getId()).orElseThrow());
+            postEntity.setUser(usersRepository.findById(signedInUser.getId()).orElseThrow());
             // Log a success message
             var createdPost = postRepository.save(postEntity);
             logger.info("Post was created with id: {}", createdPost.getId());
