@@ -11,9 +11,15 @@ node("master") {
         branch: 'main'
     }
 
+    stage('Run check style') {
+       sh '''
+         export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
+         mvn checkstyle:checkstyle
+       '''
+    }
+
     stage('Testing') {
       sh '''
-        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
         mvn test
       '''
     }
