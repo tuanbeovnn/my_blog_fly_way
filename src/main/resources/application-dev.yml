@@ -1,17 +1,57 @@
-# docker run --name blog-dev-postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=blog_dev -d postgres
-
+minio:
+    accessKey: minioadmin
+    bucket:
+        pathurlFiles: files
+        pathurlImages: images
+    bucket-name: commons
+    endpoint: http://bienhoa.cf:9000
+    file-size: 1073741824
+    image-size: 10485760
+    port: 9000
+    secretKey: minioadmin
+    secure: false
 spring:
-  main:
-    banner-mode: off
-  jpa:
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-    hibernate:
-      ddl-auto: validate
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/blog_dev?currentSchema=blog_dev
-    username: postgres
-    password: postgres
+    datasource:
+        password: P@ssword*123
+        url: jdbc:postgresql://bienhoa.cf:5432/blog_dev?currentSchema=blog_dev
+        username: dev
+    flyway:
+        password: P@ssword*123
+        url: jdbc:postgresql://bienhoa.cf:5432/blog_dev?currentSchema=blog_dev
+        user: dev
+    jpa:
+        generate-ddl: true
+        hibernate:
+            ddl-auto: validate
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+                jdbc:
+                    lob:
+                        non_contextual_creation: true
+        show-sql: true
+    mail:
+        host: smtp.gmail.com
+        username: translatorvamkv1@gmail.com
+        password: lcyhfdfjdhahknmu
+        port: 587
+        properties:
+            mail:
+                smtp:
+                    auth: true
+                    connectiontimeout: 5000
+                    starttls:
+                        enable: true
+                    timeout: 5000
+                    writetimeout: 5000
+
+# Email Sender
+email:
+    registration-confirmation:
+        template: registration-confirmation.html
+        subject: Registration Confirmation
+        from: noreply@pezzie.com
+        base-url: http://localhost:8080/user/api/v1/auth/regitrationConfirm?token=%s
+
+app:
+    generate-categories: true
