@@ -6,8 +6,8 @@ FROM maven:3.8.3-openjdk-17 AS build
 WORKDIR /opt/app
 
 COPY ./ /opt/app
-RUN --mount=type=cache,target=/root/.m2 mvn clean install -DskipTests
-#RUN mvn clean install -DskipTests
+#RUN --mount=type=cache,target=/root/.m2 mvn clean install -DskipTests
+RUN mvn clean install -DskipTests
 
 # Docker Build Stage
 FROM openjdk:17-alpine
