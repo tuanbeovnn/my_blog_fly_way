@@ -17,7 +17,7 @@ public class BlogApplication {
 
     public static void main(final String[] args) {
         SpringApplication.run(BlogApplication.class, args);
-        System.out.println("STARTED SPRING BOOT APPLICATION");
+//        System.out.println("STARTED SPRING BOOT APPLICATION");
     }
 
 }
