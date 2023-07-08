@@ -23,8 +23,8 @@ node {
     }
     stage('Deploy docker') {
       echo "Docker Image Tag Name: ${dockerImageTag}"
-      sh "docker stop blogs || true && docker rm backend_app_blog_v2 || true"
-      sh "docker run --name blogs -d -p 9090:8080 tuanquangnguyen1710/blogs:backend_app_blog${env.BUILD_NUMBER}"
+      sh "docker stop blogs || true && docker rm blogs || true"
+      sh "docker run --name blogs -d -p 9090:8080 tuanquangnguyen1710/blogs:blogs${env.BUILD_NUMBER}"
     }
   } catch (e) {
     currentBuild.result = 'FAILURE'
