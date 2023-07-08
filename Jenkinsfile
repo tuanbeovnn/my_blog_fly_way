@@ -10,8 +10,13 @@ node("master") {
     }
 
     stage('Testing') {
-      sh "export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/"
-      sh "mvn test"
+      //withMaven(maven: 'maven') {
+      //sh "mvn test"
+      sh ''
+      'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
+      mvn--version
+      mvn test ''
+      '
     }
     stage('Build docker') {
       sh "whoami"
