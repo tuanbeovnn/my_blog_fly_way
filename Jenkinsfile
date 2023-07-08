@@ -10,10 +10,8 @@ node {
     }
 
     stage('Testing') {
-       withEnv(["JAVA_HOME=${env.JAVA_HOME}"]) { // Specify the JDK path here
-          withMaven(maven: 'maven') {
-              sh "mvn test"
-           }
+       withMaven(maven: 'maven') {
+        sh "mvn test"
        }
     }
     stage('Build docker') {
