@@ -10,10 +10,10 @@ node {
     }
 
     stage('Testing') {
-       withMaven(maven: 'maven') {
+       //withMaven(maven: 'maven') {
         sh "java --version"
         sh "mvn --version"
-       }
+       //}
     }
     stage('Build docker') {
       //dockerImage = docker.build("backend_app_blog:${env.BUILD_NUMBER}")
