@@ -11,6 +11,7 @@ node {
 
     stage('Testing') {
        withMaven(maven: 'maven') {
+        sh "java --version"
         sh "mvn --version"
        }
     }
