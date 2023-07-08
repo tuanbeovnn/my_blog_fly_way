@@ -1,26 +1,24 @@
-//package com.myblogbackend.blog.fakers;
-//
-//import com.github.javafaker.Faker;
-//import com.myblogbackend.blog.repositories.CategoryRepository;
-//import com.myblogbackend.blog.request.CategoryRequest;
-//import com.myblogbackend.blog.services.CategoryService;
-//import lombok.RequiredArgsConstructor;
-//import org.springframework.boot.CommandLineRunner;
-//import org.springframework.core.annotation.Order;
-//import org.springframework.core.env.Environment;
-//import org.springframework.stereotype.Component;
-//
-//@Component
-//@Order(2)
-//@RequiredArgsConstructor
-//public class GenerateCategoriesCommand implements CommandLineRunner {
-//
-//    private final CategoryService categoryService;
-//    private final Environment environment;
-//    private final CategoryRepository categoryRepository;
-//
-//    @Override
-//    public void run(final String... args) throws Exception {
+package com.myblogbackend.blog.fakers;
+
+import com.myblogbackend.blog.repositories.CategoryRepository;
+import com.myblogbackend.blog.services.CategoryService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
+
+@Component
+@Order(2)
+@RequiredArgsConstructor
+public class GenerateCategoriesCommand implements CommandLineRunner {
+
+    private final CategoryService categoryService;
+    private final Environment environment;
+    private final CategoryRepository categoryRepository;
+
+    @Override
+    public void run(final String... args) throws Exception {
 //        boolean shouldGenerate = environment.getProperty("app.generate-categories", Boolean.class, true);
 //        if (!shouldGenerate) {
 //            return;
@@ -35,5 +33,5 @@
 //                categoryService.createCategory(categoryRequest);
 //            }
 //        }
-//    }
-//}
+    }
+}

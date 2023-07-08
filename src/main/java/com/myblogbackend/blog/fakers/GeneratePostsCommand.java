@@ -1,29 +1,27 @@
-//package com.myblogbackend.blog.fakers;
-//
-//import com.github.javafaker.Faker;
-//import com.myblogbackend.blog.repositories.CategoryRepository;
-//import com.myblogbackend.blog.repositories.PostRepository;
-//import com.myblogbackend.blog.request.PostRequest;
-//import com.myblogbackend.blog.services.PostService;
-//import lombok.RequiredArgsConstructor;
-//import org.springframework.boot.CommandLineRunner;
-//import org.springframework.core.annotation.Order;
-//import org.springframework.core.env.Environment;
-//import org.springframework.stereotype.Component;
-//
-//@Component
-//@Order(2)
-//@RequiredArgsConstructor
-//public class GeneratePostsCommand implements CommandLineRunner {
-//
-//    private final PostService postService;
-//    private final Environment environment;
-//    private final PostRepository postRepository;
-//    private final CategoryRepository categoryRepository;
-//
-//
-//    @Override
-//    public void run(final String... args) throws Exception {
+package com.myblogbackend.blog.fakers;
+
+import com.myblogbackend.blog.repositories.CategoryRepository;
+import com.myblogbackend.blog.repositories.PostRepository;
+import com.myblogbackend.blog.services.PostService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
+
+@Component
+@Order(2)
+@RequiredArgsConstructor
+public class GeneratePostsCommand implements CommandLineRunner {
+
+    private final PostService postService;
+    private final Environment environment;
+    private final PostRepository postRepository;
+    private final CategoryRepository categoryRepository;
+
+
+    @Override
+    public void run(final String... args) throws Exception {
 //        boolean shouldGenerate = environment.getProperty("app.generate-posts", Boolean.class, true);
 //        if (!shouldGenerate) {
 //            return;
@@ -41,5 +39,5 @@
 //                postService.createPost(postRequest);
 //            }
 //        }
-//    }
-//}
+    }
+}

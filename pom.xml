@@ -186,6 +186,7 @@
                     <failOnViolation>true</failOnViolation>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
                     <consoleOutput>true</consoleOutput>
+                    <violationSeverity>warning</violationSeverity>
                 </configuration>
             </plugin>
             <plugin>
