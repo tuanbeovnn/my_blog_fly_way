@@ -12,6 +12,7 @@ node("master") {
     stage('Testing') {
        //withMaven(maven: 'maven') {
         sh "mvn test"
+        sh "mvn --version"
        //}
     }
     stage('Build docker') {
