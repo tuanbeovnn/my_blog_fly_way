@@ -1,4 +1,4 @@
-node {
+node("master") {
   def WORKSPACE = "/var/lib/jenkins/workspace/springboot-deploy"
   def dockerImageTag = "blogs${env.BUILD_NUMBER}"
   try {
