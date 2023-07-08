@@ -12,6 +12,7 @@ node("master") {
     stage('Testing') {
        //withMaven(maven: 'maven') {
         //sh "mvn test"
+        sh "export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/"
         sh "java --version"
         sh "mvn --version"
        //}
