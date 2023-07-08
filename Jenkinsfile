@@ -2,7 +2,6 @@ node {
   def WORKSPACE = "/var/lib/jenkins/workspace/springboot-deploy"
   def dockerImageTag = "backend_app_blog_v2${env.BUILD_NUMBER}"
   try {
-    notifyBuild('STARTED')
     cleanWs()
     stage('Clone Repo') {
       git url: 'https://gitlab.com/tuanbeovnn/blog_v2.git',
