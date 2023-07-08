@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -29,16 +30,22 @@ public class ViewerServiceImpl implements ViewerService {
         var post = postRepository
                 .findById(postId)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        if (viewerRepository.existsByPostId(post.getId())) {
-            logger.error("Update viewer successfully by id {} ", post.getId());
-            viewerRepository.updateViewer(post.getId());
-            return;
+
+        ViewersEntity viewers = viewerRepository.findByPostId(postId)
+                .orElseGet(() -> ViewersEntity.builder()
+                        .viewCounter(1)
+                        .postId(postId)
+                        .build());
+
+        viewers.setViewCounter(viewers.getViewCounter() + 1);
+
+        try {
+            viewerRepository.save(viewers);
+            logger.error("Update viewer successfully for postId: {}", postId);
+        } catch (ObjectOptimisticLockingFailureException ex) {
+            // If another request has modified the entity, retry the update
+            logger.warn("Optimistic locking failure for postId: {}", postId);
+            countUserViewer(postId); // Retry the update
         }
-        var viewers = ViewersEntity.builder()
-                .viewCounter(1)
-                .postId(post.getId())
-                .build();
-        logger.error("Create new viewer successfully for postId by id {} ", post.getId());
-        viewerRepository.save(viewers);
     }
 }
