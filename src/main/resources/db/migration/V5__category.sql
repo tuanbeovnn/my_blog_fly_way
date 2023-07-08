@@ -1,4 +1,4 @@
-CREATE TABLE blog_dev.categories
+CREATE TABLE blog_dbo.categories
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,

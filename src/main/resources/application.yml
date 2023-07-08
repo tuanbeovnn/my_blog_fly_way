@@ -57,3 +57,6 @@ email:
 
 app:
     generate-categories: true
+
+flywaypf:
+    active: blog_dbo

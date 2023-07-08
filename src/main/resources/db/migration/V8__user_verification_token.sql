@@ -1,4 +1,4 @@
-CREATE TABLE blog_dev.user_verification_token
+CREATE TABLE blog_dbo.user_verification_token
 (
     id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id            UUID         NOT NULL REFERENCES users (id),

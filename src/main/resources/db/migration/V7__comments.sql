@@ -1,4 +1,4 @@
-CREATE TABLE blog_dev.comments
+CREATE TABLE blog_dbo.comments
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     content     TEXT      NOT NULL,
