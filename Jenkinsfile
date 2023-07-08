@@ -20,7 +20,7 @@ mvn test'''
     stage('Build docker') {
       //dockerImage = docker.build("backend_app_blog:${env.BUILD_NUMBER}")
       sh "whoami"
-      //sh "DOCKER_BUILDKIT=1 docker build -t blogs:${env.BUILD_NUMBER} ."
+      sh "DOCKER_BUILDKIT=1 docker build -t blogs:${env.BUILD_NUMBER} ."
       sh "docker build -t backend_app_blog:${env.BUILD_NUMBER} ."
     }
     stage('Deploy docker') {
