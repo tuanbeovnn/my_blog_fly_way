@@ -11,6 +11,8 @@ minio:
     secretKey: minioadmin
     secure: false
 spring:
+    config:
+        import: optional:classpath:.env[.properties]
     datasource:
         password: P@ssword*123
         url: jdbc:postgresql://bienhoa.cf:5432/blogs?currentSchema=blog_dbo
@@ -45,7 +47,7 @@ spring:
                     timeout: 5000
                     writetimeout: 5000
     profiles:
-        active: dev
+        active: prod
 
 # Email Sender
 email:
