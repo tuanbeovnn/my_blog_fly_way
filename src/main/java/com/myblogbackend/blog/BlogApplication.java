@@ -7,7 +7,6 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-
 @ConfigurationPropertiesScan(basePackages = {"com.myblogbackend.blog"})
 @SpringBootApplication
 @EnableJpaAuditing

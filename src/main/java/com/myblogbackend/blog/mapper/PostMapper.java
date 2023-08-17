@@ -15,4 +15,8 @@ public interface PostMapper {
 
     List<PostResponse> toListPostResponse(List<PostEntity> postEntityList);
 
+    PostResponse toPostResponseFromObject(Object object);
+
+    List<PostResponse> toListPostResponseFromObject(List<Object> objectList);
+
 }

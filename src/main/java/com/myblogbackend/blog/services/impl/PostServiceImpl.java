@@ -14,6 +14,7 @@ import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
+import com.myblogbackend.blog.webclient.PostWebClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -33,6 +34,7 @@ public class PostServiceImpl implements PostService {
     private final CategoryRepository categoryRepository;
     private final UsersRepository usersRepository;
     private final PostMapper postMapper;
+    private final PostWebClient postWebClient;
 
     @Override
     public PostResponse createPost(final PostRequest postRequest) {
@@ -76,6 +78,9 @@ public class PostServiceImpl implements PostService {
         try {
             var pageable = new OffsetPageRequest(offset, limited);
             var posts = postRepository.findAllByCategoryId(pageable, categoryId);
+            if (posts.getContent().size() == 0) {
+                postWebClient.getListOfPostsReactive();
+            }
             logger.info("Post get succeeded with offset: {} and limited {}", posts.getNumber(), posts.getSize());
             return getPostResponsePaginationPage(posts);
         } catch (Exception e) {
@@ -91,6 +96,10 @@ public class PostServiceImpl implements PostService {
                     .findById(id)
                     .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
             logger.error("Get post successfully by id {} ", id);
+            // if the post is null, trigger the web client to fetch post form url
+            if (post == null) {
+                postWebClient.getMonoPost(id);
+            }
             return postMapper.toPostResponse(post);
         } catch (Exception e) {
             logger.error("Failed to get post by id", e);
