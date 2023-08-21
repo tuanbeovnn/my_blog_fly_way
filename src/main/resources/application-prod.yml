@@ -4,7 +4,7 @@ minio:
         pathurlFiles: files
         pathurlImages: images
     bucket-name: commons
-    endpoint: http://bienhoa.cf:9000
+    endpoint: http://85.156.204.240:9000
     file-size: 1073741824
     image-size: 10485760
     port: 9000
@@ -15,11 +15,11 @@ spring:
         import: optional:classpath:.env[.properties]
     datasource:
         password: ${MYSQL_PASSWORD}
-        url: jdbc:postgresql://bienhoa.cf:5432/blogs_prod?currentSchema=blog_dbo
+        url: jdbc:postgresql://85.156.204.240:5432/blogs_prod?currentSchema=blog_dbo
         username: dev
     flyway:
         password: P@ssword*123
-        url: jdbc:postgresql://bienhoa.cf:5432/blogs_prod?currentSchema=blog_dbo
+        url: jdbc:postgresql://85.156.204.240:5432/blogs_prod?currentSchema=blog_dbo
         user: dev
     jpa:
         generate-ddl: true
