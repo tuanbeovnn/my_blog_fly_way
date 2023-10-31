@@ -10,8 +10,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @ConfigurationPropertiesScan(basePackages = {"com.myblogbackend.blog"})
 @SpringBootApplication
 @EnableJpaAuditing
-@EnableCaching
-@EnableTransactionManagement
 public class BlogApplication {
 
     public static void main(final String[] args) {

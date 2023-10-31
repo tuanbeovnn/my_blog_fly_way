@@ -53,6 +53,12 @@ email:
         from: noreply@pezzie.com
         base-url: http://localhost:8080/user/api/v1/auth/regitrationConfirm?token=%s
 
+BASE_URL: http://localhost:8080
+ADDRESS: localhost@gmail.com
+EMAIL_ACTIVATION: Account Activation
+EMAIL_CREATION: Account Creation
+EMAIL_RESET: Account Reset
+
 app:
     generate-categories: true
 
