@@ -36,8 +36,8 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest, final HttpServletRequest request) {
-        var newUser = authService.registerUser(signUpRequest, request);
+    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) {
+        var newUser = authService.registerUser(signUpRequest);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath().path("/user/me")
                 .buildAndExpand(newUser.getId()).toUri();

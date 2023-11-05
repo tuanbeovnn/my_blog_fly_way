@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public interface AuthService {
     JwtResponse userLogin(LoginFormRequest loginFormRequest);
 
-    UserResponse registerUser(SignUpFormRequest signUpRequest, HttpServletRequest request);
+    UserResponse registerUser(SignUpFormRequest signUpRequest);
 
     JwtResponse refreshJwtToken(TokenRefreshRequest tokenRefreshRequest);
 }

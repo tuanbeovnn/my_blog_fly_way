@@ -13,8 +13,6 @@ public interface MailStrategy {
 //    @Async
 //    void sendNotification();
 
-    void sendActivationEmail(String email);
-
-
+    void sendActivationEmail(UserEntity user);
 
 }

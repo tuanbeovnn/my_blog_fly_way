@@ -13,7 +13,7 @@ public enum ErrorCode implements CommonErrorCode {
     UN_SUPPORT_FILE_EXTENSION(HttpStatus.BAD_REQUEST, "40020", "Unsupport this file extension"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "401", "Unauthorized"),
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "001", "validation.error"),
-    ALREADY_EXIST(HttpStatus.INTERNAL_SERVER_ERROR, "500", "Account already exist!"),
+    ALREADY_EXIST(HttpStatus.BAD_REQUEST, "400", "Account already exist!"),
     USER_NAME_PASSWORD_NOT_MATCH(HttpStatus.BAD_REQUEST, "400", "Username or password not match!"),
     JWT_CLAIM_EMPTY(HttpStatus.UNAUTHORIZED, "401", "Claim empty"),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "500", "error.could not send email");

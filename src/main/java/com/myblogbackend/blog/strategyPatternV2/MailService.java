@@ -18,9 +18,9 @@ public class MailService {
     private final MailStrategy mailStrategy;
 
 
-    public void sendActivationEmail(String email) {
-        log.info("Sending activation email to '{}'", email);
-        mailStrategy.sendActivationEmail(email);
+    public void sendActivationEmail(UserEntity user) {
+        log.info("Sending activation email to '{}'", user);
+        mailStrategy.sendActivationEmail(user);
     }
 
 }

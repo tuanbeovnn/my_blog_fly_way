@@ -1,7 +1,6 @@
 package com.myblogbackend.blog.services.impl;
 
 import com.myblogbackend.blog.enums.OAuth2Provider;
-import com.myblogbackend.blog.event.OnAuthListenerEvent;
 import com.myblogbackend.blog.exception.TokenRefreshException;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
@@ -20,11 +19,9 @@ import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.security.JwtProvider;
 import com.myblogbackend.blog.services.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
+import com.myblogbackend.blog.strategyPatternV2.MailStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -42,7 +39,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class AuthServiceImpl implements AuthService {
-
     public static final long ONE_HOUR_IN_MILLIS = 3600000;
     private final UsersRepository usersRepository;
     private final AuthenticationManager authenticationManager;
@@ -51,8 +47,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder encoder;
     private final UserMapper userMapper;
-
-    private final ApplicationEventPublisher eventPublisher;
+    private final MailStrategy mailStrategy;
 
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
@@ -68,29 +63,25 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
-    public UserResponse registerUser(final SignUpFormRequest signUpRequest, final HttpServletRequest request) {
-        var userEntityOPT = usersRepository.findByEmail(signUpRequest.getEmail());
-        if (userEntityOPT.isPresent()) {
-            throw new RuntimeException("Email already exits");
+    public UserResponse registerUser(final SignUpFormRequest signUpRequest) {
+        var userEntityOpt = usersRepository.findByEmail(signUpRequest.getEmail());
+        if (userEntityOpt.isPresent()) {
+            throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
         }
-        var createdUser = new UserEntity();
-        // Creating user's account
-        createdUser.setEmail(signUpRequest.getEmail());
-        createdUser.setPassword(encoder.encode(signUpRequest.getPassword()));
-        createdUser.activate();
-        createdUser.setName(signUpRequest.getName());
-        createdUser.setProvider(OAuth2Provider.LOCAL);
-        UserEntity result = usersRepository.save(createdUser);
-        if (!ObjectUtils.isEmpty(result)) {
-            try {
-                eventPublisher.publishEvent(
-                        new OnAuthListenerEvent(result, request.getRequestURL().toString(), "REGISTER")
-                );
-            } catch (Exception ex) {
-                throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
-            }
+        var newUser = new UserEntity();
+        newUser.setEmail(signUpRequest.getEmail());
+        newUser.setPassword(encoder.encode(signUpRequest.getPassword()));
+        newUser.activate();
+        newUser.setName(signUpRequest.getName());
+        newUser.setProvider(OAuth2Provider.LOCAL);
+
+        UserEntity result = usersRepository.save(newUser);
+
+        if (result.getActive()) {
+            log.info("Sending activation email to '{}'", result);
+            mailStrategy.sendActivationEmail(result);
         }
+
         return userMapper.toUserDTO(result);
     }
 
