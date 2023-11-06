@@ -4,7 +4,7 @@ minio:
         pathurlFiles: files
         pathurlImages: images
     bucket-name: commons
-    endpoint: http://bienhoa.cf:9000
+    endpoint: http://nocng.id.vn:9000
     file-size: 1073741824
     image-size: 10485760
     port: 9000
@@ -15,11 +15,11 @@ spring:
         import: optional:classpath:.env[.properties]
     datasource:
         password: P@ssword*123
-        url: jdbc:postgresql://bienhoa.cf:5432/blogs?currentSchema=blog_dbo
+        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo
         username: dev
     flyway:
         password: P@ssword*123
-        url: jdbc:postgresql://bienhoa.cf:5432/blogs?currentSchema=blog_dbo
+        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo
         user: dev
     jpa:
         generate-ddl: true

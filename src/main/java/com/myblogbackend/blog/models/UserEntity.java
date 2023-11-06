@@ -36,6 +36,10 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false)
     private Boolean active;
 
+    @Column(name = "is_pending")
+    private Boolean isPending;
+
+
     @Column(name = "provider")
     @Enumerated(EnumType.STRING)
     private OAuth2Provider provider;

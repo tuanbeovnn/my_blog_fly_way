@@ -6,6 +6,9 @@ import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
+
+import java.io.IOException;
 
 public interface AuthService {
     JwtResponse userLogin(LoginFormRequest loginFormRequest);
@@ -13,4 +16,7 @@ public interface AuthService {
     UserResponse registerUser(SignUpFormRequest signUpRequest);
 
     JwtResponse refreshJwtToken(TokenRefreshRequest tokenRefreshRequest);
+
+    ResponseEntity<?> confirmationEmail(String token) throws IOException;
+
 }
