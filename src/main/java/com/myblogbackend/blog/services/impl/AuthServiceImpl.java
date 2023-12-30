@@ -19,8 +19,8 @@ import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.security.JwtProvider;
 import com.myblogbackend.blog.services.AuthService;
+import com.myblogbackend.blog.strategyPatternV2.MailFactory;
 import com.myblogbackend.blog.strategyPatternV2.MailStrategy;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,7 +37,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AuthServiceImpl implements AuthService {
     public static final long ONE_HOUR_IN_MILLIS = 3600000;
@@ -49,6 +48,20 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder encoder;
     private final UserMapper userMapper;
     private final MailStrategy mailStrategy;
+
+    public AuthServiceImpl(UsersRepository usersRepository, AuthenticationManager authenticationManager,
+                           JwtProvider jwtProvider, UserDeviceRepository userDeviceRepository,
+                           RefreshTokenRepository refreshTokenRepository, PasswordEncoder encoder,
+                           UserMapper userMapper, MailFactory mailFactory) {
+        this.usersRepository = usersRepository;
+        this.authenticationManager = authenticationManager;
+        this.jwtProvider = jwtProvider;
+        this.userDeviceRepository = userDeviceRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.encoder = encoder;
+        this.userMapper = userMapper;
+        this.mailStrategy = mailFactory.createStrategy();
+    }
 
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
