@@ -5,10 +5,11 @@ import lombok.*;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Getter
-@ConfigurationProperties(prefix = "email2")
+@ConfigurationProperties(prefix = "email")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Setter
 public class EmailProperties {
 
     private Email registrationConfirmation;
