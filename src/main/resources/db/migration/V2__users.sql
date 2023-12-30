@@ -5,6 +5,7 @@ CREATE TABLE blog_dbo.users (
     name     VARCHAR(255) NOT NULL,
     active   boolean NOT NULL DEFAULT false,
     provider VARCHAR(20) NOT NULL DEFAULT 'LOCAL',
+    is_pending   boolean NOT NULL DEFAULT false,
     created_date       TIMESTAMP,
     modified_date      TIMESTAMP,
     created_by         VARCHAR(20),

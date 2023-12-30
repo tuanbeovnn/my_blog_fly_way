@@ -21,6 +21,7 @@ import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.security.JwtProvider;
 import com.myblogbackend.blog.services.AuthService;
+import com.myblogbackend.blog.services.TokenRepository;
 import com.myblogbackend.blog.strategyPatternV2.MailStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Calendar;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -58,7 +60,6 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder encoder;
     private final UserMapper userMapper;
     private final MailStrategy mailStrategy;
-
     private final TokenRepository tokenRepository;
 
     @Override
@@ -90,14 +91,11 @@ public class AuthServiceImpl implements AuthService {
         newUser.activate();
         newUser.setName(signUpRequest.getName());
         newUser.setProvider(OAuth2Provider.LOCAL);
-
-        UserEntity result = usersRepository.save(newUser);
-
+        var result = usersRepository.save(newUser);
         if (result.getActive()) {
             log.info("Sending activation email to '{}'", result);
             mailStrategy.sendActivationEmail(result);
         }
-
         return userMapper.toUserDTO(result);
     }
 
@@ -117,6 +115,39 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database.Please login again")));
         return new JwtResponse(token.get(), tokenRefreshRequest.getRefreshToken(), jwtProvider.getExpiryDuration());
     }
+
+
+    @Override
+    public ResponseEntity<?> confirmationEmail(String token) throws IOException {
+        UserVerificationTokenEntity verificationToken = tokenRepository.findByVerificationToken(token);
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.TEXT_HTML);
+        if (verificationToken == null) {
+            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
+            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+        }
+        UserEntity userEntity = verificationToken.getUser();
+        if (!userEntity.getIsPending()) {
+            InputStream in = getClass().getResourceAsStream("/templates/alreadyconfirmed.html");
+            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+        }
+
+        Calendar cal = Calendar.getInstance();
+        if ((verificationToken.getExpDate().getTime() - cal.getTime().getTime()) <= 0) {
+            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
+            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+        }
+        userEntity.setIsPending(false);
+        usersRepository.save(userEntity);
+        InputStream in = getClass().getResourceAsStream("/templates/confirmed.html");
+        String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+
+        return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+    }
+
 
     @Override
     public ResponseEntity<?> confirmationEmail(String token) throws IOException {
