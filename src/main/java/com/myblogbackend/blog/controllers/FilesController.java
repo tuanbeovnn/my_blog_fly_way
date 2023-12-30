@@ -15,11 +15,11 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class FilesController {
 
-    private final MinioService minioService;
-
-    @PostMapping("/upload")
-    public ResponseEntity<?> registerUser(final @ModelAttribute MultipartFile file) {
-        var upload = minioService.uploadFile(file);
-        return ResponseEntity.ok(upload);
-    }
+//    private final MinioService minioService;
+//
+//    @PostMapping("/upload")
+//    public ResponseEntity<?> registerUser(final @ModelAttribute MultipartFile file) {
+//        var upload = minioService.uploadFile(file);
+//        return ResponseEntity.ok(upload);
+//    }
 }
