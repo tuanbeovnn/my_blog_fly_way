@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.strategyPatternV2;
 
+import com.myblogbackend.blog.config.mail.EmailProperties;
 import com.myblogbackend.blog.models.UserEntity;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;

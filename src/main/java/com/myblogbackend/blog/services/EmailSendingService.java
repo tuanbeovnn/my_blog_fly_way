@@ -1,11 +1,9 @@
 package com.myblogbackend.blog.services;
 
 
-import org.springframework.mail.SimpleMailMessage;
-
-import java.util.Map;
+import com.myblogbackend.blog.models.UserEntity;
 
 public interface EmailSendingService {
 
-    void send(String templateName, SimpleMailMessage simpleMailMessage, Map<String, Object> contentBindings);
+    void sendActivationEmail(UserEntity user);
 }

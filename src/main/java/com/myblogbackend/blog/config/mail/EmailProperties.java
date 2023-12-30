@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.strategyPatternV2;
+package com.myblogbackend.blog.config.mail;
 
 
 import lombok.*;
