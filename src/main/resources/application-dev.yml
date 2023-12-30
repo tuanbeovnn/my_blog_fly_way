@@ -22,7 +22,7 @@ spring:
     jpa:
         generate-ddl: true
         hibernate:
-            ddl-auto: validate
+            ddl-auto: update
         properties:
             hibernate:
                 dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -53,6 +53,13 @@ email:
         from: noreply@pezzie.com
         base-url: http://localhost:8080/user/api/v1/auth/regitrationConfirm?token=%s
 
+email2:
+    registration-confirmation:
+        template: registration-confirmation.html
+        subject: Registration Confirmation
+        from: noreply@pezzie.com
+        base-url: http://localhost:8080/user/api/v1/auth/regitrationConfirm?token=%s
+
 BASE_URL: http://localhost:8080
 ADDRESS: localhost@gmail.com
 EMAIL_ACTIVATION: Account Activation
@@ -64,3 +71,9 @@ app:
 
 flywaypf:
     active: blog_dbo
+#
+#springdoc:
+#    api-docs:
+#        enabled: false
+#    swagger-ui:
+#        enabled: false

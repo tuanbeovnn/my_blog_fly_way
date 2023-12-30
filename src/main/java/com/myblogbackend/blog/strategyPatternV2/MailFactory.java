@@ -8,9 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 
-/**
- * Created by Ikhiloya Imokhai on 5/7/20.
- */
 @Service
 @RequiredArgsConstructor
 public class MailFactory {
@@ -18,7 +15,6 @@ public class MailFactory {
 
     private final Environment environment;
     private final GmailStrategy gmailStrategy;
-
 
     public MailStrategy createStrategy() {
         String[] activeProfiles = environment.getActiveProfiles();

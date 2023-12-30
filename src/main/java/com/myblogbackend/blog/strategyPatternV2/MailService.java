@@ -7,19 +7,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 
-/**
- * Created by Ikhiloya Imokhai on 5/7/20.
- */
 @Service
-@RequiredArgsConstructor
 public class MailService {
     private final Logger log = LoggerFactory.getLogger(MailService.class);
-
     private final MailStrategy mailStrategy;
 
+    public MailService(MailStrategy mailStrategy) {
+        this.mailStrategy = mailStrategy;
+    }
 
     public void sendActivationEmail(UserEntity user) {
-        log.info("Sending activation email to '{}'", user);
+        log.info("Sending activation email to '{}'", user.getEmail());
         mailStrategy.sendActivationEmail(user);
     }
 

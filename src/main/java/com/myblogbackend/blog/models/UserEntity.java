@@ -1,5 +1,7 @@
 package com.myblogbackend.blog.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.myblogbackend.blog.enums.OAuth2Provider;
 import com.myblogbackend.blog.models.base.BaseEntity;
 import jakarta.persistence.*;

@@ -8,9 +8,7 @@ import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.RefreshTokenEntity;
 import com.myblogbackend.blog.models.UserDeviceEntity;
 import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.models.UserVerificationTokenEntity;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
-import com.myblogbackend.blog.repositories.TokenRepository;
 import com.myblogbackend.blog.repositories.UserDeviceRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.DeviceInfoRequest;
@@ -21,15 +19,9 @@ import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.security.JwtProvider;
 import com.myblogbackend.blog.services.AuthService;
-import com.myblogbackend.blog.services.TokenRepository;
 import com.myblogbackend.blog.strategyPatternV2.MailStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -40,10 +32,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Calendar;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,7 +49,6 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder encoder;
     private final UserMapper userMapper;
     private final MailStrategy mailStrategy;
-    private final TokenRepository tokenRepository;
 
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
@@ -91,6 +79,7 @@ public class AuthServiceImpl implements AuthService {
         newUser.activate();
         newUser.setName(signUpRequest.getName());
         newUser.setProvider(OAuth2Provider.LOCAL);
+        newUser.setIsPending(true);
         var result = usersRepository.save(newUser);
         if (result.getActive()) {
             log.info("Sending activation email to '{}'", result);
@@ -116,52 +105,57 @@ public class AuthServiceImpl implements AuthService {
         return new JwtResponse(token.get(), tokenRefreshRequest.getRefreshToken(), jwtProvider.getExpiryDuration());
     }
 
-
     @Override
     public ResponseEntity<?> confirmationEmail(String token) throws IOException {
-        UserVerificationTokenEntity verificationToken = tokenRepository.findByVerificationToken(token);
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(MediaType.TEXT_HTML);
-        if (verificationToken == null) {
-            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
-            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
-            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
-        }
-        UserEntity userEntity = verificationToken.getUser();
-        if (!userEntity.getIsPending()) {
-            InputStream in = getClass().getResourceAsStream("/templates/alreadyconfirmed.html");
-            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
-            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
-        }
-
-        Calendar cal = Calendar.getInstance();
-        if ((verificationToken.getExpDate().getTime() - cal.getTime().getTime()) <= 0) {
-            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
-            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
-            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
-        }
-        userEntity.setIsPending(false);
-        usersRepository.save(userEntity);
-        InputStream in = getClass().getResourceAsStream("/templates/confirmed.html");
-        String result = IOUtils.toString(in, StandardCharsets.UTF_8);
-
-        return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
-    }
-
-
-    @Override
-    public ResponseEntity<?> confirmationEmail(String token) throws IOException {
-
-        var verificationToken = tokenRepository.findByVerificationToken(token);
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(MediaType.TEXT_HTML);
-        if (verificationToken == null) {
-            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
-            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
-            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
-        }
         return null;
     }
+
+
+//    @Override
+//    public ResponseEntity<?> confirmationEmail(String token) throws IOException {
+//        UserVerificationTokenEntity verificationToken = tokenRepository.findByVerificationToken(token);
+//        HttpHeaders responseHeaders = new HttpHeaders();
+//        responseHeaders.setContentType(MediaType.TEXT_HTML);
+//        if (verificationToken == null) {
+//            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
+//            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+//            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+//        }
+//        UserEntity userEntity = verificationToken.getUser();
+//        if (!userEntity.getIsPending()) {
+//            InputStream in = getClass().getResourceAsStream("/templates/alreadyconfirmed.html");
+//            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+//            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+//        }
+//
+//        Calendar cal = Calendar.getInstance();
+//        if ((verificationToken.getExpDate().getTime() - cal.getTime().getTime()) <= 0) {
+//            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
+//            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+//            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+//        }
+//        userEntity.setIsPending(false);
+//        usersRepository.save(userEntity);
+//        InputStream in = getClass().getResourceAsStream("/templates/confirmed.html");
+//        String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+//
+//        return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+//    }
+
+
+//    @Override
+//    public ResponseEntity<?> confirmationEmail(String token) throws IOException {
+//
+//        var verificationToken = tokenRepository.findByVerificationToken(token);
+//        HttpHeaders responseHeaders = new HttpHeaders();
+//        responseHeaders.setContentType(MediaType.TEXT_HTML);
+//        if (verificationToken == null) {
+//            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
+//            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+//            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+//        }
+//        return null;
+//    }
 
     private void verifyExpiration(final RefreshTokenEntity token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {

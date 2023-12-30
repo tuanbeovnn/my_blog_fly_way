@@ -7,14 +7,13 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-@ConfigurationPropertiesScan(basePackages = {"com.myblogbackend.blog"})
+@ConfigurationPropertiesScan
 @SpringBootApplication
 @EnableJpaAuditing
 public class BlogApplication {
 
     public static void main(final String[] args) {
         SpringApplication.run(BlogApplication.class, args);
-//        System.out.println("STARTED SPRING BOOT APPLICATION");
     }
 
 }
