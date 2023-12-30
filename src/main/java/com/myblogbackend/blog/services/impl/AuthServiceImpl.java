@@ -8,7 +8,9 @@ import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.RefreshTokenEntity;
 import com.myblogbackend.blog.models.UserDeviceEntity;
 import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.models.UserVerificationTokenEntity;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
+import com.myblogbackend.blog.repositories.TokenRepository;
 import com.myblogbackend.blog.repositories.UserDeviceRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.DeviceInfoRequest;
@@ -22,7 +24,12 @@ import com.myblogbackend.blog.services.AuthService;
 import com.myblogbackend.blog.strategyPatternV2.MailStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,6 +38,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,10 +59,16 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final MailStrategy mailStrategy;
 
+    private final TokenRepository tokenRepository;
+
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
         var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User not found."));
+
+        if (userEntity.getActive()) {
+            throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
+        }
 
         var authentication = authenticateUser(loginRequest);
 
@@ -100,6 +116,20 @@ public class AuthServiceImpl implements AuthService {
                 .map(jwtProvider::generateTokenFromUser)
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database.Please login again")));
         return new JwtResponse(token.get(), tokenRefreshRequest.getRefreshToken(), jwtProvider.getExpiryDuration());
+    }
+
+    @Override
+    public ResponseEntity<?> confirmationEmail(String token) throws IOException {
+
+        var verificationToken = tokenRepository.findByVerificationToken(token);
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.TEXT_HTML);
+        if (verificationToken == null) {
+            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
+            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+        }
+        return null;
     }
 
     private void verifyExpiration(final RefreshTokenEntity token) {

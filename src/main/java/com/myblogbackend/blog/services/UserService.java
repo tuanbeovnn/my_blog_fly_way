@@ -5,6 +5,7 @@ import com.myblogbackend.blog.request.LogOutRequest;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.security.UserPrincipal;
 import com.myblogbackend.blog.enums.NotificationType;
+import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
 

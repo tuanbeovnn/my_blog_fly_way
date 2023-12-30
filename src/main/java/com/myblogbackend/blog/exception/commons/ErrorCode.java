@@ -15,6 +15,7 @@ public enum ErrorCode implements CommonErrorCode {
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "001", "validation.error"),
     ALREADY_EXIST(HttpStatus.BAD_REQUEST, "400", "Account already exist!"),
     USER_NAME_PASSWORD_NOT_MATCH(HttpStatus.BAD_REQUEST, "400", "Username or password not match!"),
+    USER_ACCOUNT_IS_NOT_ACTIVE(HttpStatus.UNAUTHORIZED, "401", "Account has not active yet"),
     JWT_CLAIM_EMPTY(HttpStatus.UNAUTHORIZED, "401", "Claim empty"),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "500", "error.could not send email");
     private final HttpStatus status;
