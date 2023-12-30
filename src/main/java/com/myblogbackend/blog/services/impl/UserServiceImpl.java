@@ -6,7 +6,6 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.models.UserVerificationTokenEntity;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
 import com.myblogbackend.blog.repositories.UserDeviceRepository;
 import com.myblogbackend.blog.repositories.UserTokenRepository;
@@ -15,7 +14,6 @@ import com.myblogbackend.blog.request.LogOutRequest;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.security.UserPrincipal;
 import com.myblogbackend.blog.services.UserService;
-import com.myblogbackend.blog.strategyPatternV2.NotificationType;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -27,8 +25,6 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
-
-import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_CONFIRMATION;
 
 @Service
 @RequiredArgsConstructor
@@ -83,25 +79,6 @@ public class UserServiceImpl implements UserService {
             logger.error("Failed to get user's sign in information");
             throw new RuntimeException("Failed to get user's sign in information");
         }
-    }
-
-    @Override
-    public void createVerificationToken(UserEntity userEntity, String token, NotificationType notificationType) {
-        int exp = 0;
-        if (notificationType.equals(EMAIL_REGISTRATION_CONFIRMATION)) {
-            exp = 1440;
-            //            case EMAIL_CHANGE_CONFIRMATION:
-//                exp = 10;
-//                break;
-        }
-
-
-        UserVerificationTokenEntity myToken = UserVerificationTokenEntity.builder()
-                .verificationToken(token)
-                .user(userEntity)
-                .expDate(calculateExpiryDate(exp))
-                .build();
-        tokenRepository.save(myToken);
     }
 
     private UserEntity getUserById(final UUID id) {

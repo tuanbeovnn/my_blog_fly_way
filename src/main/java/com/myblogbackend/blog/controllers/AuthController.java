@@ -7,16 +7,18 @@ import com.myblogbackend.blog.request.SignUpFormRequest;
 import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.ApiResponse;
 import com.myblogbackend.blog.services.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 
@@ -43,6 +45,10 @@ public class AuthController {
                 .buildAndExpand(newUser.getId()).toUri();
         return ResponseEntity.created(location)
                 .body(new ApiResponse(true, "User registered successfully!"));
+    }
+    @GetMapping("/auth/registrationConfirm")
+    public ResponseEntity<?> confirmRegistration(final @RequestParam("token") String token) throws IOException {
+        return authService.confirmationEmail(token);
     }
 
     @PostMapping("/refresh")

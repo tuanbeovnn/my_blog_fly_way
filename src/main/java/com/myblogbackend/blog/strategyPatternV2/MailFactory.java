@@ -22,7 +22,7 @@ public class MailFactory {
 
         //Check if Active profiles contains "local" or "test"
         if (Arrays.stream(environment.getActiveProfiles()).anyMatch(
-                env -> (env.equalsIgnoreCase(Constant.DEV_PROFILE)))) {
+                env -> (env.equalsIgnoreCase(Constant.getDevProfile())))) {
             return this.gmailStrategy;
         } else {
             return this.gmailStrategy;

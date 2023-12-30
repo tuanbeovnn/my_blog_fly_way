@@ -1,11 +1,12 @@
 package com.myblogbackend.blog.services;
 
+import com.myblogbackend.blog.enums.NotificationType;
+import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.request.SignUpFormRequest;
 import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
@@ -18,5 +19,8 @@ public interface AuthService {
     JwtResponse refreshJwtToken(TokenRefreshRequest tokenRefreshRequest);
 
     ResponseEntity<?> confirmationEmail(String token) throws IOException;
+
+    void createVerificationToken(UserEntity userEntity, String token, NotificationType notificationType);
+
 
 }

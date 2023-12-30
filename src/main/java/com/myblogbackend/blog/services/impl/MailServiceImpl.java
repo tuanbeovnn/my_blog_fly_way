@@ -13,11 +13,11 @@ public class MailServiceImpl implements EmailSendingService {
     private final Logger log = LoggerFactory.getLogger(MailServiceImpl.class);
     private final MailStrategy mailStrategy;
 
-    public MailServiceImpl(MailStrategy mailStrategy) {
+    public MailServiceImpl(final MailStrategy mailStrategy) {
         this.mailStrategy = mailStrategy;
     }
 
-    public void sendActivationEmail(UserEntity user) {
+    public void sendActivationEmail(final UserEntity user) {
         log.info("Sending activation email to '{}'", user.getEmail());
         mailStrategy.sendActivationEmail(user);
     }

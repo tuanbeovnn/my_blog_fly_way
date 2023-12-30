@@ -25,7 +25,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UserDetailsServiceImpl userDetailsService;
 
     @Override
-    protected void doFilterInternal(@NotNull final HttpServletRequest request, @NotNull final HttpServletResponse response, @NotNull final FilterChain filterChain)
+    protected void doFilterInternal(@NotNull final HttpServletRequest request,
+                                    @NotNull final HttpServletResponse response,
+                                    @NotNull final FilterChain filterChain)
             throws ServletException, IOException {
         try {
             String jwt = getJwt(request);

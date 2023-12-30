@@ -27,13 +27,13 @@ public class GmailStrategy implements MailStrategy {
     private final EmailProperties emailProperties;
 
     @Override
-    public void sendActivationEmail(UserEntity user) {
+    public void sendActivationEmail(final UserEntity user) {
         log.info("Sending activation email to '{}'", user.getEmail());
         sendEmailFromTemplate(user, emailProperties.getRegistrationConfirmation());
     }
 
-    private void sendEmail(String to, String subject, String content, boolean isHtml) {
-        log.info("Send email[html '{}'] to '{}' with subject '{}'", isHtml, to, subject);
+    private void sendEmail(final String to, final String subject, final String content) {
+        log.info("Send email[html '{}'] to '{}' with subject '{}'", true, to, subject);
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
 
         try {
@@ -41,7 +41,7 @@ public class GmailStrategy implements MailStrategy {
             message.setTo(to);
             message.setFrom(new InternetAddress(emailProperties.getRegistrationConfirmation().getFrom(), "JACK SPARROW"));
             message.setSubject(subject);
-            message.setText(content, isHtml);
+            message.setText(content, true);
             javaMailSender.send(mimeMessage);
             log.info("Sent email to '{}'", to);
         } catch (Exception e) {
@@ -49,13 +49,13 @@ public class GmailStrategy implements MailStrategy {
         }
     }
 
-    private void sendEmailFromTemplate(UserEntity user, EmailProperties.Email email) {
+    private void sendEmailFromTemplate(final UserEntity user, final EmailProperties.Email email) {
         Context context = new Context();
         context.setVariable(USER, user);
         context.setVariable(BASE_URL, email.getBaseUrl());
         String content = templateEngine.process(email.getTemplate(), context);
         String subject = email.getSubject();
-        sendEmail(user.getEmail(), subject, content, true);
+        sendEmail(user.getEmail(), subject, content);
     }
 
 }

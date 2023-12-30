@@ -1,9 +1,14 @@
 package com.myblogbackend.blog.strategyPatternV2;
 
 public class Constant {
-    public static final String MAIL = "mail";
-    public static final String STORAGE = "storage";
-    public static final String CRYPTO = "crypto";
-    public static String DEV_PROFILE ="dev";
-    public static String PROD_PROFILE ="prod";
+    private static final String DEV_PROFILE = "dev";
+    private static final String PROD_PROFILE = "prod";
+
+    public static String getDevProfile() {
+        return DEV_PROFILE;
+    }
+
+    public static String getProdProfile() {
+        return PROD_PROFILE;
+    }
 }
