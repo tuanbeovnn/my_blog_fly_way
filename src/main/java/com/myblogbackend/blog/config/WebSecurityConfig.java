@@ -3,7 +3,6 @@ package com.myblogbackend.blog.config;
 import com.myblogbackend.blog.security.JwtAuthenticationEntryPoint;
 import com.myblogbackend.blog.security.JwtAuthenticationFilter;
 import com.myblogbackend.blog.services.impl.UserDetailsServiceImpl;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,11 +19,17 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@RequiredArgsConstructor
 @EnableMethodSecurity
 public class WebSecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
+
     private final JwtAuthenticationEntryPoint unauthorizedHandler;
+
+    public WebSecurityConfig(final UserDetailsServiceImpl userDetailsService,
+                             final JwtAuthenticationEntryPoint unauthorizedHandler) {
+        this.userDetailsService = userDetailsService;
+        this.unauthorizedHandler = unauthorizedHandler;
+    }
 
     @Bean
     public JwtAuthenticationFilter authenticationJwtTokenFilter() {
@@ -64,9 +69,9 @@ public class WebSecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/api/v1/auth/**").permitAll()
+                        auth
+                                .requestMatchers("/api/v1/auth/**", "/api/v1/files/upload").permitAll()
                                 .requestMatchers(AUTH_WHITELIST).permitAll()
-                                .requestMatchers("/api/v1/users/upload").permitAll()
                                 .anyRequest().authenticated()
                 );
 
@@ -79,5 +84,4 @@ public class WebSecurityConfig {
 
         return http.build();
     }
-
 }

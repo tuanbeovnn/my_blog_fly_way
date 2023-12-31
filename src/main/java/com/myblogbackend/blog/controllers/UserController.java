@@ -7,13 +7,11 @@ import com.myblogbackend.blog.response.ApiResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.security.CurrentUser;
 import com.myblogbackend.blog.security.UserPrincipal;
-import com.myblogbackend.blog.services.MinioService;
 import com.myblogbackend.blog.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -23,14 +21,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-
-    private final MinioService minioService;
-
-    @PostMapping("/upload")
-    public ResponseEntity<?> registerUser(final @ModelAttribute MultipartFile file) {
-        var upload = minioService.uploadFile(file);
-        return ResponseEntity.ok(upload);
-    }
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser() {
