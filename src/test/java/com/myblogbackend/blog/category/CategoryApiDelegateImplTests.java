@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,24 +28,34 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.myblogbackend.blog.ResponseBodyMatcher.responseBody;
-import static com.myblogbackend.blog.category.CategoryTestApi.*;
+import static com.myblogbackend.blog.category.CategoryTestApi.makeCategoryForSaving;
+import static com.myblogbackend.blog.category.CategoryTestApi.prepareCategoryForRequesting;
+import static com.myblogbackend.blog.category.CategoryTestApi.prepareCategoryForRequestingUpdate;
+import static com.myblogbackend.blog.category.CategoryTestApi.toCategoryResponse;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+// Import necessary packages
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockUser
 public class CategoryApiDelegateImplTests {
     @Autowired
     private MockMvc mockMvc;
+
     @MockBean
     private CategoryRepository categoryRepository;
+
     @Autowired
     private ObjectMapper objectMapper;
+
     @Autowired
     private CategoryMapper categoryMapper;
+
     private UUID categoryId;
     private CategoryRequest categoryRequest;
     private CategoryEntity category;
@@ -58,8 +69,7 @@ public class CategoryApiDelegateImplTests {
 
     @Test
     public void givenMoreComplexCategoryData_whenSendData_thenReturnsCategoryCreated() throws Exception {
-        Mockito.when(categoryRepository.save(Mockito.any()))
-                .thenReturn(category);
+        Mockito.when(categoryRepository.save(Mockito.any(CategoryEntity.class))).thenReturn(category);
         var expectedCategory = toCategoryResponse(category);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/category")
                         .content(IntegrationTestUtil.asJsonString(categoryRequest))
@@ -96,7 +106,6 @@ public class CategoryApiDelegateImplTests {
                 .andExpect(responseBody().containsObjectBody(expectedCategory, CategoryResponse.class, objectMapper));
     }
 
-
     @Test
     public void givenNotExistingCategoryId_whenUpdatingCategory_thenReturnsExceptions() throws Exception {
         var categoryIdRandom = UUID.randomUUID();
@@ -110,5 +119,4 @@ public class CategoryApiDelegateImplTests {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message", is(unexpectedException)));
     }
-
 }
