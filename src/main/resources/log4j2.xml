@@ -6,8 +6,8 @@
                     pattern="%style{%d{ISO8601}} %highlight{%-5level }[%style{%t}{bright,blue}] %style{%C{10}}{bright,yellow}: %msg%n%throwable" />
         </Console>
         <SplunkHttp
-                name="splunkhttp"
-                url="http://nocng.id.vn:9999"
+                name="splutter"
+                url="http://nocng.id.vn:8088"
                 token="2f419549-21c3-4c30-bab2-e90fe95bbafc"
                 host="nocng.id.vn"
                 index="order_api_dev"
@@ -25,7 +25,7 @@
         <!-- LOG everything at INFO level -->
         <Root level="info">
             <AppenderRef ref="console" />
-            <AppenderRef ref="splunkhttp" />
+            <AppenderRef ref="splutter" />
         </Root>
     </Loggers>
 </Configuration>
