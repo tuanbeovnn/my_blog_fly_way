@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+    <Appenders>
+        <SplunkHttpEventCollector name="splunk"
+                                  index="blogs_logs"
+                                  host="http://nocng.id.vn:8000/"
+                                  port="8088"
+                                  scheme="https"
+                                  messageFormat="text"
+                                  sourceType="log4j"
+                                  source="http-event-logs"
+                                  token="edda77a0-b0cf-45d7-9373-049e84eec235">
+            <HttpEventFormatter class="com.splunk.logging.HttpEventFormatter" />
+        </SplunkHttpEventCollector>
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="splunk" />
+        </Root>
+    </Loggers>
+</Configuration>
