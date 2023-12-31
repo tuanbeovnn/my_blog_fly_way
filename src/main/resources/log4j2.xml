@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN" monitorInterval="30">
     <Appenders>
-        <SplunkHttpEventCollector name="splunk"
-                                  index="blogs_logs"
+        <SplunkHttpEventCollector name="splunkhttp"
+                                  index="order_api_dev"
                                   host="nocng.id.vn"
-                                  port="8088"
+                                  url="http://nocng.id.vn:9999"
                                   scheme="https"
                                   messageFormat="text"
                                   sourceType="log4j"
+                                  type="raw"
                                   source="http-event-logs"
-                                  token="edda77a0-b0cf-45d7-9373-049e84eec235">
+                                  token="2f419549-21c3-4c30-bab2-e90fe95bbafc">
             <HttpEventFormatter class="com.splunk.logging.HttpEventFormatter" />
         </SplunkHttpEventCollector>
     </Appenders>
