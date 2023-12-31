@@ -8,7 +8,7 @@
         <SplunkHttp
                 name="splunkhttp"
                 url="http://nocng.id.vn:9999"
-                token="7f99549c-adfb-482b-af62-c3b3dc103edd"
+                token="2f419549-21c3-4c30-bab2-e90fe95bbafc"
                 host="nocng.id.vn"
                 index="order_api_dev"
                 type="raw"
