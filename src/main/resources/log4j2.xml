@@ -3,7 +3,7 @@
     <Appenders>
         <SplunkHttpEventCollector name="splunk"
                                   index="blogs_logs"
-                                  host="http://nocng.id.vn:8000/"
+                                  host="nocng.id.vn"
                                   port="8088"
                                   scheme="https"
                                   messageFormat="text"
