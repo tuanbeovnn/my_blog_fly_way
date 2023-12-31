@@ -1,22 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN" monitorInterval="30">
+<Configuration>
     <Appenders>
-        <SplunkHttpEventCollector name="splunkhttp"
-                                  index="order_api_dev"
-                                  host="nocng.id.vn"
-                                  url="http://nocng.id.vn:9999"
-                                  scheme="https"
-                                  messageFormat="text"
-                                  sourceType="log4j"
-                                  type="raw"
-                                  source="http-event-logs"
-                                  token="2f419549-21c3-4c30-bab2-e90fe95bbafc">
-            <HttpEventFormatter class="com.splunk.logging.HttpEventFormatter" />
-        </SplunkHttpEventCollector>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout
+                    pattern="%style{%d{ISO8601}} %highlight{%-5level }[%style{%t}{bright,blue}] %style{%C{10}}{bright,yellow}: %msg%n%throwable" />
+        </Console>
+        <SplunkHttp
+                name="splunkhttp"
+                url="http://nocng.id.vn:9999"
+                token="7f99549c-adfb-482b-af62-c3b3dc103edd"
+                host="nocng.id.vn"
+                index="order_api_dev"
+                type="raw"
+                source="http-event-logs"
+                sourcetype="log4j"
+                messageFormat="text"
+                disableCertificateValidation="true">
+            <PatternLayout pattern="%m" />
+        </SplunkHttp>
+
     </Appenders>
 
     <Loggers>
+        <!-- LOG everything at INFO level -->
         <Root level="info">
+            <AppenderRef ref="console" />
             <AppenderRef ref="splunkhttp" />
         </Root>
     </Loggers>
