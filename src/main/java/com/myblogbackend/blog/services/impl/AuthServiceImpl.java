@@ -26,6 +26,8 @@ import com.myblogbackend.blog.strategyPattern.MailFactory;
 import com.myblogbackend.blog.strategyPattern.MailStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -52,6 +54,9 @@ import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_C
 @Service
 @Slf4j
 public class AuthServiceImpl implements AuthService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
+
     public static final long ONE_HOUR_IN_MILLIS = 3600000;
     private final UsersRepository usersRepository;
     private final AuthenticationManager authenticationManager;
@@ -92,8 +97,9 @@ public class AuthServiceImpl implements AuthService {
         newUser.setProvider(OAuth2Provider.LOCAL);
         newUser.setIsPending(true);
         var result = usersRepository.save(newUser);
+        logger.info("Create user successfully '{}'", result);
         if (result.getActive()) {
-            log.info("Sending activation email to '{}'", result);
+            logger.info("Sending activation email to '{}'", result);
             var token = UUID.randomUUID().toString();
             createVerificationToken(result, token, EMAIL_REGISTRATION_CONFIRMATION);
             mailStrategy.sendActivationEmail(result);
@@ -146,6 +152,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         userTokenRepository.save(myToken);
     }
+
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
         var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
