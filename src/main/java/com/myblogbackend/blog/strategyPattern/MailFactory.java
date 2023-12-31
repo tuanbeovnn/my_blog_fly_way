@@ -1,8 +1,8 @@
 package com.myblogbackend.blog.strategyPattern;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +11,7 @@ import java.util.Arrays;
 @Service
 @RequiredArgsConstructor
 public class MailFactory {
-    private final Logger log = LoggerFactory.getLogger(MailFactory.class);
+    private final Logger log = LogManager.getLogger(MailFactory.class);
 
     private final Environment environment;
     private final GmailStrategy gmailStrategy;

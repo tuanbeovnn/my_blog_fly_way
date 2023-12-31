@@ -5,8 +5,8 @@ import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
 import com.myblogbackend.blog.exception.InvalidTokenRequestException;
 import com.myblogbackend.blog.models.UserEntity;
 import io.jsonwebtoken.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ import java.util.Date;
 @Component
 public class JwtProvider {
 
-    private static final Logger logger = LoggerFactory.getLogger(JwtProvider.class);
+    private static final Logger logger = LogManager.getLogger(JwtProvider.class);
     public static final String ISSUER_GENERATE_TOKEN = "StackAbuse";
     public static final String ISSUER_GENERATE_REFRESH_TOKEN = "Therapex";
     public static final String SIGNING_KEY = "HelloWorld";

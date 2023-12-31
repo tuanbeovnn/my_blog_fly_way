@@ -9,8 +9,8 @@ import com.myblogbackend.blog.services.ViewerService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class ViewerServiceImpl implements ViewerService {
-    private static final Logger logger = LoggerFactory.getLogger(ViewerServiceImpl.class);
+    private static final Logger logger = LogManager.getLogger(ViewerServiceImpl.class);
     private final ViewerRepository viewerRepository;
     private final PostRepository postRepository;
 

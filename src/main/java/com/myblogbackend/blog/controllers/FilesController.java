@@ -6,8 +6,8 @@ import com.myblogbackend.blog.response.FileResponse;
 import com.myblogbackend.blog.services.MinioService;
 import com.myblogbackend.blog.utils.FileTypeUtils;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,7 +19,7 @@ import java.util.List;
 @RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION + "/files")
 @RequiredArgsConstructor
 public class FilesController {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FilesController.class);
+    private static final Logger LOGGER = LogManager.getLogger(FilesController.class);
 
     private final MinioService minioService;
 

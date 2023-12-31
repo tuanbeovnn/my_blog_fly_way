@@ -16,9 +16,8 @@ import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import com.myblogbackend.blog.webclient.PostWebClient;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -27,9 +26,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class PostServiceImpl implements PostService {
-    private static final Logger logger = LoggerFactory.getLogger(PostServiceImpl.class);
+    private static final Logger logger = LogManager.getLogger(PostServiceImpl.class);
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
     private final UsersRepository usersRepository;

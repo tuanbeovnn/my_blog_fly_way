@@ -1,7 +1,7 @@
 package com.myblogbackend.blog.services.impl;
 
-import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
+import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.CategoryMapper;
 import com.myblogbackend.blog.pagination.OffsetPageRequest;
 import com.myblogbackend.blog.pagination.PaginationPage;
@@ -10,8 +10,8 @@ import com.myblogbackend.blog.request.CategoryRequest;
 import com.myblogbackend.blog.response.CategoryResponse;
 import com.myblogbackend.blog.services.CategoryService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
-    private static final Logger logger = LoggerFactory.getLogger(PostServiceImpl.class);
+    private static final Logger logger = LogManager.getLogger(PostServiceImpl.class);
 
     @Override
     public PaginationPage<CategoryResponse> getAllCategories(final Integer offset, final Integer limited) {

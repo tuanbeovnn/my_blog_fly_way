@@ -10,8 +10,8 @@ import io.minio.messages.DeleteObject;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class MinioUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MinioUtil.class);
+    private static final Logger LOGGER = LogManager.getLogger(MinioUtil.class);
 
     private final MinioClient minioClient;
     private final MinioConfig minioConfig;

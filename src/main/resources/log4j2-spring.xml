@@ -6,13 +6,13 @@
                     pattern="%style{%d{ISO8601}} %highlight{%-5level }[%style{%t}{bright,blue}] %style{%C{10}}{bright,yellow}: %msg%n%throwable" />
         </Console>
         <SplunkHttp
-                name="splutter"
+                name="splunkhttp"
                 url="http://nocng.id.vn:8088"
-                token="2f419549-21c3-4c30-bab2-e90fe95bbafc"
+                token="d2cb1c66-d33e-4d27-a0cd-4ad90aa4999c"
                 host="nocng.id.vn"
-                index="order_api_dev"
+                index="spring_dev"
                 type="raw"
-                source="http-event-logs"
+                source="source name"
                 sourcetype="log4j"
                 messageFormat="text"
                 disableCertificateValidation="true">
@@ -22,10 +22,9 @@
     </Appenders>
 
     <Loggers>
-        <!-- LOG everything at INFO level -->
         <Root level="info">
             <AppenderRef ref="console" />
-            <AppenderRef ref="splutter" />
+            <AppenderRef ref="splunkhttp" />
         </Root>
     </Loggers>
 </Configuration>

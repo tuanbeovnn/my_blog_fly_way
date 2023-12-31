@@ -9,8 +9,8 @@ import com.myblogbackend.blog.utils.MinioUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,7 +22,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class MinioServiceImpl implements MinioService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MinioServiceImpl.class);
+    private final static Logger LOGGER = LogManager.getLogger(MinioServiceImpl.class);
     private final MinioUtil minioUtil;
     private final MinioConfig minioConfig;
 
@@ -30,6 +30,7 @@ public class MinioServiceImpl implements MinioService {
     @Override
     public FileResponse putObject(final MultipartFile multipartFile,
                                   final String bucket, final String fileType) {
+        LOGGER.info("we are starting the execution of findAll  () in service ");
         LOGGER.info("MinioServiceImpl | putObject is called");
         try {
             var bucketName = StringUtils.defaultIfBlank(bucket, minioConfig.getBucketName());

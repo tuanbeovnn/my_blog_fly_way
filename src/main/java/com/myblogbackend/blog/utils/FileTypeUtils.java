@@ -1,8 +1,8 @@
 package com.myblogbackend.blog.utils;
 
 import cn.hutool.core.io.FileTypeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -10,7 +10,7 @@ import java.io.InputStream;
 
 
 public class FileTypeUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileTypeUtils.class);
+    private static final Logger LOGGER = LogManager.getLogger(FileTypeUtils.class);
     private final static String IMAGE_TYPE = "image/";
     private final static String AUDIO_TYPE = "audio/";
     private final static String VIDEO_TYPE = "video/";
