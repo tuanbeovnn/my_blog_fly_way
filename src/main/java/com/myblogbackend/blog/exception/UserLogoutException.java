@@ -6,12 +6,15 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serial;
+
 @Getter
 @Setter
 @ResponseStatus(HttpStatus.EXPECTATION_FAILED)
 public class UserLogoutException extends RuntimeException {
 
-	private static final long serialVersionUID = 1L;
+	@Serial
+    private static final long serialVersionUID = 1L;
 	private final String user;
     private final String message;
 

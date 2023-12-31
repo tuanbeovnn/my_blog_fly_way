@@ -22,8 +22,8 @@ import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.security.JwtProvider;
 import com.myblogbackend.blog.services.AuthService;
-import com.myblogbackend.blog.strategyPatternV2.MailFactory;
-import com.myblogbackend.blog.strategyPatternV2.MailStrategy;
+import com.myblogbackend.blog.strategyPattern.MailFactory;
+import com.myblogbackend.blog.strategyPattern.MailStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.http.HttpHeaders;
@@ -132,11 +132,10 @@ public class AuthServiceImpl implements AuthService {
         return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
     }
 
-
     @Override
     public void createVerificationToken(final UserEntity userEntity, final String token,
                                         final NotificationType notificationType) {
-        int exp = 0;
+        var exp = 0;
         if (notificationType.equals(EMAIL_REGISTRATION_CONFIRMATION)) {
             exp = 15;
         }
@@ -147,13 +146,6 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         userTokenRepository.save(myToken);
     }
-
-    private Date calculateExpiryDate(final int expiryTimeInMinutes) {
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, expiryTimeInMinutes);
-        return new Date(cal.getTime().getTime());
-    }
-
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
         var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
@@ -188,6 +180,13 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database.Please login again")));
         return new JwtResponse(token.get(), tokenRefreshRequest.getRefreshToken(), jwtProvider.getExpiryDuration());
     }
+
+    private Date calculateExpiryDate(final int expiryTimeInMinutes) {
+        var cal = Calendar.getInstance();
+        cal.add(Calendar.MINUTE, expiryTimeInMinutes);
+        return new Date(cal.getTime().getTime());
+    }
+
 
     private void verifyExpiration(final RefreshTokenEntity token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {

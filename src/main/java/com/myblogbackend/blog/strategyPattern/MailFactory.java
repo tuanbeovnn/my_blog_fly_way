@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.strategyPatternV2;
+package com.myblogbackend.blog.strategyPattern;
 
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.strategyPatternV2;
+package com.myblogbackend.blog.strategyPattern;
 
 public class Constant {
     private static final String DEV_PROFILE = "dev";

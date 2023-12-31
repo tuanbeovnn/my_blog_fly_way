@@ -2,7 +2,7 @@ package com.myblogbackend.blog.services.impl;
 
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.services.EmailSendingService;
-import com.myblogbackend.blog.strategyPatternV2.MailStrategy;
+import com.myblogbackend.blog.strategyPattern.MailStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

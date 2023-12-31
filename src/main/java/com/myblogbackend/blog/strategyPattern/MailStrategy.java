@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.strategyPatternV2;
+package com.myblogbackend.blog.strategyPattern;
 
 import com.myblogbackend.blog.models.UserEntity;
 import org.springframework.scheduling.annotation.Async;
