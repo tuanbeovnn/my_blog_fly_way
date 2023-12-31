@@ -24,10 +24,9 @@ import com.myblogbackend.blog.security.JwtProvider;
 import com.myblogbackend.blog.services.AuthService;
 import com.myblogbackend.blog.strategyPattern.MailFactory;
 import com.myblogbackend.blog.strategyPattern.MailStrategy;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -52,11 +51,9 @@ import java.util.UUID;
 import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_CONFIRMATION;
 
 @Service
-@Slf4j
 public class AuthServiceImpl implements AuthService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
-
+    private static final Logger logger = LogManager.getLogger(AuthServiceImpl.class);
     public static final long ONE_HOUR_IN_MILLIS = 3600000;
     private final UsersRepository usersRepository;
     private final AuthenticationManager authenticationManager;
