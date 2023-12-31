@@ -1,30 +1,17 @@
 package com.myblogbackend.blog.post;
 
-import com.myblogbackend.blog.IntegrationTestUtil;
-import com.myblogbackend.blog.models.CategoryEntity;
-import com.myblogbackend.blog.models.PostEntity;
-import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.repositories.CategoryRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
-import com.myblogbackend.blog.request.PostRequest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
