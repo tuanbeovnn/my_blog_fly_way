@@ -27,6 +27,7 @@ public class PostEntity extends BaseEntity {
 
     @Column
     private String content;
+
     @Column
     private Boolean approved;
 
