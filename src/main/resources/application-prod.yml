@@ -59,3 +59,6 @@ app:
     generate-categories: true
 flywaypf:
     active: blog_dbo
+
+logging:
+    config: classpath:log4j2-spring-prod.xml
