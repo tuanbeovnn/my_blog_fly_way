@@ -2,6 +2,7 @@ package com.myblogbackend.blog.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -11,16 +12,14 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class SignUpFormRequest {
-    @NotBlank
-    @Size(min = 3, max = 50)
+    @NotBlank(message = "The username is required.")
+    @Size(min = 3, max = 20, message = "The username must be from 3 to 20 characters.")
     private String name;
 
-    @NotBlank
-    @Size(max = 60)
-    @Email
+    @NotEmpty(message = "The email is required.")
+    @Email(message = "The email is not a valid email.")
     private String email;
 
-    @NotBlank
-    @Size(min = 6, max = 40)
+    @NotEmpty(message = "The email is required.")
     private String password;
 }
