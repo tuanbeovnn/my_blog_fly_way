@@ -84,6 +84,7 @@ public class AuthServiceImpl implements AuthService {
     public UserResponse registerUser(final SignUpFormRequest signUpRequest) {
         var userEntityOpt = usersRepository.findByEmail(signUpRequest.getEmail());
         if (userEntityOpt.isPresent()) {
+            logger.warn("Account already existed '{}'", userEntityOpt.get().getEmail());
             throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
         }
         var newUser = new UserEntity();

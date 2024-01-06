@@ -1,6 +1,8 @@
 package com.myblogbackend.blog.exception;
 
+import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -12,13 +14,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
-@ControllerAdvice
+@RestControllerAdvice
 public class ControllerExceptionHandler {
     private final static Logger LOGGER = LogManager.getLogger(ControllerExceptionHandler.class);
 
@@ -53,6 +56,16 @@ public class ControllerExceptionHandler {
     public ResponseEntity<?> processAccessDeniedException(final AccessDeniedException e) {
         return ResponseEntityBuilder.getBuilder()
                 .setCode(HttpStatus.FORBIDDEN)
+                .setMessage(e.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(value = BlogRuntimeException.class)
+    @ResponseBody
+    public ResponseEntity<?> handler(final BlogRuntimeException e, final HttpServletRequest request) {
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setCode(Integer.parseInt(e.getCode()))
                 .setMessage(e.getMessage())
                 .build();
     }
