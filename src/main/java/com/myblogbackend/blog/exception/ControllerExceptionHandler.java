@@ -5,7 +5,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,6 +36,24 @@ public class ControllerExceptionHandler {
                 .setCode(HttpStatus.BAD_REQUEST)
                 .setMessage("Validation errors")
                 .setDetails(details)
+                .build();
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseBody
+    public ResponseEntity<?> processMethodNotSupportedException(final HttpRequestMethodNotSupportedException exception) {
+        return ResponseEntityBuilder.getBuilder()
+                .setCode(HttpStatus.METHOD_NOT_ALLOWED)
+                .setMessage(exception.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseBody
+    public ResponseEntity<?> processAccessDeniedException(final AccessDeniedException e) {
+        return ResponseEntityBuilder.getBuilder()
+                .setCode(HttpStatus.FORBIDDEN)
+                .setMessage(e.getMessage())
                 .build();
     }
 
