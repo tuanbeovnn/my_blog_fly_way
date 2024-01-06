@@ -64,7 +64,7 @@ public class ControllerExceptionHandler {
     public ResponseEntity<?> handler(final BlogRuntimeException e, final HttpServletRequest request) {
         return ResponseEntityBuilder
                 .getBuilder()
-                .setCode(Integer.parseInt(e.getCode()))
+                .setCode(Integer.parseInt(String.valueOf(e.getStatus().value())))
                 .setMessage(e.getMessage())
                 .build();
     }
