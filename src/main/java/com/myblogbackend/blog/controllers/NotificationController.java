@@ -8,7 +8,6 @@ import com.myblogbackend.blog.request.NotificationSubscriptionRequest;
 import com.myblogbackend.blog.request.TopicNotificationRequest;
 import com.myblogbackend.blog.services.impl.NotificationService;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
