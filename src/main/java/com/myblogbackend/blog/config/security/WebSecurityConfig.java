@@ -67,7 +67,10 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
                         auth
-                                .requestMatchers("/api/v1/auth/**", "/api/v1/files/upload").permitAll()
+                                .requestMatchers("/api/v1/auth/**",
+                                        "/api/v1/files/upload/**",
+                                        "/api/v1/notifications/**")
+                                .permitAll()
                                 .requestMatchers(AUTH_WHITELIST).permitAll()
                                 .anyRequest().authenticated()
                 );
