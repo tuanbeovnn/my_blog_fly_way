@@ -53,7 +53,6 @@ import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_C
 
 @Service
 public class AuthServiceImpl implements AuthService {
-
     private static final Logger logger = LogManager.getLogger(AuthServiceImpl.class);
     public static final long ONE_HOUR_IN_MILLIS = 3600000;
     private final UsersRepository usersRepository;
@@ -111,31 +110,20 @@ public class AuthServiceImpl implements AuthService {
         UserVerificationTokenEntity verificationToken = userTokenRepository.findByVerificationToken(token);
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.setContentType(MediaType.TEXT_HTML);
-        if (verificationToken == null) {
-            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
-            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
-            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
-        }
-        UserEntity userEntity = verificationToken.getUser();
-        if (!userEntity.getIsPending()) {
-            InputStream in = getClass().getResourceAsStream("/templates/alreadyconfirmed.html");
-            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
-            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+
+        if (verificationToken == null || isTokenExpired(verificationToken)) {
+            return loadHtmlTemplate("/templates/invalidtoken.html", responseHeaders);
         }
 
-        Calendar cal = Calendar.getInstance();
-        if ((verificationToken.getExpDate().getTime() - cal.getTime().getTime()) <= 0) {
-            InputStream in = getClass().getResourceAsStream("/templates/invalidtoken.html");
-            String result = IOUtils.toString(in, StandardCharsets.UTF_8);
-            return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+        UserEntity userEntity = verificationToken.getUser();
+        if (!userEntity.getIsPending()) {
+            return loadHtmlTemplate("/templates/alreadyconfirmed.html", responseHeaders);
         }
         userEntity.setIsPending(false);
         usersRepository.save(userEntity);
-        InputStream in = getClass().getResourceAsStream("/templates/emailAcctivated.html");
-        String result = IOUtils.toString(in, StandardCharsets.UTF_8);
-
-        return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);
+        return loadHtmlTemplate("/templates/emailActivated.html", responseHeaders);
     }
+
 
     @Override
     public void createVerificationToken(final UserEntity userEntity, final String token,
@@ -255,5 +243,21 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenEntity.setUserDevice(userDeviceEntity);
         refreshTokenEntity = refreshTokenRepository.save(refreshTokenEntity);
         return refreshTokenEntity;
+    }
+
+    private boolean isTokenExpired(final UserVerificationTokenEntity verificationToken) {
+        long timeDifference = verificationToken.getExpDate().getTime() - Calendar.getInstance().getTime().getTime();
+        return timeDifference <= 0;
+    }
+
+    private ResponseEntity<String> loadHtmlTemplate(final String templatePath,
+                                                    final HttpHeaders headers) throws IOException {
+        try (InputStream in = getClass().getResourceAsStream(templatePath)) {
+            if (in != null) {
+                String result = IOUtils.toString(in, StandardCharsets.UTF_8);
+                return new ResponseEntity<>(result, headers, HttpStatus.OK);
+            }
+        }
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
