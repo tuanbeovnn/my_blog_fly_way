@@ -21,10 +21,8 @@ public class OnUserLogoutSuccessEventListener implements ApplicationListener<OnU
     }
 
     public void onApplicationEvent(final OnUserLogoutSuccessEvent event) {
-        if (null != event) {
-            DeviceInfoRequest deviceInfoRequest = event.getLogOutRequest().getDeviceInfo();
-            logger.info(String.format("Log out success event received for user [%s] for device [%s]", event.getUserEmail(), deviceInfoRequest));
-            tokenCache.markLogoutEventForToken(event);
-        }
+        DeviceInfoRequest deviceInfoRequest = event.getLogOutRequest().getDeviceInfo();
+        logger.info(String.format("Log out success event received for user [%s] for device [%s]", event.getUserEmail(), deviceInfoRequest));
+        tokenCache.markLogoutEventForToken(event);
     }
 }

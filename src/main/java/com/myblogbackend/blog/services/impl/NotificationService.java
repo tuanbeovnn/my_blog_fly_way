@@ -7,8 +7,9 @@ import com.myblogbackend.blog.request.AllDevicesNotificationRequest;
 import com.myblogbackend.blog.request.DeviceNotificationRequest;
 import com.myblogbackend.blog.request.NotificationSubscriptionRequest;
 import com.myblogbackend.blog.request.TopicNotificationRequest;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -18,9 +19,10 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @Service
-@AllArgsConstructor
-@Slf4j
+@RequiredArgsConstructor
 public class NotificationService {
+
+    private static final Logger log = LogManager.getLogger(NotificationService.class);
 
     private final FirebaseApp firebaseApp;
 

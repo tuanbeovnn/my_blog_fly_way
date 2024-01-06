@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.event;
 
+import java.io.Serial;
 import java.time.Instant;
 import java.util.Date;
 
@@ -15,10 +16,8 @@ import lombok.Setter;
 @Setter
 public class OnUserLogoutSuccessEvent extends ApplicationEvent {
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+	@Serial
+    private static final long serialVersionUID = 1L;
 	private final String userEmail;
     private final String token;
     private final transient LogOutRequest logOutRequest;

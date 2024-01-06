@@ -13,15 +13,24 @@ import java.io.InputStream;
 
 @Configuration
 public class FirebaseConfig {
+    private static final String FIREBASE_APP_NAME = "BLOG_NOTIFICATIONS";
 
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
+        try {
+            return FirebaseApp.getInstance(FIREBASE_APP_NAME);
+        } catch (IllegalStateException e) {
+            return createFirebaseApp();
+        }
+    }
+
+    private FirebaseApp createFirebaseApp() throws IOException {
         InputStream serviceAccount = new ClassPathResource("demo-firebase.json").getInputStream();
         FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                 .build();
 
-        return FirebaseApp.initializeApp(options);
+        return FirebaseApp.initializeApp(options, FIREBASE_APP_NAME);
     }
 
     @Bean
