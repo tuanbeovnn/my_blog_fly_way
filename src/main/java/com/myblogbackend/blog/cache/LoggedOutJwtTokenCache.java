@@ -1,7 +1,7 @@
 package com.myblogbackend.blog.cache;
 
 import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
-import com.myblogbackend.blog.security.JwtProvider;
+import com.myblogbackend.blog.config.security.JwtProvider;
 import net.jodah.expiringmap.ExpiringMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

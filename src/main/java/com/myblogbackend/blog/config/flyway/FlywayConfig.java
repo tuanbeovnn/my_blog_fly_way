@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.config;
+package com.myblogbackend.blog.config.flyway;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

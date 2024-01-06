@@ -2,7 +2,7 @@ package com.myblogbackend.blog.services;
 
 import com.myblogbackend.blog.request.LogOutRequest;
 import com.myblogbackend.blog.response.UserResponse;
-import com.myblogbackend.blog.security.UserPrincipal;
+import com.myblogbackend.blog.config.security.UserPrincipal;
 
 import java.util.UUID;
 

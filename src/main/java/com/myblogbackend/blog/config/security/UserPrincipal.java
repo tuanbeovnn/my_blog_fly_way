@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.security;
+package com.myblogbackend.blog.config.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.myblogbackend.blog.models.UserEntity;

@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.security;
+package com.myblogbackend.blog.config.security;
 
 import com.myblogbackend.blog.cache.LoggedOutJwtTokenCache;
 import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;

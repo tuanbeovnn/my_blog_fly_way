@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.services.impl;
 
+import com.myblogbackend.blog.config.security.JwtProvider;
 import com.myblogbackend.blog.enums.NotificationType;
 import com.myblogbackend.blog.enums.OAuth2Provider;
 import com.myblogbackend.blog.exception.TokenRefreshException;
@@ -20,7 +21,6 @@ import com.myblogbackend.blog.request.SignUpFormRequest;
 import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
-import com.myblogbackend.blog.security.JwtProvider;
 import com.myblogbackend.blog.services.AuthService;
 import com.myblogbackend.blog.strategyPattern.MailFactory;
 import com.myblogbackend.blog.strategyPattern.MailStrategy;

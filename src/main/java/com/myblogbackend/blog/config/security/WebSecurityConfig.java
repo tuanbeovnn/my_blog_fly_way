@@ -1,8 +1,5 @@
-package com.myblogbackend.blog.config;
+package com.myblogbackend.blog.config.security;
 
-import com.myblogbackend.blog.security.JwtAuthenticationEntryPoint;
-import com.myblogbackend.blog.security.JwtAuthenticationFilter;
-import com.myblogbackend.blog.services.impl.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

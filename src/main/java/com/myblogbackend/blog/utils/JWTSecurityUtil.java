@@ -1,7 +1,7 @@
 package com.myblogbackend.blog.utils;
 
 
-import com.myblogbackend.blog.security.UserPrincipal;
+import com.myblogbackend.blog.config.security.UserPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 

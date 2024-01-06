@@ -8,7 +8,7 @@ import com.myblogbackend.blog.repositories.RefreshTokenRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.response.JwtResponse;
-import com.myblogbackend.blog.security.JwtProvider;
+import com.myblogbackend.blog.config.security.JwtProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;

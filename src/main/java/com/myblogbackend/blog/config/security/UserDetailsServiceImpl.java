@@ -1,9 +1,9 @@
-package com.myblogbackend.blog.services.impl;
+package com.myblogbackend.blog.config.security;
 
 
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.repositories.UsersRepository;
-import com.myblogbackend.blog.security.UserPrincipal;
+import com.myblogbackend.blog.config.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

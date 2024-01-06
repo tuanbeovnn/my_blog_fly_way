@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.config;
+package com.myblogbackend.blog.config.webclient;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

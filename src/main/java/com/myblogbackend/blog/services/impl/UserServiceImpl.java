@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.services.impl;
 
+import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
 import com.myblogbackend.blog.exception.UserLogoutException;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
@@ -12,7 +13,6 @@ import com.myblogbackend.blog.repositories.UserTokenRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.LogOutRequest;
 import com.myblogbackend.blog.response.UserResponse;
-import com.myblogbackend.blog.security.UserPrincipal;
 import com.myblogbackend.blog.services.UserService;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import lombok.RequiredArgsConstructor;

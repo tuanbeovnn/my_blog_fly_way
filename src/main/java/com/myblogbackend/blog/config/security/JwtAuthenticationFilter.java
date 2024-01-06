@@ -1,6 +1,5 @@
-package com.myblogbackend.blog.security;
+package com.myblogbackend.blog.config.security;
 
-import com.myblogbackend.blog.services.impl.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
