@@ -20,6 +20,6 @@ public class SignUpFormRequest {
     @Email(message = "The email is not a valid email.")
     private String email;
 
-    @NotEmpty(message = "The email is required.")
+    @NotEmpty(message = "The password is required.")
     private String password;
 }

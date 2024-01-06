@@ -12,10 +12,6 @@ public class BlogRuntimeException extends RuntimeException {
     private String code;
     private String message;
     private HttpStatus status;
-
-    public BlogRuntimeException() {
-    }
-
     public BlogRuntimeException(final CommonErrorCode code) {
         this.code = code.code();
         this.message = code.message();
