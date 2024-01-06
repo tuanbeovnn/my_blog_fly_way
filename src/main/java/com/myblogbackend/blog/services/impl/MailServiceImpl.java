@@ -17,9 +17,9 @@ public class MailServiceImpl implements EmailSendingService {
         this.mailStrategy = mailStrategy;
     }
 
+    @Override
     public void sendActivationEmail(final UserEntity user) {
-        log.info("Sending activation email to '{}'", user.getEmail());
-        mailStrategy.sendActivationEmail(user);
+
     }
 
 }

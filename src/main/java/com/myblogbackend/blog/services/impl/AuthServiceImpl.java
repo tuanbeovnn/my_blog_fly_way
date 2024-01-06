@@ -24,6 +24,7 @@ import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.AuthService;
 import com.myblogbackend.blog.strategyPattern.MailFactory;
 import com.myblogbackend.blog.strategyPattern.MailStrategy;
+import freemarker.template.TemplateException;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public UserResponse registerUser(final SignUpFormRequest signUpRequest) {
+    public UserResponse registerUser(final SignUpFormRequest signUpRequest) throws TemplateException, IOException {
         var userEntityOpt = usersRepository.findByEmail(signUpRequest.getEmail());
         if (userEntityOpt.isPresent()) {
             logger.warn("Account already existed '{}'", userEntityOpt.get().getEmail());
@@ -100,7 +101,7 @@ public class AuthServiceImpl implements AuthService {
             logger.info("Sending activation email to '{}'", result);
             var token = UUID.randomUUID().toString();
             createVerificationToken(result, token, EMAIL_REGISTRATION_CONFIRMATION);
-            mailStrategy.sendActivationEmail(result);
+            mailStrategy.sendActivationEmail(result, token);
         }
         return userMapper.toUserDTO(result);
     }
@@ -130,7 +131,7 @@ public class AuthServiceImpl implements AuthService {
         }
         userEntity.setIsPending(false);
         usersRepository.save(userEntity);
-        InputStream in = getClass().getResourceAsStream("/templates/confirmed.html");
+        InputStream in = getClass().getResourceAsStream("/templates/emailAcctivated.html");
         String result = IOUtils.toString(in, StandardCharsets.UTF_8);
 
         return new ResponseEntity<String>(result, responseHeaders, HttpStatus.NOT_FOUND);

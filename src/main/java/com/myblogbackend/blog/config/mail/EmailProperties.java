@@ -12,11 +12,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 public class EmailProperties {
 
-    private Email registrationConfirmation;
+    private EmailInfo registrationConfirmation;
 
     @Getter
     @AllArgsConstructor
-    public static class Email {
+    public static class EmailInfo {
         private String template;
         private String subject;
         private String from;

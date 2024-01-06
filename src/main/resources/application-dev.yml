@@ -50,10 +50,10 @@ spring:
 # Email Sender
 email:
     registration-confirmation:
-        template: registration-confirmation.html
+        template: registration-confirmation-en.html
         subject: Registration Confirmation
         from: noreply@pezzie.com
-        base-url: http://localhost:8080/user/api/v1/auth/regitrationConfirm?token=%s
+        base-url: http://localhost:8080/api/v1/auth/registrationConfirm?token=%s
 app:
     generate-categories: true
 

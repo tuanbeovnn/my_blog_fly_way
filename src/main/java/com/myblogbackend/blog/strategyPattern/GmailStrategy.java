@@ -2,60 +2,43 @@ package com.myblogbackend.blog.strategyPattern;
 
 import com.myblogbackend.blog.config.mail.EmailProperties;
 import com.myblogbackend.blog.models.UserEntity;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
 
-import java.nio.charset.StandardCharsets;
-
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class GmailStrategy implements MailStrategy {
-    private static final String USER = "user";
-    private static final String BASE_URL = "baseUrl";
     private final Logger log = LogManager.getLogger(GmailStrategy.class);
-    private final JavaMailSender javaMailSender;
-    private final TemplateEngine templateEngine;
+    private static final String CONFIRMATION_TOKEN = "confirmationToken";
+    private static final String UNKNOWN_EMAIL = "unknown";
     private final EmailProperties emailProperties;
+    private final NotificationMessageMapper notificationMessageMapper;
+    private final JavaEmailSendHandler javaEmailSendHandler;
 
     @Override
-    public void sendActivationEmail(final UserEntity user) {
-        log.info("Sending activation email to '{}'", user.getEmail());
-        sendEmailFromTemplate(user, emailProperties.getRegistrationConfirmation());
-    }
-
-    private void sendEmail(final String to, final String subject, final String content) {
-        log.info("Send email[html '{}'] to '{}' with subject '{}'", true, to, subject);
-        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
-
+    public void sendActivationEmail(final UserEntity user, final String token) {
+        var confirmationURL = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
+        Map<String, Object> dataBindings = Map.of(CONFIRMATION_TOKEN, confirmationURL);
+        var simpleMailMessage = notificationMessageMapper.toSimpleMailMessage(emailProperties.getRegistrationConfirmation());
+        simpleMailMessage.setTo(user.getEmail());
         try {
-            MimeMessageHelper message = new MimeMessageHelper(mimeMessage, true, StandardCharsets.UTF_8.name());
-            message.setTo(to);
-            message.setFrom(new InternetAddress(emailProperties.getRegistrationConfirmation().getFrom(), "JACK SPARROW"));
-            message.setSubject(subject);
-            message.setText(content, true);
-            javaMailSender.send(mimeMessage);
-            log.info("Sent email to '{}'", to);
+            javaEmailSendHandler.send(emailProperties.getRegistrationConfirmation().getTemplate(), simpleMailMessage, dataBindings);
+            log.info("Sending activation email to '{}'", user.getEmail());
         } catch (Exception e) {
-            log.warn("Email could not be sent to user '{}'", to, e);
+            logErrorSendingEmail(e, simpleMailMessage);
         }
     }
 
-    private void sendEmailFromTemplate(final UserEntity user, final EmailProperties.Email email) {
-        Context context = new Context();
-        context.setVariable(USER, user);
-        context.setVariable(BASE_URL, email.getBaseUrl());
-        String content = templateEngine.process(email.getTemplate(), context);
-        String subject = email.getSubject();
-        sendEmail(user.getEmail(), subject, content);
+    private void logErrorSendingEmail(final Exception e, final SimpleMailMessage simpleMailMessage) {
+        log.error("Error sending email to '{}'", Optional.ofNullable(simpleMailMessage.getTo())
+                .map(Arrays::toString)
+                .orElseGet(() -> UNKNOWN_EMAIL), e);
     }
-
 }

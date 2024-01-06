@@ -54,10 +54,10 @@ public class WebSecurityConfig {
     }
 
     private static final String[] AUTH_WHITELIST = {
-            "/v3/api-docs/**",
-            "/v3/api-docs.yaml",
-            "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/v3/api-docs/**", "/v3/api-docs.yaml", "/swagger-ui/**",
+            "/swagger-ui.html", "/favicon.ico", "/**/*.json",
+            "/**/*.gif", "/**/*.svg", "/**/*.jpg", "/**/*.jpeg",
+            "/**/*.html", "/**/*.css", "/**/*.js"
     };
 
     @Bean

@@ -7,6 +7,7 @@ import com.myblogbackend.blog.request.SignUpFormRequest;
 import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.ApiResponse;
 import com.myblogbackend.blog.services.AuthService;
+import freemarker.template.TemplateException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +39,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) {
+    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) throws TemplateException, IOException {
         var newUser = authService.registerUser(signUpRequest);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath().path("/user/me")
@@ -46,7 +47,7 @@ public class AuthController {
         return ResponseEntity.created(location)
                 .body(new ApiResponse(true, "User registered successfully!"));
     }
-    @GetMapping("/auth/registrationConfirm")
+    @GetMapping("/registrationConfirm")
     public ResponseEntity<?> confirmRegistration(final @RequestParam("token") String token) throws IOException {
         return authService.confirmationEmail(token);
     }
