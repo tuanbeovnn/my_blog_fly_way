@@ -120,6 +120,7 @@ public class AuthServiceImpl implements AuthService {
             return loadHtmlTemplate("/templates/alreadyconfirmed.html", responseHeaders);
         }
         userEntity.setIsPending(false);
+        userEntity.setActive(false);
         usersRepository.save(userEntity);
         return loadHtmlTemplate("/templates/emailActivated.html", responseHeaders);
     }
