@@ -28,7 +28,7 @@ node("master") {
 
     stage('Build docker') {
       sh "whoami"
-      sh "DOCKER_BUILDKIT=1 docker build -t blogs:${env.BUILD_NUMBER} ."
+      sh "DOCKER_BUILDKIT=1 docker build -t my_blogs:${env.BUILD_NUMBER} ."
     }
 
     stage('Deploy docker') {
