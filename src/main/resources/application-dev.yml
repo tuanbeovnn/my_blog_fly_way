@@ -15,11 +15,11 @@ minio:
 spring:
     datasource:
         password: P@ssword*123
-        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo
+        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo2
         username: dev
     flyway:
         password: P@ssword*123
-        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo
+        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo2
         user: dev
     jpa:
         generate-ddl: true
@@ -31,7 +31,7 @@ spring:
                 jdbc:
                     lob:
                         non_contextual_creation: true
-        show-sql: true
+        show-sql: false
     mail:
         host: smtp.gmail.com
         username: translatorvamkv1@gmail.com
@@ -58,7 +58,7 @@ app:
     generate-categories: true
 
 flywaypf:
-    active: blog_dbo
+    active: blog_dbo2
 #
 #springdoc:
 #    api-docs:

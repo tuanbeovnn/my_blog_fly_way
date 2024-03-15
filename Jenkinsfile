@@ -34,7 +34,7 @@ node("master") {
     stage('Deploy docker') {
       echo "Docker Image Tag Name: ${dockerImageTag}"
       sh "docker stop blogs || true && docker rm blogs || true"
-      sh "docker run --name blogs -d -p 9090:8080 blogs:${env.BUILD_NUMBER}"
+      sh "docker run --name blogs -d -p 8080:8080 blogs:${env.BUILD_NUMBER}"
     }
   } catch (e) {
     currentBuild.result = 'FAILURE'
