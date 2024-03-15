@@ -7,7 +7,7 @@ node("master") {
 
     stage('Clone Repo') {
       git url: 'https://gitlab.com/tuanbeovnn/blog_v2.git',
-        credentialsId: 'my_blogs',
+        credentialsId: 'blogs',
         branch: 'main'
     }
 
