@@ -1,13 +1,13 @@
 node("master") {
   def WORKSPACE = "/var/lib/jenkins/workspace/springboot-deploy"
-  def dockerImageTag = "blogs${env.BUILD_NUMBER}"
+  def dockerImageTag = "my_blogs${env.BUILD_NUMBER}"
 
   try {
     cleanWs()
 
     stage('Clone Repo') {
       git url: 'https://gitlab.com/tuanbeovnn/blog_v2.git',
-        credentialsId: 'blogs',
+        credentialsId: 'my_blogs',
         branch: 'main'
     }
 
@@ -33,8 +33,8 @@ node("master") {
 
     stage('Deploy docker') {
       echo "Docker Image Tag Name: ${dockerImageTag}"
-      sh "docker stop blogs || true && docker rm blogs || true"
-      sh "docker run --name blogs -d -p 8080:8080 blogs:${env.BUILD_NUMBER}"
+      sh "docker stop my_blogs || true && docker rm blogs || true"
+      sh "docker run --name my_blogs -d -p 8080:8080 blogs:${env.BUILD_NUMBER}"
     }
   } catch (e) {
     currentBuild.result = 'FAILURE'
