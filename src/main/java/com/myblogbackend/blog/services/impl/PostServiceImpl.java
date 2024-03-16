@@ -13,6 +13,7 @@ import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.services.PostService;
+import com.myblogbackend.blog.utils.GsonUtils;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import com.myblogbackend.blog.webclient.PostWebClient;
 import lombok.RequiredArgsConstructor;
@@ -37,18 +38,13 @@ public class PostServiceImpl implements PostService {
     @Override
     public PostResponse createPost(final PostRequest postRequest) {
         try {
-            // Get the signed-in user from the JWT token
             var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
-            // Validate the category ID and return the corresponding category
             var category = validateCategory(postRequest.getCategoryId());
-            // Map the post request to a post entity and set its category
             var postEntity = postMapper.toPostEntity(postRequest);
             postEntity.setCategory(category);
             postEntity.setStatus("active");
             postEntity.setApproved(Boolean.TRUE);
-            // Set the post's owner to the signed-in user
             postEntity.setUser(usersRepository.findById(signedInUser.getId()).orElseThrow());
-            // Log a success message
             var createdPost = postRepository.save(postEntity);
             logger.info("Post was created with id: {}", createdPost.getId());
             return postMapper.toPostResponse(createdPost);
@@ -59,10 +55,11 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PaginationPage<PostResponse> getAllPostsByUserId(final Integer offset, final Integer limited, final UUID userId) {
+    public PaginationPage<PostResponse> getAllPostsByUserId(final Integer offset, final Integer limited) {
         try {
+            var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
             var pageable = new OffsetPageRequest(offset, limited);
-            var postEntities = postRepository.findAllByUserId(userId, pageable);
+            var postEntities = postRepository.findAllByUserId(signedInUser.getId(), pageable);
             logger.info("Post get succeeded with offset: {} and limited {}", postEntities.getNumber(), postEntities.getSize());
             return getPostResponsePaginationPage(postEntities);
         } catch (Exception e) {
@@ -113,6 +110,8 @@ public class PostServiceImpl implements PostService {
             var category = validateCategory(postRequest.getCategoryId());
             post.setTitle(postRequest.getTitle());
             post.setContent(postRequest.getContent());
+            post.setImages(GsonUtils.arrayToString(postRequest.getImages()));
+            post.setThumnails(GsonUtils.arrayToString(postRequest.getThumnails()));
             post.setCategory(category);
             var updatedPost = postRepository.save(post);
             logger.info("Update post successfully with id {} ", id);

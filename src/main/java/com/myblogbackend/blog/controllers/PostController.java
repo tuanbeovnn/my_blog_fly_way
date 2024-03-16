@@ -18,16 +18,16 @@ import java.util.UUID;
 public class PostController {
     private final PostService postService;
 
-    @PostMapping("/posts1")
+    @PostMapping("/posts")
     public ResponseEntity<?> createPost(@RequestBody final PostRequest postRequest) {
         PostResponse post = postService.createPost(postRequest);
         return ResponseEntity.ok(post);
     }
 
-    @GetMapping("/users/{userId}")
+    @GetMapping("/user")
     public ResponseEntity<?> getAllPostsByUserId(@RequestParam(name = "offset", defaultValue = "0") final Integer offset,
-                                                 @RequestParam(name = "limit", defaultValue = "10") final Integer limit, @PathVariable final UUID userId) {
-        var postList = postService.getAllPostsByUserId(offset, limit, userId);
+                                                 @RequestParam(name = "limit", defaultValue = "10") final Integer limit) {
+        var postList = postService.getAllPostsByUserId(offset, limit);
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(postList)
