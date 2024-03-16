@@ -6,6 +6,7 @@ import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.PostService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping("/posts")
-    public ResponseEntity<?> createPost(@RequestBody final PostRequest postRequest) {
+    public ResponseEntity<?> createPost(@RequestBody @Valid final PostRequest postRequest) {
         PostResponse post = postService.createPost(postRequest);
         return ResponseEntity.ok(post);
     }
