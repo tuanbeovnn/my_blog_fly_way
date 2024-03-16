@@ -98,7 +98,7 @@ public class PostServiceImpl implements PostService {
             return postMapper.toPostResponse(post);
         } catch (Exception e) {
             logger.error("Failed to get post by id", e);
-            throw new RuntimeException("Failed to get post by id testing");
+            throw new RuntimeException("Failed to get post by id");
         }
     }
 
