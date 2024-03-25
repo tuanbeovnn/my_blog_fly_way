@@ -25,4 +25,6 @@ public interface MinioService {
     // Upload list file in the bucket
     List<FileResponse> putObjects(MultipartFile[] multipartFile, String bucketName, String fileType);
 
+    List<FileResponse> uploadMultiFiles(MultipartFile[] multipartFile);
+
 }

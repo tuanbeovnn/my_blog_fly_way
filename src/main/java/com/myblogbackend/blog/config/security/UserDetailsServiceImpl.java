@@ -1,6 +1,8 @@
 package com.myblogbackend.blog.config.security;
 
 
+import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
+import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.config.security.UserPrincipal;
@@ -23,7 +25,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         UserEntity userEntity = usersRepository.findByEmail(username)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("User Not Found with -> username or email : " + username)
+                        new BlogRuntimeException(ErrorCode.USER_COULD_NOT_FOUND)
                 );
 
         return UserPrincipal.build(userEntity);

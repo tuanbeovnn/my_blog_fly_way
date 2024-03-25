@@ -40,16 +40,8 @@ public class FilesController {
         throw new FileResponseException("File cannot be Upload");
     }
 
-    @PostMapping("/upload/files")
+    @PostMapping("/upload/client/files")
     public List<FileResponse> uploadFiles(final MultipartFile[] files, final String bucketName) {
-        String fileType = "";
-        for (MultipartFile file : files) {
-            fileType = FileTypeUtils.getFileType(file);
-        }
-        LOGGER.info("MinioController | uploadFile | fileType : " + fileType);
-        if (fileType != null) {
-            return minioService.putObjects(files, bucketName, fileType);
-        }
-        throw new FileResponseException("File cannot be Upload");
+        return minioService.uploadMultiFiles(files);
     }
 }

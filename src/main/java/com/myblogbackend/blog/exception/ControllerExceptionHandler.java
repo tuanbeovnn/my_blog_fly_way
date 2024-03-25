@@ -2,7 +2,9 @@ package com.myblogbackend.blog.exception;
 
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
+import feign.RetryableException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -68,5 +70,24 @@ public class ControllerExceptionHandler {
                 .setMessage(e.getMessage())
                 .build();
     }
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseBody
+    public ResponseEntity<?> handleConstraintViolationException(final ConstraintViolationException e) {
+        return ResponseEntityBuilder.getBuilder()
+                .setCode(HttpStatus.BAD_REQUEST)
+                .setMessage(e.getMessage())
+                .build();
+    }
+    // Handle RetryableException
+    @ExceptionHandler(RetryableException.class)
+    @ResponseBody
+    public ResponseEntity<?> handleRetryableException(final RetryableException e) {
+        LOGGER.error("Feign client encountered a RetryableException: {}", e.getMessage());
+        return ResponseEntityBuilder.getBuilder()
+                .setCode(HttpStatus.SERVICE_UNAVAILABLE)
+                .setMessage("Service temporarily unavailable" + e.getMessage())
+                .build();
+    }
+
 
 }

@@ -3,6 +3,7 @@ package com.myblogbackend.blog.services.impl;
 
 import com.myblogbackend.blog.config.minio.MinioConfig;
 import com.myblogbackend.blog.exception.MinioOperationException;
+import com.myblogbackend.blog.feign.APIClient;
 import com.myblogbackend.blog.response.FileResponse;
 import com.myblogbackend.blog.services.MinioService;
 import com.myblogbackend.blog.utils.MinioUtil;
@@ -25,6 +26,7 @@ public class MinioServiceImpl implements MinioService {
     private final static Logger LOGGER = LogManager.getLogger(MinioServiceImpl.class);
     private final MinioUtil minioUtil;
     private final MinioConfig minioConfig;
+    private final APIClient apiClient;
 
     @SneakyThrows
     @Override
@@ -60,6 +62,11 @@ public class MinioServiceImpl implements MinioService {
         }
 
         return files;
+    }
+
+    @Override
+    public List<FileResponse> uploadMultiFiles(MultipartFile[] multipartFile) {
+        return apiClient.uploadMultipleFiles(multipartFile);
     }
 
     private FileResponse processFile(final MultipartFile file, final
