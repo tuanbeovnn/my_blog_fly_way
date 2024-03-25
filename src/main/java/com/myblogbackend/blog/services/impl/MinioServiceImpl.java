@@ -65,7 +65,7 @@ public class MinioServiceImpl implements MinioService {
     }
 
     @Override
-    public List<FileResponse> uploadMultiFiles(MultipartFile[] multipartFile) {
+    public List<FileResponse> uploadMultiFiles(final MultipartFile[] multipartFile) {
         return apiClient.uploadMultipleFiles(multipartFile);
     }
 
