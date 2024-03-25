@@ -84,4 +84,4 @@ api:
 
 file:
     upload:
-        url: http://localhost:8081
+        url: http://nocng.id.vn:8081
