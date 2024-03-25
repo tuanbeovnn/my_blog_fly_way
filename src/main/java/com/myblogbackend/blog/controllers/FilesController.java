@@ -22,7 +22,7 @@ public class FilesController {
     private final MinioService minioService;
 
     @PostMapping("/upload/client/files")
-    public List<FileResponse> uploadFiles(final MultipartFile[] files, final String bucketName) {
+    public List<FileResponse> uploadFiles(final MultipartFile[] files) {
         return minioService.uploadMultiFiles(files);
     }
 }
