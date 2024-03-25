@@ -1,10 +1,8 @@
 package com.myblogbackend.blog.controllers;
 
-import com.myblogbackend.blog.config.minio.FileResponseException;
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.response.FileResponse;
 import com.myblogbackend.blog.services.MinioService;
-import com.myblogbackend.blog.utils.FileTypeUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,23 +20,6 @@ public class FilesController {
     private static final Logger LOGGER = LogManager.getLogger(FilesController.class);
 
     private final MinioService minioService;
-
-    @PostMapping("/upload")
-    public FileResponse uploadFile(final MultipartFile file, final String bucketName) {
-
-        LOGGER.info("MinioController | uploadFile is called");
-
-        LOGGER.info("MinioController | uploadFile | bucketName : " + bucketName);
-
-        String fileType = FileTypeUtils.getFileType(file);
-
-        LOGGER.info("MinioController | uploadFile | fileType : " + fileType);
-
-        if (fileType != null) {
-            return minioService.putObject(file, bucketName, fileType);
-        }
-        throw new FileResponseException("File cannot be Upload");
-    }
 
     @PostMapping("/upload/client/files")
     public List<FileResponse> uploadFiles(final MultipartFile[] files, final String bucketName) {
