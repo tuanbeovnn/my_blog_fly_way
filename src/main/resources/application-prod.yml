@@ -2,7 +2,7 @@ spring:
     config:
         import: optional:classpath:.env[.properties]
     datasource:
-        password: ${MYSQL_PASSWORD}
+        password: P@ssword*123
         url: jdbc:postgresql://nocng.id.vn:5432/blogs_prod?currentSchema=blog_dbo2
         username: dev
     flyway:
