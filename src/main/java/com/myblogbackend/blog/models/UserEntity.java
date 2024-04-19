@@ -60,12 +60,4 @@ public class UserEntity extends BaseEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<CommentEntity> comments;
 
-
-    public void activate() {
-        this.active = true;
-    }
-
-    public void deactivate() {
-        this.active = false;
-    }
 }

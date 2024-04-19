@@ -92,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
         var newUser = new UserEntity();
         newUser.setEmail(signUpRequest.getEmail());
         newUser.setPassword(encoder.encode(signUpRequest.getPassword()));
-        newUser.activate();
+        newUser.setActive(true);
         newUser.setName(signUpRequest.getName());
         newUser.setProvider(OAuth2Provider.LOCAL);
         newUser.setIsPending(true);

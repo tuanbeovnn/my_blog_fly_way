@@ -13,4 +13,5 @@ public interface UserTokenRepository extends JpaRepository<UserVerificationToken
     UserVerificationTokenEntity findByVerificationToken(String verToken);
 
     UserVerificationTokenEntity findByUser(UserEntity user);
+    void deleteByUserId(UUID userId);
 }

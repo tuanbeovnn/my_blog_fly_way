@@ -24,7 +24,7 @@ public class UserDeviceEntity extends BaseEntity {
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private UserEntity user;
 
     @Column(name = "device_type")
