@@ -4,10 +4,18 @@ import com.myblogbackend.blog.cache.LoggedOutJwtTokenCache;
 import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
 import com.myblogbackend.blog.exception.InvalidTokenRequestException;
 import com.myblogbackend.blog.models.UserEntity;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -74,22 +82,17 @@ public class JwtProvider {
         return claims.getExpiration();
     }
 
-    public boolean validateJwtToken(final String authToken) {
+    public boolean validateJwtToken(final String authToken, final HttpServletRequest request) {
         try {
             Jwts.parser().setSigningKey(SIGNING_KEY).parseClaimsJws(authToken);
             validateTokenIsNotForALoggedOutDevice(authToken);
             return true;
-        } catch (MalformedJwtException e) {
-            logger.error("Invalid JWT token -> Message: {}", e);
-        } catch (ExpiredJwtException e) {
-            logger.error("Expired JWT token -> Message: {}", e);
-        } catch (UnsupportedJwtException e) {
-            logger.error("Unsupported JWT token -> Message: {}", e);
-        } catch (IllegalArgumentException e) {
-            logger.error("JWT claims string is empty -> Message: {}", e);
+        } catch (SignatureException | MalformedJwtException | UnsupportedJwtException | IllegalArgumentException ex) {
+            throw new BadCredentialsException("INVALID_CREDENTIALS", ex);
+        } catch (ExpiredJwtException ex) {
+            request.setAttribute("expired", ex.getMessage());
+            throw new ExpiredJwtException(ex.getHeader(), ex.getClaims(), "Expired JWT token");
         }
-
-        return false;
     }
 
     private void validateTokenIsNotForALoggedOutDevice(final String authToken) {
