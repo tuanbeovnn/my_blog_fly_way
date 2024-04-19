@@ -39,6 +39,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,10 +82,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public UserResponse registerUser(final SignUpFormRequest signUpRequest) throws TemplateException, IOException {
         var userEntityOpt = usersRepository.findByEmail(signUpRequest.getEmail());
         if (userEntityOpt.isPresent()) {
-            logger.warn("Account already existed '{}'", userEntityOpt.get().getEmail());
+            logger.warn("Account already exists '{}'", userEntityOpt.get().getEmail());
             throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
         }
         var newUser = new UserEntity();
@@ -94,14 +96,23 @@ public class AuthServiceImpl implements AuthService {
         newUser.setName(signUpRequest.getName());
         newUser.setProvider(OAuth2Provider.LOCAL);
         newUser.setIsPending(true);
+
         var result = usersRepository.save(newUser);
-        logger.info("Create user successfully '{}'", result);
+        logger.info("Created user successfully '{}'", result);
+
         if (result.getActive()) {
             logger.info("Sending activation email to '{}'", result);
             var token = UUID.randomUUID().toString();
             createVerificationToken(result, token, EMAIL_REGISTRATION_CONFIRMATION);
-            mailStrategy.sendActivationEmail(result, token);
+            try {
+                mailStrategy.sendActivationEmail(result, token);
+            } catch (Exception e) {
+                // Roll back the transaction if email sending fails
+                logger.error("Failed to send activation email", e);
+                throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
+            }
         }
+
         return userMapper.toUserDTO(result);
     }
 

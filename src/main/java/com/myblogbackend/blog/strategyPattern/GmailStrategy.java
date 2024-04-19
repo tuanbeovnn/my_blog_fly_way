@@ -2,6 +2,7 @@ package com.myblogbackend.blog.strategyPattern;
 
 import com.myblogbackend.blog.config.mail.EmailProperties;
 import com.myblogbackend.blog.models.UserEntity;
+import freemarker.template.TemplateNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,7 +24,7 @@ public class GmailStrategy implements MailStrategy {
     private final JavaEmailSendHandler javaEmailSendHandler;
 
     @Override
-    public void sendActivationEmail(final UserEntity user, final String token) {
+    public void sendActivationEmail(final UserEntity user, final String token) throws TemplateNotFoundException {
         var confirmationURL = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
         Map<String, Object> dataBindings = Map.of(CONFIRMATION_TOKEN, confirmationURL);
         var simpleMailMessage = notificationMessageMapper.toSimpleMailMessage(emailProperties.getRegistrationConfirmation());
@@ -31,7 +32,13 @@ public class GmailStrategy implements MailStrategy {
         try {
             javaEmailSendHandler.send(emailProperties.getRegistrationConfirmation().getTemplate(), simpleMailMessage, dataBindings);
             log.info("Sending activation email to '{}'", user.getEmail());
+        } catch (TemplateNotFoundException e) {
+            // Log the error and throw a custom exception to indicate template not found
+            log.error("Template not found for sending activation email to '{}'", user.getEmail(), e);
+            throw new TemplateNotFoundException(emailProperties.getRegistrationConfirmation().getTemplate(), null,
+                    "Template not found for sending activation email to '" + user.getEmail() + "'");
         } catch (Exception e) {
+            // Log other errors
             logErrorSendingEmail(e, simpleMailMessage);
         }
     }
