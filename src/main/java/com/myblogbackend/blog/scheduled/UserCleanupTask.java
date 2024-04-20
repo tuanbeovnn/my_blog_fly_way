@@ -20,7 +20,7 @@ public class UserCleanupTask {
     private final UsersRepository userRepository;
     private final UserTokenRepository verificationTokenRepository;
 
-    @Scheduled(cron = "0 */1 * * * *") // Run every 1 minute
+    @Scheduled(cron = "0 0 */3 * * *") // Run every 3 hours
     @Transactional
     public void cleanupInactiveUsers() {
         logger.info("Starting user cleanup task...");
