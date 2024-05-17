@@ -63,7 +63,7 @@ email:
         template: registration-confirmation-en.html
         subject: Registration Confirmation
         from: noreply@pezzie.com
-        base-url: http://nocng.id.vn:9091/api/v1/auth/regitrationConfirm?token=%s
+        base-url: http://nocng.id.vn:9091/api/v1/auth/registrationConfirm?token=%s
 
 app:
     generate-categories: true
