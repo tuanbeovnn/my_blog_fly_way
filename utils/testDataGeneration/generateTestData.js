@@ -3,15 +3,16 @@ const generateMockData = require('./postTemplate');
 
 async function main() {
     const args = process.argv.slice(2);
-    if (args.length === 2 && args[0] === 'Post') {
-        const token = args[1];
+    if (args.length === 3 && args[0] === 'Post') {
+        const url = args[1];
+        const token = args[2];
         const { posts } = generateMockData();
 
         for (const post of posts) {
-            await postData(post, token);
+            await postData(url, post, token);
         }
     } else {
-        console.log('Usage: node generateTestData Post <Token>');
+        console.log('Usage: node generateTestData Post <URL> <Token>');
     }
 }
 

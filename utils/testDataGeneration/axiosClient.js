@@ -1,8 +1,8 @@
 const axios = require('axios');
 
-async function postData(data, token) {
+async function postData(url, data, token) {
     try {
-        const response = await axios.post('http://localhost:8080/api/v1/posts', data, {
+        const response = await axios.post(url + "/api/v1/posts", data, {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
