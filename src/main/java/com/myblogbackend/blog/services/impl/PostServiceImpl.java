@@ -1,28 +1,36 @@
 package com.myblogbackend.blog.services.impl;
 
+import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.PostTag;
+import com.myblogbackend.blog.enums.RatingType;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
+import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.CategoryEntity;
+import com.myblogbackend.blog.models.FavoriteEntity;
 import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.pagination.OffsetPageRequest;
 import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.CategoryRepository;
+import com.myblogbackend.blog.repositories.FavoriteRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
+import com.myblogbackend.blog.response.UserLikedPostResponse;
 import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.utils.GsonUtils;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,17 +42,21 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
     private final UsersRepository usersRepository;
+    private final FavoriteRepository favoriteRepository;
     private final PostMapper postMapper;
+    private final UserMapper userMapper;
 
     @Override
     public PostResponse createPost(final PostRequest postRequest) {
-        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+        var userEntity = usersRepository.findById(getSignedInUser().getId()).orElseThrow();
         var category = validateCategory(postRequest.getCategoryId());
         var postEntity = postMapper.toPostEntity(postRequest);
         postEntity.setCategory(category);
-        postEntity.setStatus(true);
+        postEntity.setStatus(Boolean.TRUE);
         postEntity.setApproved(Boolean.TRUE);
-        postEntity.setUser(usersRepository.findById(signedInUser.getId()).orElseThrow());
+        postEntity.setFavourite(0L);
+        postEntity.setCreatedBy(getSignedInUser().getName());
+        postEntity.setUser(usersRepository.findById(userEntity.getId()).orElseThrow());
         // Validate and normalize tags
         var validFoodTags = validatePostTags(postRequest.getTags());
         // Convert FoodTag enum values to TagEntity instances
@@ -58,28 +70,63 @@ public class PostServiceImpl implements PostService {
 
     }
 
-    private Set<PostTag> validatePostTags(final Set<PostTag> tags) {
-        return tags.stream()
-                .map(tag -> PostTag.fromString(tag.getType()))
-                .collect(Collectors.toSet());
-    }
-
     @Override
     public PaginationPage<PostResponse> getAllPostsByUserId(final Integer offset, final Integer limited) {
-        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
         var pageable = new OffsetPageRequest(offset, limited);
-        var postEntities = postRepository.findAllByUserId(signedInUser.getId(), pageable);
+        var postEntities = postRepository.findAllByUserIdAndStatusTrueOrderByCreatedDateDesc(getSignedInUser().getId(), pageable);
+
+        var postResponses = getPostResponses(postEntities, getSignedInUser());
+
         logger.info("Post get succeeded with offset: {} and limited {}", postEntities.getNumber(), postEntities.getSize());
-        return getPostResponsePaginationPage(postEntities);
+        return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
 
     }
+
+    @NotNull
+    private List<PostResponse> getPostResponses(final Page<PostEntity> postEntities,
+                                                final UserPrincipal signedInUser) {
+
+        return postEntities.getContent().stream()
+                .map(postEntity ->
+                        getPostResponse(postEntity, signedInUser)
+                )
+                .toList();
+    }
+
+    @NotNull
+    private PostResponse getPostResponse(final PostEntity post, final UserPrincipal SignedInUser) {
+        var postResponse = postMapper.toPostResponse(post);
+        // Set users who liked the post
+        var favoriteEntities = favoriteRepository.findAllByPostId(post.getId());
+        var userLikedPosts = favoriteEntities.stream()
+                .map(favoriteEntity -> {
+                    var userResponse = userMapper.toUserResponse(favoriteEntity.getUser());
+                    var type = favoriteEntity.getType() == null ? RatingType.UNLIKE : RatingType.valueOf(favoriteEntity.getType().name());
+                    return UserLikedPostResponse.builder()
+                            .id(userResponse.getId())
+                            .name(userResponse.getName())
+                            .type(type)
+                            .build();
+                })
+                .toList();
+        postResponse.setUsersLikedPost(userLikedPosts);
+        // Set favorite type for the signed-in user
+        var favoriteEntityOpt = favoriteRepository.findByUserIdAndPostId(SignedInUser.getId(), post.getId());
+        var ratingType = favoriteEntityOpt
+                .map(FavoriteEntity::getType)
+                .map(type -> RatingType.valueOf(type.name()))
+                .orElse(RatingType.UNLIKE);
+        postResponse.setFavoriteType(ratingType);
+        return postResponse;
+    }
+
 
     @Override
     public PaginationPage<PostResponse> getAllPostsByCategoryId(final Integer offset, final Integer limited, final UUID categoryId) {
         var pageable = new OffsetPageRequest(offset, limited);
         var posts = postRepository.findAllByCategoryId(pageable, categoryId);
         logger.info("Post get succeeded with offset: {} and limited {}", posts.getNumber(), posts.getSize());
-        return getPostResponsePaginationPage(posts);
+        return null;
 
     }
 
@@ -113,14 +160,26 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
     }
 
-    private PaginationPage<PostResponse> getPostResponsePaginationPage(final Page<PostEntity> postEntities) {
-        var postResponses = postEntities.getContent().stream()
-                .map(postMapper::toPostResponse)
-                .collect(Collectors.toList());
+    private static PaginationPage<PostResponse> getPostResponsePaginationPage(final Integer offset,
+                                                                              final Integer limited,
+                                                                              final List<PostResponse> postResponses,
+                                                                              final Page<PostEntity> postEntities) {
         return new PaginationPage<PostResponse>()
                 .setRecords(postResponses)
-                .setOffset(postEntities.getNumber())
-                .setLimit(postEntities.getSize())
+                .setOffset(offset)
+                .setLimit(limited)
                 .setTotalRecords(postEntities.getTotalElements());
     }
+
+    @NotNull
+    private static UserPrincipal getSignedInUser() {
+        return JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+    }
+
+    private Set<PostTag> validatePostTags(final Set<PostTag> tags) {
+        return tags.stream()
+                .map(tag -> PostTag.fromString(tag.getType()))
+                .collect(Collectors.toSet());
+    }
+
 }

@@ -1,8 +1,13 @@
 package com.myblogbackend.blog.response;
 
+import com.myblogbackend.blog.enums.PostTag;
+import com.myblogbackend.blog.enums.RatingType;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -18,4 +23,8 @@ public class PostResponse {
     private String shortDescription;
     private List<String> thumnails;
     private List<String> images;
+    private String createdBy;
+    private List<UserLikedPostResponse> usersLikedPost = new ArrayList<>();
+    private RatingType favoriteType;
+    private Set<PostTag> tags = new HashSet<>();
 }

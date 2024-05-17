@@ -11,4 +11,6 @@ public interface PostRepository extends JpaRepository<PostEntity, UUID> {
     Page<PostEntity> findAllByCategoryId(Pageable pageable, UUID categoryId);
 
     Page<PostEntity> findAllByUserId(UUID userId, Pageable pageable);
+
+    Page<PostEntity> findAllByUserIdAndStatusTrueOrderByCreatedDateDesc(UUID userId, Pageable pageable);
 }
