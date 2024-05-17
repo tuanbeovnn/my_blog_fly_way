@@ -2,7 +2,7 @@ function generateMockData() {
     return {
         posts: [
             {
-                title: 'Introduction to Java Programming',
+                title: "Introduction to Java Programming",
                 content: `Java is a widely-used, high-level programming language developed by Sun Microsystems (now owned by Oracle) in 1995. It is known for its platform independence, meaning that Java programs can run on any device or operating system with the Java Virtual Machine (JVM). This makes Java a popular choice for building web applications, mobile apps, and enterprise software.
 
 Java syntax is similar to C and C++, making it easy for developers to transition to Java from other programming languages. It features automatic memory management, garbage collection, and built-in security features, making it a robust and secure language for building reliable software.
@@ -10,20 +10,14 @@ Java syntax is similar to C and C++, making it easy for developers to transition
 One of the key features of Java is its extensive standard library, which provides predefined classes and methods for common programming tasks. This allows developers to quickly build complex applications without reinventing the wheel. Java also supports multithreading, allowing applications to execute multiple tasks concurrently, improving performance and responsiveness.
 
 In addition to its use in web development, Java is also widely used in enterprise software development, scientific computing, and Android app development. With its versatility, scalability, and strong community support, Java remains one of the most popular programming languages in the world.`,
-                categoryId: '39c5b10d-b08e-42a9-a62e-df4065488f4e',
+                categoryId: "39c5b10d-b08e-42a9-a62e-df4065488f4e",
                 shortDescription: `Java is a versatile and powerful programming language that is used for building a wide range of applications, from web and mobile apps to enterprise software and scientific computing. It is known for its platform independence, extensive standard library, and robust security features. Whether you're a beginner or an experienced developer, learning Java can open up a world of opportunities. Java's syntax is similar to C and C++, making it easy to learn for those familiar with these languages. It also offers automatic memory management and built-in security features, making it a reliable choice for building secure and scalable software.`,
-                thumnails: [
-                    'da101765c35b42f5984c250c4feb3223.png'
-                ],
-                images: [
-                    'da101765c35b42f5984c250c4feb3223.png'
-                ],
-                tags: [
-                    'WEB'
-                ]
+                thumnails: ["da101765c35b42f5984c250c4feb3223.png"],
+                images: ["da101765c35b42f5984c250c4feb3223.png"],
+                tags: ["WEB"],
             },
             {
-                title: 'Modern JavaScript Development',
+                title: "Modern JavaScript Development",
                 content: `JavaScript is a versatile programming language that is primarily used for creating interactive web pages and web applications. It is a core technology of the World Wide Web, alongside HTML and CSS. JavaScript enables developers to add dynamic behavior to their websites, such as user interaction, form validation, and content updates without reloading the page.
 
 With the advent of frameworks like React, Angular, and Vue.js, JavaScript has also become popular for building single-page applications (SPAs) and progressive web apps (PWAs). These frameworks provide developers with tools and libraries for building complex and feature-rich web applications with ease.
@@ -31,20 +25,14 @@ With the advent of frameworks like React, Angular, and Vue.js, JavaScript has al
 JavaScript is also used on the server-side, thanks to platforms like Node.js. With Node.js, developers can build scalable and high-performance web servers and backend services using JavaScript. This enables full-stack development with a single programming language, streamlining the development process and improving code reusability.
 
 Overall, JavaScript is a versatile and powerful language that is essential for modern web development. Whether you're building a simple website or a complex web application, JavaScript is a key technology that every developer should learn.`,
-                categoryId: '7a982f46-138f-4218-848a-54aa231dd13d',
+                categoryId: "7a982f46-138f-4218-848a-54aa231dd13d",
                 shortDescription: `JavaScript is a dynamic and versatile programming language that is essential for modern web development. It is used for creating interactive web pages, building single-page applications, and developing server-side applications. With its wide range of frameworks and libraries, JavaScript empowers developers to build complex and feature-rich web applications with ease. JavaScript is also known for its ease of use and flexibility, making it a popular choice for both beginner and experienced developers. Whether you're building a simple website or a complex web application, JavaScript is a powerful tool that can help you bring your ideas to life.`,
-                thumnails: [
-                    'da101765c35b42f5984c250c4feb3224.png'
-                ],
-                images: [
-                    'da101765c35b42f5984c250c4feb3224.png'
-                ],
-                tags: [
-                    'WEB'
-                ]
+                thumnails: ["da101765c35b42f5984c250c4feb3224.png"],
+                images: ["da101765c35b42f5984c250c4feb3224.png"],
+                tags: ["WEB"],
             },
             {
-                title: 'A Beginner\'s Guide to Python Programming',
+                title: "A Beginner's Guide to Python Programming",
                 content: `Python is a high-level, interpreted programming language known for its simplicity and readability. It was created by Guido van Rossum and first released in 1991. Python is widely used in various domains, including web development, data science, artificial intelligence, and automation.
 
 One of the key features of Python is its clear and concise syntax, which makes it easy for beginners to learn and understand. Python emphasizes code readability and simplicity, allowing developers to express concepts in fewer lines of code compared to other programming languages.
@@ -52,21 +40,14 @@ One of the key features of Python is its clear and concise syntax, which makes i
 Python has a vast ecosystem of libraries and frameworks that extend its functionality for different purposes. For web development, frameworks like Django and Flask provide tools for building scalable and maintainable web applications. In the field of data science, libraries like NumPy, pandas, and matplotlib are widely used for data manipulation, analysis, and visualization.
 
 Python's versatility and ease of use make it an ideal choice for beginners and experienced developers alike. Whether you're building a simple script or a complex web application, Python has the tools and libraries to help you get the job done.`,
-                categoryId: '39c5b10d-b08e-42a9-a62e-df4065488f4e',
+                categoryId: "39c5b10d-b08e-42a9-a62e-df4065488f4e",
                 shortDescription: `Python is a high-level, interpreted programming language known for its simplicity and readability. It is widely used in web development, data science, artificial intelligence, and automation. Python's clear and concise syntax makes it easy for beginners to learn and understand. With a vast ecosystem of libraries and frameworks, Python is a versatile language that can be used for a wide range of applications.`,
-                thumnails: [
-                    'python_thumbnail.png'
-                ],
-                images: [
-                    'python_image.png'
-                ],
-                tags: [
-                    'WEB',
-                    'INFORMATION'
-                ]
+                thumnails: ["python_thumbnail.png"],
+                images: ["python_image.png"],
+                tags: ["WEB", "TECHNOLOGY"],
             },
             {
-                title: 'The Power of Machine Learning in Modern Technology',
+                title: "The Power of Machine Learning in Modern Technology",
                 content: `Machine learning is a subset of artificial intelligence that focuses on building systems that can learn from data and improve over time without being explicitly programmed. It has become increasingly important in modern technology, powering applications and services across various industries.
 
 One of the key advantages of machine learning is its ability to analyze large datasets and extract valuable insights. By recognizing patterns and trends in data, machine learning algorithms can make predictions and decisions with a high degree of accuracy. This enables businesses to optimize processes, improve customer experiences, and make informed decisions.
@@ -74,21 +55,14 @@ One of the key advantages of machine learning is its ability to analyze large da
 Machine learning is used in a wide range of applications, including recommendation systems, natural language processing, computer vision, and autonomous vehicles. In healthcare, machine learning algorithms are used to diagnose diseases, predict patient outcomes, and personalize treatment plans. In finance, machine learning is used for fraud detection, risk assessment, and algorithmic trading.
 
 As technology continues to advance, machine learning will play an increasingly important role in shaping the future of innovation. By leveraging the power of data and algorithms, machine learning enables us to solve complex problems and unlock new opportunities.`,
-                categoryId: '7a982f46-138f-4218-848a-54aa231dd13d',
+                categoryId: "7a982f46-138f-4218-848a-54aa231dd13d",
                 shortDescription: `Machine learning is a subset of artificial intelligence that focuses on building systems that can learn from data and improve over time without being explicitly programmed. It has become increasingly important in modern technology, powering applications and services across various industries. Machine learning enables businesses to optimize processes, improve customer experiences, and make informed decisions by analyzing large datasets and extracting valuable insights.`,
-                thumnails: [
-                    'machine_learning_thumbnail.png'
-                ],
-                images: [
-                    'machine_learning_image.png'
-                ],
-                tags: [
-                    'TECHNOLOGY',
-                    'AI'
-                ]
+                thumnails: ["machine_learning_thumbnail.png"],
+                images: ["machine_learning_image.png"],
+                tags: ["TECHNOLOGY", "AI"],
             },
             {
-                title: 'Introduction to DevOps Principles',
+                title: "Introduction to DevOps Principles",
                 content: `DevOps is a set of practices that combines software development (Dev) and IT operations (Ops) to shorten the systems development life cycle and provide continuous delivery with high software quality. It aims to automate and streamline the process of software development, testing, and deployment, enabling organizations to deliver applications and services at a faster pace and with improved efficiency.
 
 DevOps emphasizes collaboration, communication, and integration between development and operations teams. It breaks down traditional silos and promotes a culture of shared responsibility and accountability. By automating manual tasks, DevOps reduces the risk of human error and increases the reliability and repeatability of software deployments.
@@ -96,20 +70,14 @@ DevOps emphasizes collaboration, communication, and integration between developm
 Key principles of DevOps include continuous integration (CI), continuous delivery (CD), infrastructure as code (IaC), and automated testing. These practices enable organizations to build, test, and deploy software more quickly and reliably, leading to improved customer satisfaction and business agility.
 
 Overall, DevOps is a fundamental shift in how organizations approach software development and delivery. By breaking down barriers between development and operations teams, DevOps enables faster innovation, improved collaboration, and greater efficiency across the entire software development lifecycle.`,
-                categoryId: '733ec3fe-52dd-4eef-95fe-080e709f8da9',
+                categoryId: "733ec3fe-52dd-4eef-95fe-080e709f8da9",
                 shortDescription: `DevOps is a set of practices that combines software development (Dev) and IT operations (Ops) to shorten the systems development life cycle and provide continuous delivery with high software quality. It aims to automate and streamline the process of software development, testing, and deployment, enabling organizations to deliver applications and services at a faster pace and with improved efficiency. DevOps emphasizes collaboration, communication, and integration between development and operations teams.`,
-                thumnails: [
-                    'da101765c35b42f5984c250c4feb3225.png'
-                ],
-                images: [
-                    'da101765c35b42f5984c250c4feb3225.png'
-                ],
-                tags: [
-                    'WEB'
-                ]
+                thumnails: ["da101765c35b42f5984c250c4feb3225.png"],
+                images: ["da101765c35b42f5984c250c4feb3225.png"],
+                tags: ["WEB"],
             },
             {
-                title: 'Exploring Data Structures and Algorithms in JavaScript',
+                title: "Exploring Data Structures and Algorithms in JavaScript",
                 content: `Data structures and algorithms are fundamental concepts in computer science that every developer should understand. They are the building blocks of efficient and scalable software solutions, enabling developers to solve complex problems and optimize performance.
         
         JavaScript, as a versatile programming language, provides built-in data structures like arrays, objects, and maps, as well as powerful algorithms for sorting, searching, and traversing data. By mastering data structures and algorithms in JavaScript, developers can write more efficient code and tackle a wide range of programming challenges.
@@ -117,21 +85,14 @@ Overall, DevOps is a fundamental shift in how organizations approach software de
         In this post, we'll explore various data structures and algorithms in JavaScript, including arrays, linked lists, stacks, queues, trees, and graphs. We'll discuss their implementation, time complexity, and common use cases, providing practical examples and code snippets along the way.
         
         Whether you're a beginner or an experienced developer, understanding data structures and algorithms is essential for building high-quality software and advancing your career in software development.`,
-                categoryId: '7a982f46-138f-4218-848a-54aa231dd13d',
+                categoryId: "7a982f46-138f-4218-848a-54aa231dd13d",
                 shortDescription: `Data structures and algorithms are fundamental concepts in computer science that every developer should understand. They enable developers to solve complex problems and optimize performance by efficiently organizing and manipulating data. In this post, we'll explore various data structures and algorithms in JavaScript, including arrays, linked lists, stacks, queues, trees, and graphs, providing practical examples and code snippets along the way.`,
-                thumnails: [
-                  'data_structures_thumbnail.png'
-                ],
-                images: [
-                  'data_structures_image.png'
-                ],
-                tags: [
-                  'WEB',
-                  'TECHNOLOGY'
-                ]
-              },
-              {
-                title: 'Introduction to Artificial Intelligence and Its Applications',
+                thumnails: ["data_structures_thumbnail.png"],
+                images: ["data_structures_image.png"],
+                tags: ["WEB", "TECHNOLOGY"],
+            },
+            {
+                title: "Introduction to Artificial Intelligence and Its Applications",
                 content: `Artificial intelligence (AI) is a branch of computer science that aims to create intelligent machines that can mimic human behavior and perform tasks that would typically require human intelligence. It has become increasingly important in various industries, including healthcare, finance, transportation, and entertainment.
         
         One of the key applications of AI is machine learning, which involves training algorithms to learn from data and make predictions or decisions without being explicitly programmed. Machine learning algorithms are used in a wide range of applications, including recommendation systems, natural language processing, computer vision, and autonomous vehicles.
@@ -141,21 +102,14 @@ Overall, DevOps is a fundamental shift in how organizations approach software de
         In this post, we'll provide an overview of artificial intelligence and its applications, discussing its impact on society and the economy. We'll explore various AI technologies and techniques, including machine learning, deep learning, natural language processing, and robotics, and discuss their real-world applications and implications.
         
         Whether you're a student, researcher, or industry professional, understanding artificial intelligence and its applications is essential for staying informed and advancing your career in the field of technology.`,
-                categoryId: '39c5b10d-b08e-42a9-a62e-df4065488f4e',
+                categoryId: "39c5b10d-b08e-42a9-a62e-df4065488f4e",
                 shortDescription: `Artificial intelligence (AI) is a branch of computer science that aims to create intelligent machines that can mimic human behavior and perform tasks that would typically require human intelligence. It has become increasingly important in various industries, including healthcare, finance, transportation, and entertainment. In this post, we'll provide an overview of artificial intelligence and its applications, discussing its impact on society and the economy, as well as its real-world applications and implications.`,
-                thumnails: [
-                  'ai_thumbnail.png'
-                ],
-                images: [
-                  'ai_image.png'
-                ],
-                tags: [
-                  'AI',
-                  'TECHNOLOGY'
-                ]
-              },
-              {
-                title: 'The Evolution of Mobile App Development',
+                thumnails: ["ai_thumbnail.png"],
+                images: ["ai_image.png"],
+                tags: ["AI", "TECHNOLOGY"],
+            },
+            {
+                title: "The Evolution of Mobile App Development",
                 content: `Mobile app development has undergone significant evolution over the past decade, driven by advancements in technology and changes in user behavior. From simple utility apps to sophisticated augmented reality experiences, mobile apps have become an integral part of everyday life for billions of people around the world.
         
         One of the key drivers of this evolution is the proliferation of smartphones and tablets, which have become increasingly powerful and capable of running complex applications. In addition, the rise of app stores and mobile platforms like iOS and Android has made it easier than ever for developers to distribute and monetize their apps.
@@ -165,20 +119,13 @@ Overall, DevOps is a fundamental shift in how organizations approach software de
         In this post, we'll explore the evolution of mobile app development, from the early days of mobile computing to the latest trends and technologies shaping the future of mobile apps. We'll discuss the challenges and opportunities facing mobile app developers today and provide insights into the tools and techniques used to build successful mobile apps.
         
         Whether you're a seasoned developer or just starting out, understanding the evolution of mobile app development is essential for staying relevant and competitive in the fast-paced world of technology.`,
-                categoryId: '733ec3fe-52dd-4eef-95fe-080e709f8da9',
+                categoryId: "733ec3fe-52dd-4eef-95fe-080e709f8da9",
                 shortDescription: `Mobile app development has undergone significant evolution over the past decade, driven by advancements in technology and changes in user behavior. From simple utility apps to sophisticated augmented reality experiences, mobile apps have become an integral part of everyday life for billions of people around the world. In this post, we'll explore the evolution of mobile app development, discussing the latest trends and technologies shaping the future of mobile apps.`,
-                thumnails: [
-                  'mobile_thumbnail.png'
-                ],
-                images: [
-                  'mobile_image.png'
-                ],
-                tags: [
-                  'MOBILE',
-                  'TECHNOLOGY'
-                ]
-              }
-        ]
+                thumnails: ["mobile_thumbnail.png"],
+                images: ["mobile_image.png"],
+                tags: ["MOBILE", "TECHNOLOGY"],
+            },
+        ],
     };
 }
 
