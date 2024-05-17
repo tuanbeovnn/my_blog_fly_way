@@ -3,15 +3,18 @@ package com.myblogbackend.blog.services.impl;
 import com.myblogbackend.blog.config.security.JwtProvider;
 import com.myblogbackend.blog.enums.NotificationType;
 import com.myblogbackend.blog.enums.OAuth2Provider;
+import com.myblogbackend.blog.enums.RoleName;
 import com.myblogbackend.blog.exception.TokenRefreshException;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.RefreshTokenEntity;
+import com.myblogbackend.blog.models.RoleEntity;
 import com.myblogbackend.blog.models.UserDeviceEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.models.UserVerificationTokenEntity;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
+import com.myblogbackend.blog.repositories.RoleRepository;
 import com.myblogbackend.blog.repositories.UserDeviceRepository;
 import com.myblogbackend.blog.repositories.UserTokenRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
@@ -47,6 +50,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -65,11 +69,13 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final MailStrategy mailStrategy;
     private final UserTokenRepository userTokenRepository;
+    private final RoleRepository roleRepository;
 
     public AuthServiceImpl(final UsersRepository usersRepository, final AuthenticationManager authenticationManager,
                            final JwtProvider jwtProvider, final UserDeviceRepository userDeviceRepository,
                            final RefreshTokenRepository refreshTokenRepository, final PasswordEncoder encoder,
-                           final UserMapper userMapper, final MailFactory mailFactory, final UserTokenRepository userTokenRepository) {
+                           final UserMapper userMapper, final MailFactory mailFactory, final UserTokenRepository userTokenRepository,
+                           final RoleRepository roleRepository) {
         this.usersRepository = usersRepository;
         this.authenticationManager = authenticationManager;
         this.jwtProvider = jwtProvider;
@@ -79,6 +85,7 @@ public class AuthServiceImpl implements AuthService {
         this.userMapper = userMapper;
         this.mailStrategy = mailFactory.createStrategy();
         this.userTokenRepository = userTokenRepository;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -89,13 +96,18 @@ public class AuthServiceImpl implements AuthService {
             logger.warn("Account already exists '{}'", userEntityOpt.get().getEmail());
             throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
         }
+        var roles = new HashSet<RoleEntity>();
+        var userRole = roleRepository.findByName(RoleName.ROLE_USER)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        roles.add(userRole);
         var newUser = new UserEntity();
         newUser.setEmail(signUpRequest.getEmail());
         newUser.setPassword(encoder.encode(signUpRequest.getPassword()));
         newUser.setActive(true);
+        newUser.setIsPending(true);
         newUser.setName(signUpRequest.getName());
         newUser.setProvider(OAuth2Provider.LOCAL);
-        newUser.setIsPending(true);
+        newUser.setRoles(roles);
 
         var result = usersRepository.save(newUser);
         logger.info("Created user successfully '{}'", result);

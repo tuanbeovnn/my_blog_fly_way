@@ -1,8 +1,10 @@
 package com.myblogbackend.blog.config.security;
 
 import com.myblogbackend.blog.cache.LoggedOutJwtTokenCache;
+import com.myblogbackend.blog.enums.RoleName;
 import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
 import com.myblogbackend.blog.exception.InvalidTokenRequestException;
+import com.myblogbackend.blog.models.RoleEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -20,7 +22,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Component
@@ -44,7 +51,15 @@ public class JwtProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + 3600000);
 
+        List<String> roles = userPrincipal.getAuthorities()
+                .stream()
+                .map(Object::toString)
+                .collect(Collectors.toList());
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles);
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject((userPrincipal.getUsername()))
                 .setIssuer(ISSUER_GENERATE_TOKEN)
                 .setId(String.valueOf(userPrincipal.getId()))
@@ -56,7 +71,12 @@ public class JwtProvider {
 
     public String generateTokenFromUser(final UserEntity userEntity) {
         Instant expiryDate = Instant.now().plusMillis(3600000);
+        Map<String, Object> claims = new HashMap<>();
+        List<RoleName> roles = new ArrayList<>();
+        userEntity.getRoles().stream().map(RoleEntity::getName).forEach(roles::add);
+        claims.put("roles", roles);
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(userEntity.getEmail())
                 .setIssuer(ISSUER_GENERATE_REFRESH_TOKEN)
                 .setId(String.valueOf(userEntity.getId()))
