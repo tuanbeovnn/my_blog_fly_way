@@ -1,8 +1,13 @@
 package com.myblogbackend.blog.models;
 
+
+
+import com.myblogbackend.blog.enums.RatingType;
 import com.myblogbackend.blog.models.base.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -19,24 +24,19 @@ import org.hibernate.annotations.GenericGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "comments")
+@Table(name = "favorites")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CommentEntity extends BaseEntity {
+public class FavoriteEntity extends BaseEntity {
 
     @Id
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
-
-    private String content;
-
-    @Column(name = "status")
-    private Boolean status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -46,8 +46,8 @@ public class CommentEntity extends BaseEntity {
     @JoinColumn(name = "post_id")
     private PostEntity post;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_comment_id")
-    private CommentEntity parentComment;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RatingType type;
 
 }

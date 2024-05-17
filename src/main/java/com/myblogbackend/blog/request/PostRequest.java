@@ -1,10 +1,17 @@
 package com.myblogbackend.blog.request;
 
 
+import com.myblogbackend.blog.enums.PostTag;
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -22,4 +29,6 @@ public class PostRequest {
     private String shortDescription;
     private List<String> thumnails;
     private List<String> images;
+    @NotEmpty(message = "At least one valid food tag is required.")
+    private Set<PostTag> tags;
 }

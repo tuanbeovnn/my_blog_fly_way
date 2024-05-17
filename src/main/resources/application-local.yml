@@ -1,0 +1,87 @@
+server:
+    port: 8080
+spring:
+    datasource:
+        password: P@ssword*123
+        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo2
+        username: dev
+    flyway:
+        password: P@ssword*123
+        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo2
+        user: dev
+    jpa:
+        generate-ddl: true
+        hibernate:
+            ddl-auto: validate
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+                jdbc:
+                    lob:
+                        non_contextual_creation: true
+        show-sql: false
+    mvc:
+        pathmatch:
+            matching-strategy: ant_path_matcher
+    mail:
+        host: smtp.gmail.com
+        username: translatorvamkv1@gmail.com
+        password: lcyhfdfjdhahknmu
+        port: 587
+        properties:
+            mail:
+                smtp:
+                    auth: true
+                    connectiontimeout: 5000
+                    starttls:
+                        enable: true
+                    timeout: 5000
+                    writetimeout: 5000
+
+    security:
+        oauth2:
+            client:
+                registration:
+                    google:
+                        clientId: 28179558203-kdugdkjaiuljem1ornmiobdua124kok7.apps.googleusercontent.com
+                        clientSecret: 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
+                        redirect-uri: 'http://localhost:8080/oauth2/callback/google'
+                        scope:
+                            - email
+                            - profile
+    servlet:
+        multipart:
+            max-file-size: 25MB
+            max-request-size: 25MB
+oauth2:
+    authorizedRedirectUris:
+        - http://localhost:3000/oauth2/
+
+# Email Sender
+email:
+    registration-confirmation:
+        template: registration-confirmation-en.html
+        subject: Registration Confirmation
+        from: noreply@pezzie.com
+        base-url: http://localhost:8080/api/v1/auth/registrationConfirm?token=%s
+app:
+    generate-categories: true
+
+flywaypf:
+    active: blog_dbo2
+#
+#springdoc:
+#    api-docs:
+#        enabled: false
+#    swagger-ui:
+#        enabled: false
+# For development
+logging:
+    config: classpath:log4j2-spring-dev.xml
+api:
+    username: admin
+    password: 123456
+
+file:
+    upload:
+        url: http://nocng.id.vn:8081

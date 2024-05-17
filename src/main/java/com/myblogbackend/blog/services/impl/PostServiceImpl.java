@@ -1,10 +1,12 @@
 package com.myblogbackend.blog.services.impl;
 
+import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.models.CategoryEntity;
 import com.myblogbackend.blog.models.PostEntity;
+import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.pagination.OffsetPageRequest;
 import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.CategoryRepository;
@@ -21,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,82 +38,74 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostResponse createPost(final PostRequest postRequest) {
-        try {
-            var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
-            var category = validateCategory(postRequest.getCategoryId());
-            var postEntity = postMapper.toPostEntity(postRequest);
-            postEntity.setCategory(category);
-            postEntity.setStatus("active");
-            postEntity.setApproved(Boolean.TRUE);
-            postEntity.setUser(usersRepository.findById(signedInUser.getId()).orElseThrow());
-            var createdPost = postRepository.save(postEntity);
-            logger.info("Post was created with id: {}", createdPost.getId());
-            return postMapper.toPostResponse(createdPost);
-        } catch (Exception e) {
-            logger.error("Failed to create post", e);
-            throw new RuntimeException("Failed to create post");
-        }
+        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+        var category = validateCategory(postRequest.getCategoryId());
+        var postEntity = postMapper.toPostEntity(postRequest);
+        postEntity.setCategory(category);
+        postEntity.setStatus(true);
+        postEntity.setApproved(Boolean.TRUE);
+        postEntity.setUser(usersRepository.findById(signedInUser.getId()).orElseThrow());
+        // Validate and normalize tags
+        var validFoodTags = validatePostTags(postRequest.getTags());
+        // Convert FoodTag enum values to TagEntity instances
+        var tagEntities = validFoodTags.stream()
+                .map(tag -> TagEntity.builder().name(tag).build())
+                .collect(Collectors.toSet());
+        postEntity.setTags(tagEntities);
+        var createdPost = postRepository.save(postEntity);
+        logger.info("Post was created with id: {}", createdPost.getId());
+        return postMapper.toPostResponse(createdPost);
+
+    }
+
+    private Set<PostTag> validatePostTags(final Set<PostTag> tags) {
+        return tags.stream()
+                .map(tag -> PostTag.fromString(tag.getType()))
+                .collect(Collectors.toSet());
     }
 
     @Override
     public PaginationPage<PostResponse> getAllPostsByUserId(final Integer offset, final Integer limited) {
-        try {
-            var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
-            var pageable = new OffsetPageRequest(offset, limited);
-            var postEntities = postRepository.findAllByUserId(signedInUser.getId(), pageable);
-            logger.info("Post get succeeded with offset: {} and limited {}", postEntities.getNumber(), postEntities.getSize());
-            return getPostResponsePaginationPage(postEntities);
-        } catch (Exception e) {
-            logger.error("Failed to get list post", e);
-            throw new RuntimeException("Failed to get list post");
-        }
+        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+        var pageable = new OffsetPageRequest(offset, limited);
+        var postEntities = postRepository.findAllByUserId(signedInUser.getId(), pageable);
+        logger.info("Post get succeeded with offset: {} and limited {}", postEntities.getNumber(), postEntities.getSize());
+        return getPostResponsePaginationPage(postEntities);
+
     }
 
     @Override
     public PaginationPage<PostResponse> getAllPostsByCategoryId(final Integer offset, final Integer limited, final UUID categoryId) {
-        try {
-            var pageable = new OffsetPageRequest(offset, limited);
-            var posts = postRepository.findAllByCategoryId(pageable, categoryId);
-            logger.info("Post get succeeded with offset: {} and limited {}", posts.getNumber(), posts.getSize());
-            return getPostResponsePaginationPage(posts);
-        } catch (Exception e) {
-            logger.error("Failed to  get all posts by category id", e);
-            throw new RuntimeException("Failed to get all posts by category id");
-        }
+        var pageable = new OffsetPageRequest(offset, limited);
+        var posts = postRepository.findAllByCategoryId(pageable, categoryId);
+        logger.info("Post get succeeded with offset: {} and limited {}", posts.getNumber(), posts.getSize());
+        return getPostResponsePaginationPage(posts);
+
     }
 
     @Override
     public PostResponse getPostById(final UUID id) {
-        try {
-            var post = postRepository
-                    .findById(id)
-                    .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-            logger.error("Get post successfully by id {} ", id);
-            return postMapper.toPostResponse(post);
-        } catch (Exception e) {
-            logger.error("Failed to get post by id", e);
-            throw new RuntimeException("Failed to get post by id");
-        }
+        var post = postRepository
+                .findById(id)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        logger.error("Get post successfully by id {} ", id);
+        return postMapper.toPostResponse(post);
+
     }
 
     @Override
     public PostResponse updatePost(final UUID id, final PostRequest postRequest) {
-        try {
-            var post = postRepository.findById(id)
-                    .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-            var category = validateCategory(postRequest.getCategoryId());
-            post.setTitle(postRequest.getTitle());
-            post.setContent(postRequest.getContent());
-            post.setImages(GsonUtils.arrayToString(postRequest.getImages()));
-            post.setThumnails(GsonUtils.arrayToString(postRequest.getThumnails()));
-            post.setCategory(category);
-            var updatedPost = postRepository.save(post);
-            logger.info("Update post successfully with id {} ", id);
-            return postMapper.toPostResponse(updatedPost);
-        } catch (Exception e) {
-            logger.error("Failed to update post by id", e);
-            throw new RuntimeException("Failed to update post by id");
-        }
+        var post = postRepository.findById(id)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        var category = validateCategory(postRequest.getCategoryId());
+        post.setTitle(postRequest.getTitle());
+        post.setContent(postRequest.getContent());
+        post.setImages(GsonUtils.arrayToString(postRequest.getImages()));
+        post.setThumnails(GsonUtils.arrayToString(postRequest.getThumnails()));
+        post.setCategory(category);
+        var updatedPost = postRepository.save(post);
+        logger.info("Update post successfully with id {} ", id);
+        return postMapper.toPostResponse(updatedPost);
     }
 
     private CategoryEntity validateCategory(final UUID categoryId) {

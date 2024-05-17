@@ -3,6 +3,7 @@ package com.myblogbackend.blog.services.impl;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.CommentMapper;
+import com.myblogbackend.blog.models.CommentEntity;
 import com.myblogbackend.blog.pagination.OffsetPageRequest;
 import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.CommentRepository;
@@ -15,10 +16,12 @@ import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,57 +34,75 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public CommentResponse createComment(final CommentRequest commentRequest) {
-        try {
-            //get the user signed in
-            var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
-            //find the post by post id
-            var post = postRepository.findById(commentRequest.getPostId())
-                    .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-            //convert comment request to comment entity
-            var commentEntity = commentMapper.toCommentEntity(commentRequest);
-            //find user based on signedInUser id
-            var userFound = usersRepository.findById(signedInUser.getId()).orElseThrow();
-            //set the user to the comment
-            commentEntity.setUser(userFound);
-            //set the post to the comment
-            commentEntity.setPost(post);
-            //save comment
-            var createdComment = commentRepository.save(commentEntity);
-            //add logger
-            logger.info("Create the comment of a post id by user successfully {}", commentRequest.getPostId());
-            //convert to comment response
-            return commentMapper.toCommentResponse(createdComment);
-        } catch (Exception e) {
-            logger.info("Failed to create the comment by user id and post id", e);
-            throw new RuntimeException("Failed to create the comment by user id and post id");
+        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+        var post = postRepository.findById(commentRequest.getPostId())
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        // If the comment has a parent comment, retrieve it from the database
+        CommentEntity parentComment = null;
+        if (commentRequest.getParentCommentId() != null) {
+            parentComment = commentRepository.findById(commentRequest.getParentCommentId())
+                    .orElseThrow(() -> new BlogRuntimeException(ErrorCode.PARENT_COMMENT_NOT_FOUND));
         }
+        var commentEntity = commentMapper.toCommentEntity(commentRequest);
+        var userFound = usersRepository.findById(signedInUser.getId()).orElseThrow();
+        commentEntity.setUser(userFound);
+        commentEntity.setPost(post);
+        commentEntity.setParentComment(parentComment);
+        commentEntity.setStatus(true);
+        commentEntity.setCreatedBy(signedInUser.getName());
+        var createdComment = commentRepository.save(commentEntity);
+        logger.info("Created the comment for post ID {} by user ID {}",
+                commentRequest.getPostId(), signedInUser.getId());
+        return commentMapper.toCommentResponse(createdComment);
     }
 
     @Override
     public PaginationPage<CommentResponse> getListCommentsByPostId(final Integer offset, final Integer limited, final UUID postId) {
-        try {
-            //create the pageable by OffsetPageRequest class
-            var pageable = new OffsetPageRequest(offset, limited);
-            //find list of comments by post id and pageable
-            var commentEntityList = commentRepository.findAllByPostId(postId, pageable);
-            //stream and map to return list of comment response
-            var commentResponseList = commentEntityList
-                    .getContent()
-                    .stream()
-                    .map(item ->
-                            commentMapper.toCommentResponse(item))
-                    .collect(Collectors.toList());
-            //add logger
-            logger.info("Get list of comment by post id successfully {}", postId);
-            //create the PaginationPage instance, set records, offset, limit and total
-            return new PaginationPage<CommentResponse>()
-                    .setRecords(commentResponseList)
-                    .setOffset(commentEntityList.getNumber())
-                    .setLimit(commentEntityList.getSize())
-                    .setTotalRecords(commentEntityList.getTotalElements());
-        } catch (Exception e) {
-            logger.info("Failed to get list of comments by post id", e);
-            throw new RuntimeException("Failed to get comment list by post id");
+        var pageable = new OffsetPageRequest(offset, limited);
+        var post = postRepository.findById(postId)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        var comments = commentRepository.findByPostIdAndStatusTrueOrderByCreatedDateDesc(post.getId(), pageable);
+        logger.info("Retrieved comments for post ID {}", postId);
+        var commentResponses = commentMapper.toListCommentResponse(comments.getContent());
+        return getCommentResponsePaginationPage(offset, limited, commentResponses, comments);
+    }
+
+    @Transactional
+    @Override
+    public CommentResponse updateComment(final UUID commentId, final CommentRequest commentRequest) {
+        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+        var existingComment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COMMENT_NOT_FOUND));
+        if (!existingComment.getUser().getId().equals(signedInUser.getId())) {
+            throw new BlogRuntimeException(ErrorCode.UNABLE_EDIT);
         }
+        existingComment.setContent(commentRequest.getContent());
+        var updatedComment = commentRepository.save(existingComment);
+        logger.info("Updated the comment with ID {} by user ID {}",
+                commentId, signedInUser.getId());
+        return commentMapper.toCommentResponse(updatedComment);
+    }
+
+    private void disableChildComments(final CommentEntity parentComment) {
+        // Fetch all child comments of the parent comment
+        var childComments = commentRepository.findByParentComment(parentComment);
+        // Disable each child comment and save them
+        childComments.forEach(childComment -> {
+            childComment.setStatus(false);
+            commentRepository.save(childComment);
+            // Recursively disable child comments of the current child comment
+            disableChildComments(childComment);
+        });
+    }
+
+    private static PaginationPage<CommentResponse> getCommentResponsePaginationPage(final Integer offset,
+                                                                                    final Integer limited,
+                                                                                    final List<CommentResponse> commentResponses,
+                                                                                    final Page<CommentEntity> comments) {
+        return new PaginationPage<CommentResponse>()
+                .setRecords(commentResponses)
+                .setOffset(offset)
+                .setLimit(limited)
+                .setTotalRecords(comments.getTotalElements());
     }
 }

@@ -10,4 +10,7 @@ public interface CommentService {
     CommentResponse createComment(CommentRequest commentRequest);
 
     PaginationPage<CommentResponse> getListCommentsByPostId(Integer offset, Integer limited, UUID postId);
+
+    CommentResponse updateComment(UUID commentId, CommentRequest commentRequest);
+
 }

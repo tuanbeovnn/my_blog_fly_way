@@ -1,10 +1,9 @@
-CREATE TABLE blog_dbo2.comments
+CREATE TABLE blog_dbo2.favorites
 (
     id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    content       TEXT                          NOT NULL,
-    status        BOOLEAN          DEFAULT true NOT NULL,
-    user_id       UUID,
-    post_id       UUID,
+    user_id       UUID NOT NULL,
+    post_id       UUID NOT NULL,
+    type VARCHAR(20),
     FOREIGN KEY (user_id) REFERENCES users (id),
     FOREIGN KEY (post_id) REFERENCES posts (id),
     created_date  TIMESTAMP,
