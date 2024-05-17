@@ -23,7 +23,6 @@ public class PostRequest {
     @NotBlank(message = "Title info cannot be blank")
     private String title;
     private String content;
-    @NotBlank(message = "Category Id info cannot be blank")
     private UUID categoryId;
     @NotBlank(message = "Short Description info cannot be blank")
     private String shortDescription;

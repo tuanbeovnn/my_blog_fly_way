@@ -28,7 +28,7 @@ import java.util.UUID;
 public class PostController {
     private final PostService postService;
 
-    @PostMapping("/posts")
+    @PostMapping
     public ResponseEntity<?> createPost(@RequestBody @Valid final PostRequest postRequest) {
         PostResponse post = postService.createPost(postRequest);
         return ResponseEntity.ok(post);
