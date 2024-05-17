@@ -20,71 +20,55 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
+    private static final Logger logger = LogManager.getLogger(CategoryServiceImpl.class);
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
-    private static final Logger logger = LogManager.getLogger(PostServiceImpl.class);
 
     @Override
     public PaginationPage<CategoryResponse> getAllCategories(final Integer offset, final Integer limited) {
-        try {
-            var pageable = new OffsetPageRequest(offset, limited);
-            var categoryList = categoryRepository.findAll(pageable);
-            var categoryResponse = categoryList.getContent()
-                    .stream()
-                    .map(categoryMapper::toCategoryResponse)
-                    .collect(Collectors.toList());
-            logger.info("Get all category with pagination successfully");
-            return new PaginationPage<CategoryResponse>()
-                    .setRecords(categoryResponse)
-                    .setLimit(categoryList.getSize())
-                    .setTotalRecords(categoryList.getTotalElements())
-                    .setOffset(categoryList.getNumber());
-        } catch (Exception e) {
-            logger.info("Failed to get all category with pagination", e);
-            throw new RuntimeException("Failed to get all category with pagination");
-        }
+        var pageable = new OffsetPageRequest(offset, limited);
+        var categoryList = categoryRepository.findAll(pageable);
+        var categoryResponse = categoryList.getContent()
+                .stream()
+                .map(categoryMapper::toCategoryResponse)
+                .collect(Collectors.toList());
+        logger.info("Get all category with pagination successfully");
+        return new PaginationPage<CategoryResponse>()
+                .setRecords(categoryResponse)
+                .setLimit(categoryList.getSize())
+                .setTotalRecords(categoryList.getTotalElements())
+                .setOffset(categoryList.getNumber());
+
     }
 
     @Override
     public CategoryResponse getCategoryById(final UUID id) {
-        try {
-            var category = categoryRepository
-                    .findById(id)
-                    .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-            logger.info("Get category successfully by id {}", id);
-            return categoryMapper.toCategoryResponse(category);
-        } catch (Exception e) {
-            logger.info("Failed to get category by id", e);
-            throw new RuntimeException("Failed to get category by id", e);
-        }
+        var category = categoryRepository
+                .findById(id)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        logger.info("Get category successfully by id {}", id);
+        return categoryMapper.toCategoryResponse(category);
+
     }
 
     @Override
     public CategoryResponse createCategory(final CategoryRequest categoryRequest) {
-        try {
-            var category = categoryMapper.toCategoryEntity(categoryRequest);
-            var createdCategory = categoryRepository.save(category);
-            logger.info("Create category successfully!");
-            return categoryMapper.toCategoryResponse(createdCategory);
-        } catch (Exception e) {
-            logger.info("Failed to create category");
-            throw new RuntimeException("Failed to create category", e);
-        }
+        var category = categoryMapper.toCategoryEntity(categoryRequest);
+        var createdCategory = categoryRepository.save(category);
+        logger.info("Create category successfully!");
+        return categoryMapper.toCategoryResponse(createdCategory);
+
     }
 
     @Override
     public CategoryResponse updateCategory(final UUID id, final CategoryRequest categoryRequest) {
-        try {
-            var category = categoryRepository
-                    .findById(id)
-                    .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-            category.setName(categoryRequest.getName());
-            var updatedCategory = categoryRepository.save(category);
-            logger.info("Update category successfully");
-            return categoryMapper.toCategoryResponse(updatedCategory);
-        } catch (Exception e) {
-            logger.info("Failed to update category", e);
-            throw new RuntimeException("Failed to update category");
-        }
+        var category = categoryRepository
+                .findById(id)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        category.setName(categoryRequest.getName());
+        var updatedCategory = categoryRepository.save(category);
+        logger.info("Update category successfully");
+        return categoryMapper.toCategoryResponse(updatedCategory);
+
     }
 }
