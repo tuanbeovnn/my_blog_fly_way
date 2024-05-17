@@ -17,10 +17,12 @@ import com.myblogbackend.blog.repositories.CategoryRepository;
 import com.myblogbackend.blog.repositories.FavoriteRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.UserLikedPostResponse;
 import com.myblogbackend.blog.services.PostService;
+import com.myblogbackend.blog.specification.PostSpec;
 import com.myblogbackend.blog.utils.GsonUtils;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -80,6 +84,20 @@ public class PostServiceImpl implements PostService {
         logger.info("Post get succeeded with offset: {} and limited {}", postEntities.getNumber(), postEntities.getSize());
         return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
 
+    }
+    @Override
+    public PaginationPage<PostResponse> getAllPostByFilter(final Integer offset, final Integer limited, final PostFilterRequest filter) {
+
+        var spec = PostSpec.filterBy(filter);
+        var pageable = PageRequest.of(offset, limited,
+                Sort.Direction.fromString(filter.getSortDirection().toUpperCase()),
+                filter.getSortField());
+        var postEntities = postRepository.findAll(spec, pageable);
+
+        var postResponses = getPostResponses(postEntities, getSignedInUser());
+
+        logger.info("Get feed list by filter succeeded with offset: {} and limited {}", offset, limited);
+        return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
     }
 
     @NotNull

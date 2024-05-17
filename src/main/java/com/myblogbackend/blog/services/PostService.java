@@ -1,6 +1,7 @@
 package com.myblogbackend.blog.services;
 
 import com.myblogbackend.blog.pagination.PaginationPage;
+import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 
@@ -16,5 +17,8 @@ public interface PostService {
     PostResponse createPost(PostRequest postRequest);
 
     PostResponse updatePost(UUID id, PostRequest postRequest);
+
+    PaginationPage<PostResponse> getAllPostByFilter(Integer offset, Integer limited, PostFilterRequest filter);
+
 
 }
