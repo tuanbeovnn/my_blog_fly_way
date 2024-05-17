@@ -19,12 +19,12 @@ public class PostResponse {
     private UUID id;
     private String title;
     private String content;
-    private UUID categoryId;
     private String shortDescription;
     private List<String> thumnails;
     private List<String> images;
     private String createdBy;
     private List<UserLikedPostResponse> usersLikedPost = new ArrayList<>();
     private RatingType favoriteType;
+    private CategoryResponse category;
     private Set<PostTag> tags = new HashSet<>();
 }
