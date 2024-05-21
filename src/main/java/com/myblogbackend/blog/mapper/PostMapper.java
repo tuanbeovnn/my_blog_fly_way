@@ -24,6 +24,7 @@ public interface PostMapper {
     @Mapping(target = "images", source = "images", qualifiedByName = "mapImagesInformation")
     @Mapping(target = "thumnails", source = "thumnails", qualifiedByName = "mapImagesInformation")
     @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTagEntitiesToPostTags")
+    @Mapping(target = "createdBy", source = "user")
     PostResponse toPostResponse(PostEntity postEntity);
 
     List<PostResponse> toListPostResponse(List<PostEntity> postEntityList);

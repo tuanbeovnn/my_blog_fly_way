@@ -22,7 +22,7 @@ public class PostResponse {
     private String shortDescription;
     private List<String> thumnails;
     private List<String> images;
-    private String createdBy;
+    private UserResponse createdBy;
     private List<UserLikedPostResponse> usersLikedPost = new ArrayList<>();
     private RatingType favoriteType;
     private CategoryResponse category;
