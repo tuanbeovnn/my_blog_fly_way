@@ -8,7 +8,7 @@ import com.myblogbackend.blog.response.PostResponse;
 import java.util.UUID;
 
 public interface PostService {
-    PaginationPage<PostResponse> getAllPostsByUserId(Integer offset, Integer limited);
+    PaginationPage<PostResponse> getAllPostsByUserId(UUID userId, Integer offset, Integer limited);
 
     PaginationPage<PostResponse> getAllPostsByCategoryId(Integer offset, Integer limited, UUID categoryId);
 

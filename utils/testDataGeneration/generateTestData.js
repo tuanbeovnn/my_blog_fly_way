@@ -1,6 +1,7 @@
 const axios = require('axios');
 const postData = require('./axiosClient');
 const postTemplate = require('./postTemplate.json'); // Import JSON file
+const moment = require('moment');
 
 // Define your category IDs for test and production environments
 const categoryIdsTest = [
@@ -20,6 +21,17 @@ const getRandomCategoryId = (environment) => {
     return ids[randomIndex];
 };
 
+// Function to calculate the date with offset
+const calculateDateWithOffset = (offset) => {
+    if (offset.startsWith('{') && offset.endsWith('}')) {
+        const daysOffset = parseInt(offset.substring(1, offset.length - 6)); // Extracting the number from the offset string
+        if (!isNaN(daysOffset)) {
+            return moment().subtract(daysOffset, 'days').toISOString();
+        }
+    }
+    return null; // Return null if offset format is invalid
+};
+
 async function main() {
     const args = process.argv.slice(2);
     let action = 'test'; // Default action is set to "test"
@@ -32,11 +44,21 @@ async function main() {
 
         const url = args[1];
         const token = args[2];
-        const {posts} = postTemplate; // Access posts array from JSON
+        const { posts } = postTemplate; // Access posts array from JSON
 
         for (const post of posts) {
             // Modify the categoryId field with a random category ID based on the action
             post.categoryId = action === 'test' ? getRandomCategoryId('test') : getRandomCategoryId('production');
+
+            // Set createdDate based on the provided offset, if available
+            if (post.createdDate) {
+                const calculatedDate = calculateDateWithOffset(post.createdDate);
+                if (calculatedDate) {
+                    post.createdDate = calculatedDate;
+                } else {
+                    console.log('Invalid createdDate offset format:', post.createdDate);
+                }
+            }
 
             await postData(url, post, token);
         }

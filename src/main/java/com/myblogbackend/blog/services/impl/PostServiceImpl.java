@@ -75,44 +75,47 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PaginationPage<PostResponse> getAllPostsByUserId(final Integer offset, final Integer limited) {
-        var pageable = new OffsetPageRequest(offset, limited);
-        var postEntities = postRepository.findAllByUserIdAndStatusTrueOrderByCreatedDateDesc(getSignedInUser().getId(), pageable);
+    public PaginationPage<PostResponse> getAllPostsByUserId(final UUID userId, final Integer offset, final Integer limited) {
 
-        var postResponses = getPostResponses(postEntities, getSignedInUser());
+        var pageable = new OffsetPageRequest(offset, limited);
+        var postEntities = postRepository.findAllByUserIdAndStatusTrueOrderByCreatedDateDesc(userId, pageable);
+
+        var postResponses = getPostResponses(postEntities, userId);
 
         logger.info("Post get succeeded with offset: {} and limited {}", postEntities.getNumber(), postEntities.getSize());
         return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
-
     }
+
     @Override
     public PaginationPage<PostResponse> getAllPostByFilter(final Integer offset, final Integer limited, final PostFilterRequest filter) {
-
         var spec = PostSpec.filterBy(filter);
         var pageable = PageRequest.of(offset, limited,
                 Sort.Direction.fromString(filter.getSortDirection().toUpperCase()),
                 filter.getSortField());
         var postEntities = postRepository.findAll(spec, pageable);
 
-        var postResponses = getPostResponses(postEntities, getSignedInUser());
+        UUID userId = null;
+        try {
+            userId = getSignedInUser().getId(); // Try to get the signed-in user
+        } catch (Exception e) {
+            logger.info("No user logged in, proceeding without user context");
+        }
+
+        var postResponses = getPostResponses(postEntities, userId);
 
         logger.info("Get feed list by filter succeeded with offset: {} and limited {}", offset, limited);
         return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
     }
 
     @NotNull
-    private List<PostResponse> getPostResponses(final Page<PostEntity> postEntities,
-                                                final UserPrincipal signedInUser) {
-
+    private List<PostResponse> getPostResponses(final Page<PostEntity> postEntities, final UUID userId) {
         return postEntities.getContent().stream()
-                .map(postEntity ->
-                        getPostResponse(postEntity, signedInUser)
-                )
+                .map(postEntity -> getPostResponse(postEntity, userId))
                 .toList();
     }
 
     @NotNull
-    private PostResponse getPostResponse(final PostEntity post, final UserPrincipal SignedInUser) {
+    private PostResponse getPostResponse(final PostEntity post, final UUID userId) {
         var postResponse = postMapper.toPostResponse(post);
         // Set users who liked the post
         var favoriteEntities = favoriteRepository.findAllByPostId(post.getId());
@@ -128,13 +131,18 @@ public class PostServiceImpl implements PostService {
                 })
                 .toList();
         postResponse.setUsersLikedPost(userLikedPosts);
+
         // Set favorite type for the signed-in user
-        var favoriteEntityOpt = favoriteRepository.findByUserIdAndPostId(SignedInUser.getId(), post.getId());
-        var ratingType = favoriteEntityOpt
-                .map(FavoriteEntity::getType)
-                .map(type -> RatingType.valueOf(type.name()))
-                .orElse(RatingType.UNLIKE);
-        postResponse.setFavoriteType(ratingType);
+        if (userId != null) {
+            var favoriteEntityOpt = favoriteRepository.findByUserIdAndPostId(userId, post.getId());
+            var ratingType = favoriteEntityOpt
+                    .map(FavoriteEntity::getType)
+                    .map(type -> RatingType.valueOf(type.name()))
+                    .orElse(RatingType.UNLIKE);
+            postResponse.setFavoriteType(ratingType);
+        } else {
+            postResponse.setFavoriteType(RatingType.UNLIKE); // Default value for non-logged-in users
+        }
         return postResponse;
     }
 

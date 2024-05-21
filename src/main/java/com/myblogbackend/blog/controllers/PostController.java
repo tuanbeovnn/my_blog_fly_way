@@ -36,8 +36,9 @@ public class PostController {
 
     @GetMapping("/user")
     public ResponseEntity<?> getAllPostsByUserId(@RequestParam(name = "offset", defaultValue = "0") final Integer offset,
-                                                 @RequestParam(name = "limit", defaultValue = "10") final Integer limit) {
-        var postList = postService.getAllPostsByUserId(offset, limit);
+                                                 @RequestParam(name = "limit", defaultValue = "10") final Integer limit,
+                                                 @RequestParam(name = "userId", required = true) final UUID userId) {
+        var postList = postService.getAllPostsByUserId(userId, offset, limit);
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(postList)
