@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.UUID;
 
 public interface PostRepository extends JpaRepository<PostEntity, UUID>, JpaSpecificationExecutor<PostEntity> {
-    Page<PostEntity> findAllByCategoryId(Pageable pageable, UUID categoryId);
+    Page<PostEntity> findAllByCategoryIdAndStatusTrueOrderByCreatedDateDesc(Pageable pageable, UUID categoryId);
 
     Page<PostEntity> findAllByUserId(UUID userId, Pageable pageable);
 

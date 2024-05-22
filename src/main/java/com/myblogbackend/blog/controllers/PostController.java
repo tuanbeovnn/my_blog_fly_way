@@ -51,24 +51,20 @@ public class PostController {
         return ResponseEntity.ok(post);
     }
 
-    @GetMapping("/categories/{categoryId}")
-    public ResponseEntity<?> getAllPostsByCategoryId(@RequestParam(name = "offset", defaultValue = "0") final Integer offset,
-                                                     @RequestParam(name = "limit", defaultValue = "10") final Integer limit,
-                                                     @PathVariable(value = "categoryId") final UUID categoryId) {
-        var postList = postService.getAllPostsByCategoryId(offset, limit, categoryId);
-        return ResponseEntityBuilder
-                .getBuilder()
-                .setDetails(postList)
-                .build();
-    }
-
     @GetMapping("/feed")
     public ResponseEntity<?> getAllPostByFiltering(@RequestParam(value = "offset", defaultValue = "0") final Integer offset,
                                                    @RequestParam(value = "limit", defaultValue = "10") final Integer limit,
                                                    @RequestParam(value = "tags", required = false) final Set<String> tags,
+                                                   @RequestParam(value = "categoryId", required = false) final UUID categoryId,
                                                    @RequestParam(defaultValue = "createdDate") final String sortField,
                                                    @RequestParam(defaultValue = "DESC") final String sortDirection) {
-        var filter = new PostFilterRequest(tags, sortField, sortDirection);
+
+        var filter = PostFilterRequest.builder()
+                .categoryId(categoryId)
+                .tags(tags)
+                .sortField(sortField)
+                .sortDirection(sortDirection)
+                .build();
 
         var postFeeds = postService.getAllPostByFilter(offset, limit, filter);
         return ResponseEntityBuilder

@@ -88,6 +88,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PaginationPage<PostResponse> getAllPostByFilter(final Integer offset, final Integer limited, final PostFilterRequest filter) {
+        // Call the static method directly from the class/interface
         var spec = PostSpec.filterBy(filter);
         var pageable = PageRequest.of(offset, limited,
                 Sort.Direction.fromString(filter.getSortDirection().toUpperCase()),
@@ -144,16 +145,6 @@ public class PostServiceImpl implements PostService {
             postResponse.setFavoriteType(RatingType.UNLIKE); // Default value for non-logged-in users
         }
         return postResponse;
-    }
-
-
-    @Override
-    public PaginationPage<PostResponse> getAllPostsByCategoryId(final Integer offset, final Integer limited, final UUID categoryId) {
-        var pageable = new OffsetPageRequest(offset, limited);
-        var posts = postRepository.findAllByCategoryId(pageable, categoryId);
-        logger.info("Post get succeeded with offset: {} and limited {}", posts.getNumber(), posts.getSize());
-        return null;
-
     }
 
     @Override
