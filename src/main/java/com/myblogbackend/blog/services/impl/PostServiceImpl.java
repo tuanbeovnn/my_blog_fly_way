@@ -154,7 +154,7 @@ public class PostServiceImpl implements PostService {
         var post = postRepository
                 .findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        logger.error("Get post successfully by id {} ", id);
+        logger.info("Get post successfully by id {} ", id);
         return postMapper.toPostResponse(post);
 
     }
