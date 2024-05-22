@@ -10,20 +10,15 @@ import com.myblogbackend.blog.services.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
 import java.util.UUID;
 
+import static com.myblogbackend.blog.controllers.route.PostRoutes.PUBLIC_URL;
+
 @RestController
-@RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION + PostRoutes.BASE_URL)
+@RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION)
 @RequiredArgsConstructor
 public class PostController {
     private final PostService postService;
@@ -34,7 +29,7 @@ public class PostController {
         return ResponseEntity.ok(post);
     }
 
-    @GetMapping("/user")
+    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/user")
     public ResponseEntity<?> getAllPostsByUserId(@RequestParam(name = "offset", defaultValue = "0") final Integer offset,
                                                  @RequestParam(name = "limit", defaultValue = "10") final Integer limit,
                                                  @RequestParam(name = "userId", required = true) final UUID userId) {
@@ -45,13 +40,16 @@ public class PostController {
                 .build();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/{id}")
     public ResponseEntity<?> getPostById(@PathVariable(value = "id") final UUID id) {
         var post = postService.getPostById(id);
-        return ResponseEntity.ok(post);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(post)
+                .build();
     }
 
-    @GetMapping("/feed")
+    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/feed")
     public ResponseEntity<?> getAllPostByFiltering(@RequestParam(value = "offset", defaultValue = "0") final Integer offset,
                                                    @RequestParam(value = "limit", defaultValue = "10") final Integer limit,
                                                    @RequestParam(value = "tags", required = false) final Set<String> tags,
