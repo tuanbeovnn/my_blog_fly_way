@@ -2,9 +2,14 @@ package com.myblogbackend.blog.response;
 
 import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.enums.RatingType;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,4 +32,5 @@ public class PostResponse {
     private RatingType favoriteType;
     private CategoryResponse category;
     private Set<PostTag> tags = new HashSet<>();
+    private Date createdDate;
 }
