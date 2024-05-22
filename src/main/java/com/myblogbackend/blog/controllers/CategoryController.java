@@ -11,13 +11,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+import static com.myblogbackend.blog.controllers.route.PostRoutes.PUBLIC_URL;
+
 @RestController
-@RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION + CategoryRoutes.BASE_URL)
+@RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION)
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;
 
-    @GetMapping()
+    @GetMapping(PUBLIC_URL + CategoryRoutes.BASE_URL)
     public ResponseEntity<?> getAllCategories(@RequestParam(name = "offset", defaultValue = "0") final Integer offset,
                                               @RequestParam(name = "limit", defaultValue = "10") final Integer limit) {
         var categoryList = categoryService.getAllCategories(offset, limit);
@@ -27,19 +29,13 @@ public class CategoryController {
                 .build();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getCategoryById(@PathVariable(value = "id")  final UUID id) {
-        var category = categoryService.getCategoryById(id);
-        return ResponseEntity.ok(category);
-    }
-
-    @PostMapping
+    @PostMapping(CategoryRoutes.BASE_URL)
     public ResponseEntity<?> createCategory(@RequestBody final CategoryRequest categoryRequest) {
         var categoryResponse = categoryService.createCategory(categoryRequest);
         return ResponseEntity.ok(categoryResponse);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(CategoryRoutes.BASE_URL + "/{id}")
     public ResponseEntity<?> updateCategory(final CategoryRequest categoryRequest, @PathVariable(value = "id") final UUID id) {
         var category = categoryService.updateCategory(id, categoryRequest);
         return ResponseEntity.ok(category);
