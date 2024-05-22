@@ -33,6 +33,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -51,6 +52,7 @@ public class PostServiceImpl implements PostService {
     private final UserMapper userMapper;
 
     @Override
+    @Transactional
     public PostResponse createPost(final PostRequest postRequest) {
         var userEntity = usersRepository.findById(getSignedInUser().getId()).orElseThrow();
         var category = validateCategory(postRequest.getCategoryId());
@@ -158,6 +160,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
     public PostResponse updatePost(final UUID id, final PostRequest postRequest) {
         var post = postRepository.findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
