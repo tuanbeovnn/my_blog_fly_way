@@ -82,7 +82,7 @@ public class PostServiceImpl implements PostService {
         var pageable = new OffsetPageRequest(offset, limited);
         var postEntities = postRepository.findAllByUserIdAndStatusTrueOrderByCreatedDateDesc(userId, pageable);
 
-        var postResponses = getPostResponses(postEntities, userId);
+        var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
 
         logger.info("Post get succeeded with offset: {} and limited {}", postEntities.getNumber(), postEntities.getSize());
         return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
@@ -173,13 +173,6 @@ public class PostServiceImpl implements PostService {
     }
 
     private List<PostResponse> mapPostEntitiesToPostResponses(final Page<PostEntity> postEntities, final UUID userId) {
-        return postEntities.getContent().stream()
-                .map(postEntity -> getPostResponse(postEntity, userId))
-                .toList();
-    }
-
-    @NotNull
-    private List<PostResponse> getPostResponses(final Page<PostEntity> postEntities, final UUID userId) {
         return postEntities.getContent().stream()
                 .map(postEntity -> getPostResponse(postEntity, userId))
                 .toList();
