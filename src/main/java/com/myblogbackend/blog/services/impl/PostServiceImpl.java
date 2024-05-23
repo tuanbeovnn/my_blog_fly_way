@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,21 +91,12 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PaginationPage<PostResponse> getAllPostByFilter(final Integer offset, final Integer limited, final PostFilterRequest filter) {
-        // Call the static method directly from the class/interface
         var spec = PostSpec.filterBy(filter);
-        var pageable = PageRequest.of(offset, limited,
-                Sort.Direction.fromString(filter.getSortDirection().toUpperCase()),
-                filter.getSortField());
+        var pageable = buildPageable(offset, limited, filter);
         var postEntities = postRepository.findAll(spec, pageable);
 
-        UUID userId = null;
-        try {
-            userId = getSignedInUser().getId(); // Try to get the signed-in user
-        } catch (Exception e) {
-            logger.info("No user logged in, proceeding without user context");
-        }
-
-        var postResponses = getPostResponses(postEntities, userId);
+        UUID userId = getUserId();
+        var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
 
         logger.info("Get feed list by filter succeeded with offset: {} and limited {}", offset, limited);
         return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
@@ -200,6 +192,30 @@ public class PostServiceImpl implements PostService {
         return tags.stream()
                 .map(tag -> PostTag.fromString(tag.getType()))
                 .collect(Collectors.toSet());
+    }
+
+    private UUID getUserId() {
+        try {
+            return getSignedInUser().getId();
+        } catch (Exception e) {
+            logger.info("No user logged in, proceeding without user context");
+            return null;
+        }
+    }
+
+    private Pageable buildPageable(final Integer offset, final Integer limited, final PostFilterRequest filter) {
+        return PageRequest.of(
+                offset,
+                limited,
+                Sort.Direction.fromString(filter.getSortDirection().toUpperCase()),
+                filter.getSortField()
+        );
+    }
+
+    private List<PostResponse> mapPostEntitiesToPostResponses(final Page<PostEntity> postEntities, final UUID userId) {
+        return postEntities.getContent().stream()
+                .map(postEntity -> getPostResponse(postEntity, userId))
+                .toList();
     }
 
 }
