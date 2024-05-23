@@ -7,7 +7,14 @@ import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
@@ -39,5 +46,11 @@ public class CategoryController {
     public ResponseEntity<?> updateCategory(final CategoryRequest categoryRequest, @PathVariable(value = "id") final UUID id) {
         var category = categoryService.updateCategory(id, categoryRequest);
         return ResponseEntity.ok(category);
+    }
+
+    @PutMapping(CategoryRoutes.BASE_URL + "/status/{id}/{status}")
+    public ResponseEntity<?> updateCategoryStatus(@PathVariable(value = "id") final UUID id, @PathVariable(value = "status") final Boolean status) {
+        categoryService.updateCategoryStatus(id, status);
+        return ResponseEntity.ok("Update category status successfully");
     }
 }

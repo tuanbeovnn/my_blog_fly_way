@@ -14,4 +14,6 @@ public interface CategoryService {
     CategoryResponse createCategory(CategoryRequest categoryRequest);
 
     CategoryResponse updateCategory(UUID id, CategoryRequest categoryRequest);
+
+    void updateCategoryStatus(UUID id, Boolean status);
 }
