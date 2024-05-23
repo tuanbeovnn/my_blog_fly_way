@@ -8,7 +8,6 @@ import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.CategoryEntity;
-import com.myblogbackend.blog.models.FavoriteEntity;
 import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.pagination.OffsetPageRequest;
@@ -102,45 +101,6 @@ public class PostServiceImpl implements PostService {
         return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
     }
 
-    @NotNull
-    private List<PostResponse> getPostResponses(final Page<PostEntity> postEntities, final UUID userId) {
-        return postEntities.getContent().stream()
-                .map(postEntity -> getPostResponse(postEntity, userId))
-                .toList();
-    }
-
-    @NotNull
-    private PostResponse getPostResponse(final PostEntity post, final UUID userId) {
-        var postResponse = postMapper.toPostResponse(post);
-        // Set users who liked the post
-        var favoriteEntities = favoriteRepository.findAllByPostId(post.getId());
-        var userLikedPosts = favoriteEntities.stream()
-                .map(favoriteEntity -> {
-                    var userResponse = userMapper.toUserResponse(favoriteEntity.getUser());
-                    var type = favoriteEntity.getType() == null ? RatingType.UNLIKE : RatingType.valueOf(favoriteEntity.getType().name());
-                    return UserLikedPostResponse.builder()
-                            .id(userResponse.getId())
-                            .name(userResponse.getName())
-                            .type(type)
-                            .build();
-                })
-                .toList();
-        postResponse.setUsersLikedPost(userLikedPosts);
-
-        // Set favorite type for the signed-in user
-        if (userId != null) {
-            var favoriteEntityOpt = favoriteRepository.findByUserIdAndPostId(userId, post.getId());
-            var ratingType = favoriteEntityOpt
-                    .map(FavoriteEntity::getType)
-                    .map(type -> RatingType.valueOf(type.name()))
-                    .orElse(RatingType.UNLIKE);
-            postResponse.setFavoriteType(ratingType);
-        } else {
-            postResponse.setFavoriteType(RatingType.UNLIKE); // Default value for non-logged-in users
-        }
-        return postResponse;
-    }
-
     @Override
     public PostResponse getPostById(final UUID id) {
         var post = postRepository
@@ -216,6 +176,46 @@ public class PostServiceImpl implements PostService {
         return postEntities.getContent().stream()
                 .map(postEntity -> getPostResponse(postEntity, userId))
                 .toList();
+    }
+
+    @NotNull
+    private List<PostResponse> getPostResponses(final Page<PostEntity> postEntities, final UUID userId) {
+        return postEntities.getContent().stream()
+                .map(postEntity -> getPostResponse(postEntity, userId))
+                .toList();
+    }
+
+    @NotNull
+    private PostResponse getPostResponse(final PostEntity post, final UUID userId) {
+        var postResponse = postMapper.toPostResponse(post);
+        postResponse.setUsersLikedPost(mapUserLikedPosts(post));
+        postResponse.setFavoriteType(getUserFavoriteType(post, userId));
+        return postResponse;
+    }
+
+    private List<UserLikedPostResponse> mapUserLikedPosts(final PostEntity post) {
+        var favoriteEntities = favoriteRepository.findAllByPostId(post.getId());
+        return favoriteEntities.stream()
+                .map(favoriteEntity -> {
+                    var userResponse = userMapper.toUserResponse(favoriteEntity.getUser());
+                    var type = favoriteEntity.getType() == null ? RatingType.UNLIKE : RatingType.valueOf(favoriteEntity.getType().name());
+                    return UserLikedPostResponse.builder()
+                            .id(userResponse.getId())
+                            .name(userResponse.getName())
+                            .type(type)
+                            .build();
+                })
+                .toList();
+    }
+
+    private RatingType getUserFavoriteType(final PostEntity post, final UUID userId) {
+        if (userId == null) {
+            return RatingType.UNLIKE; // Default value for non-logged-in users
+        }
+
+        return favoriteRepository.findByUserIdAndPostId(userId, post.getId())
+                .map(favoriteEntity -> RatingType.valueOf(favoriteEntity.getType().name()))
+                .orElse(RatingType.UNLIKE);
     }
 
 }
