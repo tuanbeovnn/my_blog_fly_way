@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.specification;
 
+import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.models.CategoryEntity;
 import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.models.TagEntity;
@@ -42,7 +43,7 @@ public class PostSpec {
         };
     }
 
-    private static Specification<PostEntity> hasTags(final Set<String> tags) {
+    private static Specification<PostEntity> hasTags(final Set<PostTag> tags) {
         if (tags == null || tags.isEmpty()) {
             return null;
         }

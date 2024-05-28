@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.request;
 
+import com.myblogbackend.blog.enums.PostTag;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 public class PostFilterRequest {
-    private Set<String> tags;
+    private Set<PostTag> tags;
     private UUID categoryId;
 
     private String sortField = "createdDate"; // Default sort field

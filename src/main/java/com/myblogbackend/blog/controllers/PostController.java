@@ -2,6 +2,7 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.controllers.route.PostRoutes;
+import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
@@ -52,7 +53,7 @@ public class PostController {
     @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/feed")
     public ResponseEntity<?> getAllPostByFiltering(@RequestParam(value = "offset", defaultValue = "0") final Integer offset,
                                                    @RequestParam(value = "limit", defaultValue = "10") final Integer limit,
-                                                   @RequestParam(value = "tags", required = false) final Set<String> tags,
+                                                   @RequestParam(value = "tags", required = false) final Set<PostTag> tags,
                                                    @RequestParam(value = "categoryId", required = false) final UUID categoryId,
                                                    @RequestParam(defaultValue = "createdDate") final String sortField,
                                                    @RequestParam(defaultValue = "DESC") final String sortDirection) {
