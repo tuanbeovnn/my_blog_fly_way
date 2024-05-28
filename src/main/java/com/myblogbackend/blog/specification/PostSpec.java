@@ -4,6 +4,7 @@ import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.models.CategoryEntity;
 import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.models.TagEntity;
+import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import jakarta.persistence.criteria.Join;
 import org.springframework.data.jpa.domain.Specification;
@@ -15,6 +16,7 @@ public class PostSpec {
 
     public static final String STATUS = "status";
     public static final String CATEGORY = "category";
+    public static final String USER = "user";
     public static final String TAGS = "tags";
     public static final String ID = "id";
     public static final String NAME = "name";
@@ -26,6 +28,7 @@ public class PostSpec {
         return Specification
                 .where(hasTags(postFilterRequest.getTags()))
                 .and(hasCategoryId(postFilterRequest.getCategoryId()))
+                .and(hasUserId(postFilterRequest.getUserId()))
                 .and(hasStatusTrue());
     }
 
@@ -50,6 +53,16 @@ public class PostSpec {
         return (root, query, criteriaBuilder) -> {
             Join<PostEntity, TagEntity> tagJoin = root.join(TAGS);
             return tagJoin.get(NAME).in(tags);
+        };
+    }
+
+    private static Specification<PostEntity> hasUserId(final UUID userId) {
+        if (userId == null) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> {
+            Join<PostEntity, UserEntity> userJoin = root.join(USER);
+            return criteriaBuilder.equal(userJoin.get(ID), userId);
         };
     }
 

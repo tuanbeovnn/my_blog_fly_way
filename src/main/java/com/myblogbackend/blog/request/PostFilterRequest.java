@@ -16,6 +16,7 @@ import java.util.UUID;
 public class PostFilterRequest {
     private Set<PostTag> tags;
     private UUID categoryId;
+    private UUID userId;
 
     private String sortField = "createdDate"; // Default sort field
     private String sortDirection = "DESC"; // Default sort direction

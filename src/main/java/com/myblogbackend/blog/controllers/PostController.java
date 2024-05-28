@@ -11,7 +11,14 @@ import com.myblogbackend.blog.services.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Set;
 import java.util.UUID;
@@ -30,17 +37,6 @@ public class PostController {
         return ResponseEntity.ok(post);
     }
 
-    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/user")
-    public ResponseEntity<?> getAllPostsByUserId(@RequestParam(name = "offset", defaultValue = "0") final Integer offset,
-                                                 @RequestParam(name = "limit", defaultValue = "10") final Integer limit,
-                                                 @RequestParam(name = "userId", required = true) final UUID userId) {
-        var postList = postService.getAllPostsByUserId(userId, offset, limit);
-        return ResponseEntityBuilder
-                .getBuilder()
-                .setDetails(postList)
-                .build();
-    }
-
     @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/{id}")
     public ResponseEntity<?> getPostById(@PathVariable(value = "id") final UUID id) {
         var post = postService.getPostById(id);
@@ -55,11 +51,13 @@ public class PostController {
                                                    @RequestParam(value = "limit", defaultValue = "10") final Integer limit,
                                                    @RequestParam(value = "tags", required = false) final Set<PostTag> tags,
                                                    @RequestParam(value = "categoryId", required = false) final UUID categoryId,
+                                                   @RequestParam(value = "userId", required = false) final UUID userId,
                                                    @RequestParam(defaultValue = "createdDate") final String sortField,
                                                    @RequestParam(defaultValue = "DESC") final String sortDirection) {
 
         var filter = PostFilterRequest.builder()
                 .categoryId(categoryId)
+                .userId(userId)
                 .tags(tags)
                 .sortField(sortField)
                 .sortDirection(sortDirection)
