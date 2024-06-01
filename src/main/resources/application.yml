@@ -37,17 +37,6 @@ spring:
                         enable: true
                     timeout: 5000
                     writetimeout: 5000
-    security:
-        oauth2:
-            client:
-                registration:
-                    google:
-                        clientId: 28179558203-kdugdkjaiuljem1ornmiobdua124kok7.apps.googleusercontent.com
-                        clientSecret: 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
-                        redirect-uri: 'http://localhost:8080/oauth2/callback/google'
-                        scope:
-                            - email
-                            - profile
     servlet:
         multipart:
             max-file-size: 25MB
