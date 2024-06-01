@@ -78,6 +78,13 @@ flywaypf:
 # For development
 logging:
     config: classpath:log4j2-spring-dev.xml
+
+outbound:
+    identity:
+        client-id: 720549923520-qbmtr8g24bptcp90659vh6ffc39j9se6.apps.googleusercontent.com
+        client-secret: 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
+        redirect-uri: http://localhost:3000/authenticate
+
 api:
     username: admin
     password: 123456

@@ -2,6 +2,7 @@ package com.myblogbackend.blog.services;
 
 import com.myblogbackend.blog.enums.NotificationType;
 import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.request.LoginFormOutboundRequest;
 import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.request.SignUpFormRequest;
 import com.myblogbackend.blog.request.TokenRefreshRequest;
@@ -22,6 +23,8 @@ public interface AuthService {
     ResponseEntity<?> confirmationEmail(String token) throws IOException;
 
     void createVerificationToken(UserEntity userEntity, String token, NotificationType notificationType);
+
+    JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest);
 
 
 }

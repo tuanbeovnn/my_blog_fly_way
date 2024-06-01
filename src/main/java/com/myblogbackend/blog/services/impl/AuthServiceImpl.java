@@ -7,30 +7,23 @@ import com.myblogbackend.blog.enums.RoleName;
 import com.myblogbackend.blog.exception.TokenRefreshException;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
+import com.myblogbackend.blog.feign.OutboundIdentityClient;
+import com.myblogbackend.blog.feign.OutboundUserClient;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.RefreshTokenEntity;
-import com.myblogbackend.blog.models.RoleEntity;
-import com.myblogbackend.blog.models.UserDeviceEntity;
-import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.models.UserVerificationTokenEntity;
-import com.myblogbackend.blog.repositories.RefreshTokenRepository;
-import com.myblogbackend.blog.repositories.RoleRepository;
-import com.myblogbackend.blog.repositories.UserDeviceRepository;
-import com.myblogbackend.blog.repositories.UserTokenRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
-import com.myblogbackend.blog.request.DeviceInfoRequest;
-import com.myblogbackend.blog.request.LoginFormRequest;
-import com.myblogbackend.blog.request.SignUpFormRequest;
-import com.myblogbackend.blog.request.TokenRefreshRequest;
+import com.myblogbackend.blog.models.*;
+import com.myblogbackend.blog.repositories.*;
+import com.myblogbackend.blog.request.*;
 import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.AuthService;
 import com.myblogbackend.blog.strategyPattern.MailFactory;
 import com.myblogbackend.blog.strategyPattern.MailStrategy;
 import freemarker.template.TemplateException;
+import lombok.experimental.NonFinal;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -46,13 +39,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_CONFIRMATION;
 
@@ -60,6 +50,20 @@ import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_C
 public class AuthServiceImpl implements AuthService {
     private static final Logger logger = LogManager.getLogger(AuthServiceImpl.class);
     public static final long ONE_HOUR_IN_MILLIS = 3600000;
+    public static final String JSON = "json";
+
+    @NonFinal
+    @Value("${outbound.identity.client-id}")
+    private String CLIENT_ID;
+
+    @NonFinal
+    @Value("${outbound.identity.client-secret}")
+    private String CLIENT_SECRET;
+
+    @NonFinal
+    @Value("${outbound.identity.redirect-uri}")
+    private String REDIRECT_URI;
+    private static final String GRANT_TYPE = "authorization_code";
     private final UsersRepository usersRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
@@ -70,12 +74,15 @@ public class AuthServiceImpl implements AuthService {
     private final MailStrategy mailStrategy;
     private final UserTokenRepository userTokenRepository;
     private final RoleRepository roleRepository;
+    private final OutboundIdentityClient outboundIdentityClient;
+    private final OutboundUserClient outboundUserClient;
 
     public AuthServiceImpl(final UsersRepository usersRepository, final AuthenticationManager authenticationManager,
                            final JwtProvider jwtProvider, final UserDeviceRepository userDeviceRepository,
                            final RefreshTokenRepository refreshTokenRepository, final PasswordEncoder encoder,
                            final UserMapper userMapper, final MailFactory mailFactory, final UserTokenRepository userTokenRepository,
-                           final RoleRepository roleRepository) {
+                           final RoleRepository roleRepository, final OutboundIdentityClient outboundIdentityClient,
+                           final OutboundUserClient outboundUserClient) {
         this.usersRepository = usersRepository;
         this.authenticationManager = authenticationManager;
         this.jwtProvider = jwtProvider;
@@ -86,6 +93,8 @@ public class AuthServiceImpl implements AuthService {
         this.mailStrategy = mailFactory.createStrategy();
         this.userTokenRepository = userTokenRepository;
         this.roleRepository = roleRepository;
+        this.outboundIdentityClient = outboundIdentityClient;
+        this.outboundUserClient = outboundUserClient;
     }
 
     @Override
@@ -165,6 +174,50 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest) {
+
+        var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
+                .code(URLDecoder.decode(loginFormOutboundRequest.getCode(), StandardCharsets.UTF_8))
+                .clientId(CLIENT_ID)
+                .clientSecret(CLIENT_SECRET)
+                .redirectUri(REDIRECT_URI)
+                .grantType(GRANT_TYPE)
+                .build());
+
+        logger.info("Token from google {} ", response.getAccessToken());
+        var userInfo = outboundUserClient.getUserInfo(JSON, response.getAccessToken());
+
+        var user = usersRepository.findByEmail(userInfo.getEmail())
+                .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
+
+        var jwtToken = jwtProvider.generateTokenFromUser(user);
+        var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
+
+        return JwtResponse.builder()
+                .accessToken(jwtToken)
+                .refreshToken(refreshTokenEntity.getToken())
+                .expiryDuration(jwtProvider.getExpiryDuration())
+                .build();
+    }
+
+    private UserEntity createNewUser(final String email, final String name) {
+        var roles = new HashSet<RoleEntity>();
+        var userRole = roleRepository.findByName(RoleName.ROLE_USER)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
+        roles.add(userRole);
+        var user = UserEntity.builder()
+                .provider(OAuth2Provider.GOOGLE)
+                .email(email)
+                .name(name)
+                .active(false)
+                .isPending(false)
+                .roles(roles)
+                .build();
+        usersRepository.save(user);
+        return user;
+    }
+
+    @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
         var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.USER_COULD_NOT_FOUND));
@@ -177,7 +230,7 @@ public class AuthServiceImpl implements AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         var jwtToken = jwtProvider.generateJwtToken(authentication);
-        var refreshTokenEntity = createRefreshToken(loginRequest, userEntity);
+        var refreshTokenEntity = createRefreshToken(loginRequest.getDeviceInfo(), userEntity);
         return new JwtResponse(jwtToken, refreshTokenEntity.getToken(), jwtProvider.getExpiryDuration());
     }
 
@@ -254,13 +307,13 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private RefreshTokenEntity createRefreshToken(final LoginFormRequest loginRequest, final UserEntity userEntity) {
+    private RefreshTokenEntity createRefreshToken(final DeviceInfoRequest deviceInfoRequest, final UserEntity userEntity) {
         userDeviceRepository.findByUserId(userEntity.getId())
                 .map(UserDeviceEntity::getRefreshToken)
                 .map(RefreshTokenEntity::getId)
                 .ifPresent(refreshTokenRepository::deleteById);
 
-        var userDeviceEntity = createUserDevice(loginRequest.getDeviceInfo());
+        var userDeviceEntity = createUserDevice(deviceInfoRequest);
         var refreshTokenEntity = createRefreshToken();
         userDeviceEntity.setUser(userEntity);
         userDeviceEntity.setRefreshToken(refreshTokenEntity);

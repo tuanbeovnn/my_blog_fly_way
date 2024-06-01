@@ -9,7 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-@FeignClient(value = "uploadFiles", url = "${file.upload.url}", configuration = FeignSupportConfig.class)
+@FeignClient(value = "uploadFiles", url = "${file.upload.url}", configuration = UploadFilesFeignWithBasicAuthenticationConfig.class)
 public interface APIClient {
     @PostMapping(value = "/minio/upload/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     List<FileResponse> uploadMultipleFiles(@RequestPart("files") final MultipartFile[] files);
