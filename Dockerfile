@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.m2 mvn clean install -DskipTests
 #RUN mvn clean install -DskipTests
 
 # Docker Build Stage
-FROM openjdk:21-jre-alpine
+FROM openjdk:21-slim
 
 COPY --from=build /opt/app/target/*.jar app.jar
 
