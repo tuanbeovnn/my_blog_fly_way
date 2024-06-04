@@ -42,6 +42,9 @@ spring:
         multipart:
             max-file-size: 25MB
             max-request-size: 25MB
+    threads:
+        virtual:
+            enabled: true
 oauth2:
     authorizedRedirectUris:
         - http://localhost:3000/oauth2/

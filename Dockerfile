@@ -1,5 +1,5 @@
 # Docker Build Stage
-FROM maven:3.8.3-openjdk-17 AS build
+FROM maven:3.8.3-openjdk-21 AS build
 
 
 # Build Stage
@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.m2 mvn clean install -DskipTests
 #RUN mvn clean install -DskipTests
 
 # Docker Build Stage
-FROM openjdk:17-alpine
+FROM openjdk:21-jdk
 
 COPY --from=build /opt/app/target/*.jar app.jar
 
