@@ -11,20 +11,20 @@ node("master") {
         branch: 'dev'
     }
 
-//     stage('Run check style') {
-//        sh '''
-//          export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-//          cp /.env src/main/resources/
-//          mvn checkstyle:check
-//        '''
-//     }
-//
-//     stage('Testing') {
-//       sh '''
-//         export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-//         mvn test
-//       '''
-//     }
+    stage('Run check style') {
+       sh '''
+         export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
+         cp /.env src/main/resources/
+         mvn checkstyle:check
+       '''
+    }
+
+    stage('Testing') {
+      sh '''
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
+        mvn test
+      '''
+    }
 
     stage('Build docker') {
       sh "whoami"
