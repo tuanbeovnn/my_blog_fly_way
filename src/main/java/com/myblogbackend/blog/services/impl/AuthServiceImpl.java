@@ -114,6 +114,7 @@ public class AuthServiceImpl implements AuthService {
         newUser.setPassword(encoder.encode(signUpRequest.getPassword()));
         newUser.setActive(true);
         newUser.setIsPending(true);
+        newUser.setFollowers(0L);
         newUser.setName(signUpRequest.getName());
         newUser.setProvider(OAuth2Provider.LOCAL);
         newUser.setRoles(roles);
@@ -208,6 +209,7 @@ public class AuthServiceImpl implements AuthService {
         var user = UserEntity.builder()
                 .provider(OAuth2Provider.GOOGLE)
                 .email(email)
+                .followers(0L)
                 .name(name)
                 .active(false)
                 .isPending(false)
