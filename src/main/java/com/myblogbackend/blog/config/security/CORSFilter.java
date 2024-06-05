@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.config;
+package com.myblogbackend.blog.config.security;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;

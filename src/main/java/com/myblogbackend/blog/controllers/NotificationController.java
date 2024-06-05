@@ -6,6 +6,7 @@ import com.myblogbackend.blog.request.AllDevicesNotificationRequest;
 import com.myblogbackend.blog.request.DeviceNotificationRequest;
 import com.myblogbackend.blog.request.NotificationSubscriptionRequest;
 import com.myblogbackend.blog.request.TopicNotificationRequest;
+import com.myblogbackend.blog.request.UserFirebaseDeviceRequest;
 import com.myblogbackend.blog.services.impl.NotificationService;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
@@ -36,6 +37,12 @@ public class NotificationController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send notification.");
         }
+    }
+
+    @PostMapping("/save-user-token-device")
+    public ResponseEntity<String> saveUserFireBaseToken(final @RequestBody @Valid UserFirebaseDeviceRequest userFirebaseDeviceRequest) {
+        notificationService.saveUserIdAndFireBaseToken(userFirebaseDeviceRequest);
+        return ResponseEntity.ok("Saved notification firebase successfully.");
     }
 
     @PostMapping("/send-to-topic")
