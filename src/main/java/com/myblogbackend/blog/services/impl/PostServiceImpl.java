@@ -3,22 +3,30 @@ package com.myblogbackend.blog.services.impl;
 import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.enums.RatingType;
+import com.myblogbackend.blog.enums.TopicType;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.CategoryEntity;
+import com.myblogbackend.blog.models.FollowersEntity;
 import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.models.TagEntity;
+import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
+import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.OffsetPageRequest;
 import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.CategoryRepository;
 import com.myblogbackend.blog.repositories.FavoriteRepository;
+import com.myblogbackend.blog.repositories.FirebaseUserRepository;
+import com.myblogbackend.blog.repositories.FollowersRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
+import com.myblogbackend.blog.request.TopicNotificationRequest;
 import com.myblogbackend.blog.response.PostResponse;
+import com.myblogbackend.blog.response.UserFollowingResponse;
 import com.myblogbackend.blog.response.UserLikedPostResponse;
 import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.specification.PostSpec;
@@ -38,6 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,10 +59,13 @@ public class PostServiceImpl implements PostService {
     private final FavoriteRepository favoriteRepository;
     private final PostMapper postMapper;
     private final UserMapper userMapper;
+    private final NotificationService notificationService;
+    private final FollowersRepository followersRepository;
+    private final FirebaseUserRepository firebaseUserRepository;
 
     @Override
     @Transactional
-    public PostResponse createPost(final PostRequest postRequest) {
+    public PostResponse createPost(final PostRequest postRequest) throws ExecutionException, InterruptedException {
         var userEntity = usersRepository.findById(getSignedInUser().getId()).orElseThrow();
         var category = validateCategory(postRequest.getCategoryId());
         var postEntity = postMapper.toPostEntity(postRequest);
@@ -71,9 +83,45 @@ public class PostServiceImpl implements PostService {
                 .collect(Collectors.toSet());
         postEntity.setTags(tagEntities);
         var createdPost = postRepository.save(postEntity);
+
+        sendNotificationsToUser(userEntity, createdPost);
+
         logger.info("Post was created with id: {}", createdPost.getId());
         return postMapper.toPostResponse(createdPost);
 
+    }
+
+    private void sendNotificationsToUser(final UserEntity userEntity, final PostEntity createdPost)
+            throws ExecutionException, InterruptedException {
+        // Step 1: get list user who is following user is creating post
+        var followers = followersRepository.findByFollowedUserId(userEntity.getId());
+        var usersFollowing = getUserFollowingResponses(followers);
+        if (!usersFollowing.isEmpty()) {
+            // Step 2: Send notifications to each follower
+            for (UserFollowingResponse follower : usersFollowing) {
+                List<UserDeviceFireBaseTokenEntity> userDeviceFireBaseTokenEntities = firebaseUserRepository.findAllByUserId(follower.getId());
+                for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceFireBaseTokenEntities) {
+                    TopicNotificationRequest topicNotificationRequest = new TopicNotificationRequest();
+                    topicNotificationRequest.setTopicName(TopicType.NEWPOST);
+                    topicNotificationRequest.setDeviceToken(deviceTokenEntity.getDeviceToken());
+                    topicNotificationRequest.setTitle("New Post Notification");
+                    topicNotificationRequest.setBody(String.format("User %s has just created a new post: %s", userEntity.getName(), createdPost.getTitle()));
+                    notificationService.sendNotificationToDeviceWithSpecificTopic(topicNotificationRequest);
+                }
+            }
+        }
+    }
+
+    private @NotNull List<UserFollowingResponse> getUserFollowingResponses(final List<FollowersEntity> followers) {
+        return followers.stream()
+                .map(follower -> {
+                    var followerUser = usersRepository.findById(follower.getFollower().getId()).orElseThrow();
+                    return UserFollowingResponse.builder()
+                            .id(followerUser.getId())
+                            .name(followerUser.getName())
+                            .build();
+                })
+                .toList();
     }
 
     @Override

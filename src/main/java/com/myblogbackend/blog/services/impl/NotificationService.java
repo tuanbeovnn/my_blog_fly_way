@@ -2,7 +2,17 @@ package com.myblogbackend.blog.services.impl;
 
 
 import com.google.firebase.FirebaseApp;
-import com.google.firebase.messaging.*;
+import com.google.firebase.messaging.AndroidConfig;
+import com.google.firebase.messaging.AndroidNotification;
+import com.google.firebase.messaging.ApnsConfig;
+import com.google.firebase.messaging.Aps;
+import com.google.firebase.messaging.BatchResponse;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingException;
+import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.MulticastMessage;
+import com.google.firebase.messaging.Notification;
+import com.google.firebase.messaging.SendResponse;
 import com.myblogbackend.blog.mapper.UserFirebaseDeviceTokenMapper;
 import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
 import com.myblogbackend.blog.repositories.FirebaseUserRepository;
@@ -49,8 +59,33 @@ public class NotificationService {
                 .build();
 
         String response = FirebaseMessaging.getInstance(firebaseApp).sendAsync(fcmMessage).get();
-        log.info("sendNotificationToDevice response: {}", response);
+//        log.info("sendNotificationToDevice response: {}", response);
     }
+
+    public void sendNotificationToDeviceWithSpecificTopic(final TopicNotificationRequest request)
+            throws ExecutionException, InterruptedException {
+        switch (request.getTopicName().getType()) {
+            case "COMMENT":
+            case "LIKE":
+            case "NEWPOST":
+                Message fcmMessage = Message.builder()
+                        .setToken(request.getDeviceToken())
+                        .setNotification(
+                                Notification.builder()
+                                        .setTitle(request.getTitle())
+                                        .setBody(request.getBody())
+                                        .setImage(request.getImageUrl())
+                                        .build()
+                        )
+                        .putAllData(request.getData())
+                        .build();
+
+                String response = FirebaseMessaging.getInstance(firebaseApp).sendAsync(fcmMessage).get();
+                log.info("sendNotificationToDevice response: {}", response);
+                break;
+        }
+    }
+
 
     // 2 users are using the same device
 
@@ -81,22 +116,22 @@ public class NotificationService {
 
     public void sendPushNotificationToTopic(final TopicNotificationRequest request)
             throws FirebaseMessagingException, ExecutionException, InterruptedException {
-        Message fcmMessage = Message.builder()
-                .setTopic(request.getTopicName())
-                .setNotification(
-                        Notification.builder()
-                                .setTitle(request.getTitle())
-                                .setBody(request.getBody())
-                                .setImage(request.getImageUrl())
-                                .build()
-                )
-                .setAndroidConfig(getAndroidConfig(request.getTopicName()))
-                .setApnsConfig(getApnsConfig(request.getTopicName()))
-                .putAllData(request.getData())
-                .build();
-
-        String response = FirebaseMessaging.getInstance(firebaseApp).sendAsync(fcmMessage).get();
-        log.info("sendNotificationToDevice response: {}", response);
+//        Message fcmMessage = Message.builder()
+//                .setTopic(request.getTopicName())
+//                .setNotification(
+//                        Notification.builder()
+//                                .setTitle(request.getTitle())
+//                                .setBody(request.getBody())
+//                                .setImage(request.getImageUrl())
+//                                .build()
+//                )
+//                .setAndroidConfig(getAndroidConfig(request.getTopicName()))
+//                .setApnsConfig(getApnsConfig(request.getTopicName()))
+//                .putAllData(request.getData())
+//                .build();
+//
+//        String response = FirebaseMessaging.getInstance(firebaseApp).sendAsync(fcmMessage).get();
+//        log.info("sendNotificationToDevice response: {}", response);
     }
 
 

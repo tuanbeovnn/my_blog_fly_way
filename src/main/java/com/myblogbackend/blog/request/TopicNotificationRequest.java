@@ -1,12 +1,12 @@
 package com.myblogbackend.blog.request;
 
-import jakarta.validation.constraints.NotBlank;
+import com.myblogbackend.blog.enums.TopicType;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
 public class TopicNotificationRequest extends NotificationRequest {
-    @NotBlank
-    private String topicName;
+    private String deviceToken;
+    private TopicType topicName;
 }

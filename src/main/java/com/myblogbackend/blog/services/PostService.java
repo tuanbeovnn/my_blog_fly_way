@@ -6,6 +6,7 @@ import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 public interface PostService {
     PaginationPage<PostResponse> getAllPostsByUserId(UUID userId, Integer offset, Integer limited);
@@ -14,7 +15,7 @@ public interface PostService {
 
     PostResponse getPostById(UUID id);
 
-    PostResponse createPost(PostRequest postRequest);
+    PostResponse createPost(PostRequest postRequest) throws ExecutionException, InterruptedException;
 
     PostResponse updatePost(UUID id, PostRequest postRequest);
 
