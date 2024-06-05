@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import static com.myblogbackend.blog.controllers.route.PostRoutes.PUBLIC_URL;
 
@@ -32,7 +33,7 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping
-    public ResponseEntity<?> createPost(@RequestBody @Valid final PostRequest postRequest) {
+    public ResponseEntity<?> createPost(@RequestBody @Valid final PostRequest postRequest) throws ExecutionException, InterruptedException {
         PostResponse post = postService.createPost(postRequest);
         return ResponseEntity.ok(post);
     }
