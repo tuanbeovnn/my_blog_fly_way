@@ -2,7 +2,7 @@ package com.myblogbackend.blog.controllers;
 
 
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
-import com.myblogbackend.blog.controllers.route.FavoriteRoutes;
+import com.myblogbackend.blog.controllers.route.FollowerRoutes;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.FollowerService;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +16,13 @@ import java.util.UUID;
 
 
 @RestController
-@RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION + FavoriteRoutes.BASE_URL)
+@RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION + FollowerRoutes.BASE_URL)
 @RequiredArgsConstructor
 public class FollowerController {
     private final FollowerService followerService;
 
     @PutMapping("/{userId}")
-    public ResponseEntity<?> followingUser(@PathVariable final UUID userId) {
+    public ResponseEntity<?> followingUser(@PathVariable(value = "userId") final UUID userId) {
         followerService.persistOrDelete(userId);
         return ResponseEntityBuilder
                 .getBuilder()
