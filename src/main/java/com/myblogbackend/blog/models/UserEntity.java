@@ -15,6 +15,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -57,10 +58,13 @@ public class UserEntity extends BaseEntity {
     @Column(name = "is_pending")
     private Boolean isPending;
 
-
     @Column(name = "provider")
     @Enumerated(EnumType.STRING)
     private OAuth2Provider provider;
+
+    @NotNull
+    @Column(name = "followers")
+    private Long followers = 0L;
 
     // One-to-Many relationship with Comments table
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
