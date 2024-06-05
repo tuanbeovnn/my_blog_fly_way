@@ -1,7 +1,6 @@
 package com.myblogbackend.blog.models;
 
 
-
 import com.myblogbackend.blog.enums.RatingType;
 import com.myblogbackend.blog.models.base.BaseEntity;
 import jakarta.persistence.Column;
