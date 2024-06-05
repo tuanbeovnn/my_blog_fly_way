@@ -38,11 +38,10 @@ public class FollowerServiceImpl implements FollowerService {
             usersRepository.save(followedUser);
             logger.info("User {} unfollowed user {} successfully", signedInUser.getId(), userIdToFollow);
         }, () -> {
-            var userIdToFollowing = usersRepository.findById(userIdToFollow).orElseThrow();
             var user = usersRepository.findById(signedInUser.getId()).orElseThrow();
             var newFollower = new FollowersEntity();
             newFollower.setFollower(user);
-            newFollower.setFollowedUser(userIdToFollowing);
+            newFollower.setFollowedUser(followedUser);
             newFollower.setType(FollowType.FOLLOW);
             followerRepository.save(newFollower);
             followedUser.setFollowers(followedUser.getFollowers() + 1);
