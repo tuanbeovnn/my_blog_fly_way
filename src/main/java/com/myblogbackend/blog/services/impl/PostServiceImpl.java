@@ -43,7 +43,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -125,7 +127,10 @@ public class PostServiceImpl implements PostService {
         topicNotificationRequest.setTopicName(TopicType.NEWPOST);
         topicNotificationRequest.setDeviceToken(deviceTokenEntity.getDeviceToken());
         topicNotificationRequest.setTitle("New Post Notification");
-        topicNotificationRequest.setBody(String.format("%s has just created a new post: %s", userEntity.getName(), createdPost.getTitle()));
+        topicNotificationRequest.setBody(String.format("%s posted new post: %s", userEntity.getName().toUpperCase(), createdPost.getTitle()));
+        Map<String, String> data = new HashMap<>();
+        data.put("postId", String.valueOf(createdPost.getId()));
+        topicNotificationRequest.setData(data);
         return topicNotificationRequest;
     }
 
