@@ -101,16 +101,23 @@ public class PostServiceImpl implements PostService {
             for (UserFollowingResponse follower : usersFollowing) {
                 List<UserDeviceFireBaseTokenEntity> userDeviceFireBaseTokenEntities = firebaseUserRepository.findAllByUserId(follower.getId());
                 for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceFireBaseTokenEntities) {
-                    TopicNotificationRequest topicNotificationRequest = new TopicNotificationRequest();
-                    topicNotificationRequest.setTopicName(TopicType.NEWPOST);
-                    topicNotificationRequest.setDeviceToken(deviceTokenEntity.getDeviceToken());
-                    topicNotificationRequest.setTitle("New Post Notification");
-                    topicNotificationRequest.setBody(String.format("%s has just created a new post: %s",
-                            userEntity.getName().toUpperCase(), createdPost.getTitle()));
+                    TopicNotificationRequest topicNotificationRequest = getTopicNotificationRequest(userEntity, createdPost, deviceTokenEntity);
                     notificationService.sendNotificationToDeviceWithSpecificTopic(topicNotificationRequest);
                 }
             }
         }
+    }
+
+    private static @NotNull TopicNotificationRequest getTopicNotificationRequest(final UserEntity userEntity,
+                                                                                 final PostEntity createdPost,
+                                                                                 final UserDeviceFireBaseTokenEntity deviceTokenEntity) {
+        TopicNotificationRequest topicNotificationRequest = new TopicNotificationRequest();
+        topicNotificationRequest.setTopicName(TopicType.NEWPOST);
+        topicNotificationRequest.setDeviceToken(deviceTokenEntity.getDeviceToken());
+        topicNotificationRequest.setTitle("New Post Notification");
+        topicNotificationRequest.setBody(String.format("%s has just created a new post: %s",
+                userEntity.getName().toUpperCase(), createdPost.getTitle()));
+        return topicNotificationRequest;
     }
 
     private @NotNull List<UserFollowingResponse> getUserFollowingResponses(final List<FollowersEntity> followers) {
