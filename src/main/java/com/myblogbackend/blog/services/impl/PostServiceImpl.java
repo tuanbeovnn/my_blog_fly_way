@@ -93,30 +93,39 @@ public class PostServiceImpl implements PostService {
 
     private void sendNotificationsToUser(final UserEntity userEntity, final PostEntity createdPost)
             throws ExecutionException, InterruptedException {
-        // Step 1: get list user who is following user is creating post
+        // Step 1: Get list of users who are following the user creating the post
         var followers = followersRepository.findByFollowedUserId(userEntity.getId());
         var usersFollowing = getUserFollowingResponses(followers);
+        logger.info("User {} has {} followers.", userEntity.getId(), usersFollowing.size());
         if (!usersFollowing.isEmpty()) {
             // Step 2: Send notifications to each follower
             for (UserFollowingResponse follower : usersFollowing) {
                 List<UserDeviceFireBaseTokenEntity> userDeviceFireBaseTokenEntities = firebaseUserRepository.findAllByUserId(follower.getId());
-                for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceFireBaseTokenEntities) {
-                    TopicNotificationRequest topicNotificationRequest = getTopicNotificationRequest(userEntity, createdPost, deviceTokenEntity);
-                    notificationService.sendNotificationToDeviceWithSpecificTopic(topicNotificationRequest);
+                if (!userDeviceFireBaseTokenEntities.isEmpty()) {
+                    logger.info("Follower {} has {} device tokens.", follower.getId(), userDeviceFireBaseTokenEntities.size());
+
+                    for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceFireBaseTokenEntities) {
+                        TopicNotificationRequest topicNotificationRequest = getTopicNotificationRequest(userEntity, createdPost, deviceTokenEntity);
+                        notificationService.sendNotificationToDeviceWithSpecificTopic(topicNotificationRequest);
+                        logger.info("Notification sent to device token: {}", deviceTokenEntity.getDeviceToken());
+                    }
+                } else {
+                    logger.info("Follower {} has no device tokens.", follower.getId());
                 }
             }
+        } else {
+            logger.info("User {} has no followers.", userEntity.getId());
         }
     }
 
-    private static @NotNull TopicNotificationRequest getTopicNotificationRequest(final UserEntity userEntity,
-                                                                                 final PostEntity createdPost,
-                                                                                 final UserDeviceFireBaseTokenEntity deviceTokenEntity) {
+    private TopicNotificationRequest getTopicNotificationRequest(final UserEntity userEntity,
+                                                                 final PostEntity createdPost,
+                                                                 final UserDeviceFireBaseTokenEntity deviceTokenEntity) {
         TopicNotificationRequest topicNotificationRequest = new TopicNotificationRequest();
         topicNotificationRequest.setTopicName(TopicType.NEWPOST);
         topicNotificationRequest.setDeviceToken(deviceTokenEntity.getDeviceToken());
         topicNotificationRequest.setTitle("New Post Notification");
-        topicNotificationRequest.setBody(String.format("%s has just created a new post: %s",
-                userEntity.getName().toUpperCase(), createdPost.getTitle()));
+        topicNotificationRequest.setBody(String.format("%s has just created a new post: %s", userEntity.getName(), createdPost.getTitle()));
         return topicNotificationRequest;
     }
 
