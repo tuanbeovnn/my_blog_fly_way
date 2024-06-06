@@ -32,7 +32,7 @@ import static com.myblogbackend.blog.controllers.route.PostRoutes.PUBLIC_URL;
 public class PostController {
     private final PostService postService;
 
-    @PostMapping
+    @PostMapping("/posts")
     public ResponseEntity<?> createPost(@RequestBody @Valid final PostRequest postRequest) throws ExecutionException, InterruptedException {
         PostResponse post = postService.createPost(postRequest);
         return ResponseEntity.ok(post);

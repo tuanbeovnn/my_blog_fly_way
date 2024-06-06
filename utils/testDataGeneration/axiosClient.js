@@ -18,11 +18,7 @@ async function postData(url, data, token) {
 // Function to get category list
 async function getCategoryList(baseUrl, token) {
     try {
-        const response = await axios.get(baseUrl + "/api/v1/category", {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        const response = await axios.get(baseUrl + "/api/v1/public/category");
         return response.data;
     } catch (error) {
         console.error('Error fetching category list:', error.response ? error.response.data : error.message);

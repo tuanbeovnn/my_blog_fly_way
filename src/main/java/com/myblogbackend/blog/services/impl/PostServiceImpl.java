@@ -105,7 +105,7 @@ public class PostServiceImpl implements PostService {
                     topicNotificationRequest.setTopicName(TopicType.NEWPOST);
                     topicNotificationRequest.setDeviceToken(deviceTokenEntity.getDeviceToken());
                     topicNotificationRequest.setTitle("New Post Notification");
-                    topicNotificationRequest.setBody(String.format("User %s has just created a new post: %s", userEntity.getName(), createdPost.getTitle()));
+                    topicNotificationRequest.setBody(String.format("%s has just created a new post: %s", userEntity.getName().toUpperCase(), createdPost.getTitle()));
                     notificationService.sendNotificationToDeviceWithSpecificTopic(topicNotificationRequest);
                 }
             }
