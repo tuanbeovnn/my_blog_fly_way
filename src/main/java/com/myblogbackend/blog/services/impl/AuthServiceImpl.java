@@ -191,7 +191,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest) {
 
         var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
@@ -209,11 +208,11 @@ public class AuthServiceImpl implements AuthService {
                 .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
 
         var jwtToken = jwtProvider.generateTokenFromUser(user);
-        var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
+//        var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
 
         return JwtResponse.builder()
                 .accessToken(jwtToken)
-                .refreshToken(refreshTokenEntity.getToken())
+                .refreshToken("")
                 .expiryDuration(jwtProvider.getExpiryDuration())
                 .build();
     }
@@ -237,7 +236,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
         var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.USER_COULD_NOT_FOUND));
@@ -327,8 +325,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    @Transactional
-    protected RefreshTokenEntity createRefreshToken(final DeviceInfoRequest deviceInfoRequest, final UserEntity userEntity) {
+    private RefreshTokenEntity createRefreshToken(final DeviceInfoRequest deviceInfoRequest, final UserEntity userEntity) {
         userDeviceRepository.findByUserId(userEntity.getId())
                 .map(UserDeviceEntity::getRefreshToken)
                 .map(RefreshTokenEntity::getId)
