@@ -208,7 +208,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
 
         var jwtToken = jwtProvider.generateTokenFromUser(user);
-//        var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
+        var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
 
         return JwtResponse.builder()
                 .accessToken(jwtToken)
