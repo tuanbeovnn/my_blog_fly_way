@@ -178,7 +178,7 @@ public class AuthServiceImpl implements AuthService {
     public JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest) {
 
         var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
-                .code(URLDecoder.decode(loginFormOutboundRequest.getCode(), StandardCharsets.UTF_8))
+                .code(loginFormOutboundRequest.getCode())
                 .clientId(CLIENT_ID)
                 .clientSecret(CLIENT_SECRET)
                 .redirectUri(REDIRECT_URI)
