@@ -2,13 +2,13 @@ package com.myblogbackend.blog.login;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myblogbackend.blog.IntegrationTestUtil;
+import com.myblogbackend.blog.config.security.JwtProvider;
 import com.myblogbackend.blog.models.RefreshTokenEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.response.JwtResponse;
-import com.myblogbackend.blog.config.security.JwtProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.myblogbackend.blog.ResponseBodyMatcher.responseBody;
-import static com.myblogbackend.blog.login.LoginTestApi.*;
+import static com.myblogbackend.blog.login.LoginTestApi.createAuthenticationByLoginRequest;
+import static com.myblogbackend.blog.login.LoginTestApi.createRefreshTokenEntity;
+import static com.myblogbackend.blog.login.LoginTestApi.jwtResponseForSaving;
+import static com.myblogbackend.blog.login.LoginTestApi.loginDataForRequesting;
+import static com.myblogbackend.blog.login.LoginTestApi.mockJwtToken;
+import static com.myblogbackend.blog.login.LoginTestApi.userEntityForSaving;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
