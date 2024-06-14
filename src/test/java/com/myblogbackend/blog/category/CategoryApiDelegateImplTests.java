@@ -20,7 +20,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.util.Arrays;
+import java.util.List;
 
 import static com.myblogbackend.blog.category.CategoryTestApi.makeCategoryForSaving;
 import static com.myblogbackend.blog.category.CategoryTestApi.prepareCategoryForRequesting;
@@ -28,7 +28,6 @@ import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Import necessary packages
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -36,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @WithMockUser
 public class CategoryApiDelegateImplTests {
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -66,7 +66,7 @@ public class CategoryApiDelegateImplTests {
 
     @Test
     public void givenUserRequestForListCategory_whenRequestCategoryList_thenReturnsCategoryList() throws Exception {
-        var categoryEntities = Arrays.asList(
+        var categoryEntities = List.of(
                 makeCategoryForSaving("Category A"),
                 makeCategoryForSaving("Category B")
         );

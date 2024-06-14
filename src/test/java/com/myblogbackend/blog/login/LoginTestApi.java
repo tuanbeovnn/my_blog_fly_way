@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.login;
 
+import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.OAuth2Provider;
 import com.myblogbackend.blog.models.RefreshTokenEntity;
 import com.myblogbackend.blog.models.UserDeviceEntity;
@@ -55,6 +56,16 @@ public final class LoginTestApi {
                 .build();
     }
 
+    public static UserEntity userEntityBasicInfo() {
+        return UserEntity.builder()
+                .id(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+                .name("test")
+                .email("test@gmail.com")
+                .active(false)
+                .provider(OAuth2Provider.LOCAL)
+                .build();
+    }
+
     //create the jwt response after login successfully
     public static JwtResponse jwtResponseForSaving(final String jwtToken, final String refreshToken, final long expirationDuration) {
         return JwtResponse.builder()
@@ -92,5 +103,10 @@ public final class LoginTestApi {
 
     public static String mockJwtToken() {
         return "mockJwtToken";
+    }
+
+    public static UserPrincipal userPrincipal() {
+        return new UserPrincipal(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"),
+                "test1@gmail.com", "123", "aaa", null);
     }
 }
