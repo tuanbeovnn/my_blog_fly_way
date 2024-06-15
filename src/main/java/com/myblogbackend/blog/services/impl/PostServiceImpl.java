@@ -43,18 +43,22 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
     private static final Logger logger = LogManager.getLogger(PostServiceImpl.class);
+    private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
+    private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
     private final UsersRepository usersRepository;
@@ -75,6 +79,7 @@ public class PostServiceImpl implements PostService {
         postEntity.setStatus(Boolean.TRUE);
         postEntity.setApproved(Boolean.TRUE);
         postEntity.setFavourite(0L);
+        postEntity.setSlug(makeSlug(postRequest.getTitle()));
         postEntity.setCreatedBy(getSignedInUser().getName());
         postEntity.setUser(usersRepository.findById(userEntity.getId()).orElseThrow());
         // Validate and normalize tags
@@ -279,6 +284,13 @@ public class PostServiceImpl implements PostService {
         return favoriteRepository.findByUserIdAndPostId(userId, post.getId())
                 .map(favoriteEntity -> RatingType.valueOf(favoriteEntity.getType().name()))
                 .orElse(RatingType.UNLIKE);
+    }
+
+    private String makeSlug(final String input) {
+        var whitespace = WHITESPACE.matcher(input).replaceAll("-");
+        var normalized = Normalizer.normalize(whitespace, Normalizer.Form.NFD);
+        var slug = NONLATIN.matcher(normalized).replaceAll("");
+        return slug.toLowerCase();
     }
 
 }
