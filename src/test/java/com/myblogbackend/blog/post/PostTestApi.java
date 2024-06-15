@@ -21,12 +21,13 @@ public final class PostTestApi {
                 .build();
     }
 
-    public static PostEntity makePostForSaving() {
+    public static PostEntity makePostForSaving(final String title, final String content) {
         Set<TagEntity> tags = new HashSet<>();
         tags.add(makeTagsForSaving());
         return PostEntity.builder()
                 .id(UUID.fromString("86286271-7c2b-4fad-9125-a32e2ec9dc7c"))
-                .title("Post title A")
+                .title(title)
+                .content(content)
                 .shortDescription("")
                 .thumnails("c4feb3223.png")
                 .images("c4feb3223.png")
@@ -44,6 +45,13 @@ public final class PostTestApi {
                 .images(List.of("c4feb3223.png"))
                 .tags(Set.of(PostTag.AI, PostTag.INFORMATION))
                 .build();
+    }
+
+    public static List<PostEntity> preparePostsEntitySaving() {
+        return List.of(
+                makePostForSaving("Title B", "Description B"),
+                makePostForSaving("Title A", "Description A")
+        );
     }
 
 
