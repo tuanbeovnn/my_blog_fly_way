@@ -47,7 +47,7 @@ public class PostController {
                 .build();
     }
 
-    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/{slug}")
+    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/slug/{slug}")
     public ResponseEntity<?> getPostBySlug(@PathVariable(value = "slug") final String slug) {
         var post = postService.getPostBySlug(slug);
         return ResponseEntityBuilder
