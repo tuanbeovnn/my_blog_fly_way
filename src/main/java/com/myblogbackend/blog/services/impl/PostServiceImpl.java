@@ -79,7 +79,7 @@ public class PostServiceImpl implements PostService {
         postEntity.setStatus(Boolean.TRUE);
         postEntity.setApproved(Boolean.TRUE);
         postEntity.setFavourite(0L);
-        postEntity.setSlug(makeSlug(postRequest.getTitle()));
+        postEntity.setSlug(makeSlug(postRequest.getTitle() + UUID.randomUUID()));
         postEntity.setCreatedBy(getSignedInUser().getName());
         postEntity.setUser(usersRepository.findById(userEntity.getId()).orElseThrow());
         // Validate and normalize tags
@@ -184,6 +184,15 @@ public class PostServiceImpl implements PostService {
         logger.info("Get post successfully by id {} ", id);
         return postMapper.toPostResponse(post);
 
+    }
+
+    @Override
+    public PostResponse getPostBySlug(final String slug) {
+        var post = postRepository
+                .findBySlug(slug)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        logger.info("Get post successfully by slug {} ", slug);
+        return postMapper.toPostResponse(post);
     }
 
     @Override

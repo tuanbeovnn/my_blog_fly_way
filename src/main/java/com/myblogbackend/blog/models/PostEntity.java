@@ -49,7 +49,7 @@ public class PostEntity extends BaseEntity {
     private String thumnails;
     @Column(name = "images", columnDefinition = "TEXT")
     private String images;
-    @Column(name = "slug", columnDefinition = "TEXT")
+    @Column(name = "slug", columnDefinition = "TEXT", unique = true)
     private String slug;
     @Column
     private Boolean approved;

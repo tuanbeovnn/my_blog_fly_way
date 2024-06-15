@@ -15,6 +15,8 @@ public interface PostService {
 
     PostResponse getPostById(UUID id);
 
+    PostResponse getPostBySlug(String slug);
+
     PostResponse createPost(PostRequest postRequest) throws ExecutionException, InterruptedException;
 
     PostResponse updatePost(UUID id, PostRequest postRequest);

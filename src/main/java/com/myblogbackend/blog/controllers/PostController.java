@@ -47,6 +47,15 @@ public class PostController {
                 .build();
     }
 
+    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/{slug}")
+    public ResponseEntity<?> getPostBySlug(@PathVariable(value = "slug") final String slug) {
+        var post = postService.getPostBySlug(slug);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(post)
+                .build();
+    }
+
     @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/feed")
     public ResponseEntity<?> getAllPostByFiltering(@RequestParam(value = "offset", defaultValue = "0") final Integer offset,
                                                    @RequestParam(value = "limit", defaultValue = "9") final Integer limit,
