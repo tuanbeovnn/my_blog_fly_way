@@ -3,6 +3,7 @@ package com.myblogbackend.blog.category;
 import com.myblogbackend.blog.models.CategoryEntity;
 import com.myblogbackend.blog.request.CategoryRequest;
 
+import java.util.List;
 import java.util.UUID;
 
 public final class CategoryTestApi {
@@ -18,6 +19,13 @@ public final class CategoryTestApi {
         return CategoryRequest.builder()
                 .name("Category A")
                 .build();
+    }
+
+    public static List<CategoryEntity> prepareCategories() {
+        return List.of(
+                makeCategoryForSaving("Category A"),
+                makeCategoryForSaving("Category B")
+        );
     }
 
 }

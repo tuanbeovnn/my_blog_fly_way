@@ -9,6 +9,7 @@ import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -40,6 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 public class PostApiDelegateImplTests {
+    private static final String API_URL = "/api/v1/posts";
+    private static final String PUBLIC_FEED_URL = "/api/v1/public/posts/feed";
 
     @Autowired
     private MockMvc mockMvc;
@@ -61,32 +64,33 @@ public class PostApiDelegateImplTests {
 
     @Test
     public void givenValidPostData_whenCreatingNewPost_thenPostIsSuccessfullyCreatedAndReturnsExpectedDetails() throws Exception {
+        // Mock JWTSecurityUtil
+        try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class)) {
+            jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo).thenReturn(Optional.of(userPrincipal()));
 
-        var postRequest = preparePostForRequest();
-        Mockito.mockStatic(JWTSecurityUtil.class);
-        Mockito.when(JWTSecurityUtil.getJWTUserInfo()).thenReturn(Optional.of(userPrincipal()));
-        Mockito.when(userRepository.findById(any(UUID.class)))
-                .thenReturn(Optional.of(userEntityBasicInfo()));
-        Mockito.when(categoryRepository.findById(any(UUID.class)))
-                .thenReturn(Optional.of(makeCategoryForSaving("Category A")));
-        Mockito.when(postRepository.save(any(PostEntity.class)))
-                .thenReturn(makePostForSaving("Title A", "Description A"));
+            Mockito.when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+            Mockito.when(categoryRepository.findById(any(UUID.class))).thenReturn(Optional.of(makeCategoryForSaving("Category A")));
 
-        var expectedPostResponse = postMapper.toPostResponse(makePostForSaving("Title A", "Description A"));
+            PostEntity savedPostEntity = makePostForSaving("Title A", "Description A");
+            Mockito.when(postRepository.save(any(PostEntity.class))).thenReturn(savedPostEntity);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/posts")
-                        .content(objectMapper.writeValueAsString(postRequest))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(expectedPostResponse.getId().toString()))
-                .andExpect(jsonPath("$.title").value(expectedPostResponse.getTitle()));
+            var expectedPostResponse = postMapper.toPostResponse(savedPostEntity);
+
+            mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
+                            .content(objectMapper.writeValueAsString(preparePostForRequest()))
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(expectedPostResponse.getId().toString()))
+                    .andExpect(jsonPath("$.title").value(expectedPostResponse.getTitle()));
+        }
     }
 
     @Test
     public void givenEmptyShortDescription_whenCreatingNewPost_thenReturnsBadRequestWithValidationErrorMessage() throws Exception {
         var postRequest = preparePostForRequest();
         postRequest.setShortDescription("");
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/posts")
+
+        mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
                         .content(objectMapper.writeValueAsString(postRequest))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
@@ -102,7 +106,7 @@ public class PostApiDelegateImplTests {
 
         var expectedPostList = postMapper.toListPostResponse(postEntityList);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/public/posts/feed")
+        mockMvc.perform(MockMvcRequestBuilders.get(PUBLIC_FEED_URL)
                         .param("page", "0")
                         .param("size", "9"))
                 .andExpect(status().isOk())

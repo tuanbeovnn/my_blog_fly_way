@@ -20,11 +20,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.util.List;
-
-import static com.myblogbackend.blog.category.CategoryTestApi.makeCategoryForSaving;
-import static com.myblogbackend.blog.category.CategoryTestApi.prepareCategoryForRequesting;
+import static com.myblogbackend.blog.category.CategoryTestApi.*;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,7 +51,7 @@ public class CategoryApiDelegateImplTests {
         var categoryName = "Category A";
         var categoryRequest = prepareCategoryForRequesting();
 
-        Mockito.when(categoryRepository.save(Mockito.any(CategoryEntity.class))).thenReturn(makeCategoryForSaving(categoryName));
+        Mockito.when(categoryRepository.save(any(CategoryEntity.class))).thenReturn(makeCategoryForSaving(categoryName));
         var expectedCategoryResponse = categoryMapper.toCategoryResponse(makeCategoryForSaving(categoryName));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/category")
@@ -66,11 +64,8 @@ public class CategoryApiDelegateImplTests {
 
     @Test
     public void givenUserRequestForListCategory_whenRequestCategoryList_thenReturnsCategoryList() throws Exception {
-        var categoryEntities = List.of(
-                makeCategoryForSaving("Category A"),
-                makeCategoryForSaving("Category B")
-        );
-        Mockito.when(categoryRepository.findAllByStatusTrue(Mockito.any(Pageable.class)))
+        var categoryEntities = prepareCategories();
+        Mockito.when(categoryRepository.findAllByStatusTrue(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(categoryEntities));
 
         var expectedCategoryList = categoryMapper.toListCategoryResponse(categoryEntities);
