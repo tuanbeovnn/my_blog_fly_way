@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import static com.myblogbackend.blog.category.CategoryTestApi.*;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -51,7 +52,7 @@ public class CategoryApiDelegateImplTests {
         var categoryName = "Category A";
         var categoryRequest = prepareCategoryForRequesting();
 
-        Mockito.when(categoryRepository.save(any(CategoryEntity.class))).thenReturn(makeCategoryForSaving(categoryName));
+        when(categoryRepository.save(any(CategoryEntity.class))).thenReturn(makeCategoryForSaving(categoryName));
         var expectedCategoryResponse = categoryMapper.toCategoryResponse(makeCategoryForSaving(categoryName));
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/category")
@@ -65,7 +66,7 @@ public class CategoryApiDelegateImplTests {
     @Test
     public void givenUserRequestForListCategory_whenRequestCategoryList_thenReturnsCategoryList() throws Exception {
         var categoryEntities = prepareCategories();
-        Mockito.when(categoryRepository.findAllByStatusTrue(any(Pageable.class)))
+        when(categoryRepository.findAllByStatusTrue(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(categoryEntities));
 
         var expectedCategoryList = categoryMapper.toListCategoryResponse(categoryEntities);

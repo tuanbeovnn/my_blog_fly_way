@@ -33,6 +33,7 @@ import static com.myblogbackend.blog.login.LoginTestApi.userPrincipal;
 import static com.myblogbackend.blog.post.PostTestApi.*;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,11 +69,11 @@ public class PostApiDelegateImplTests {
         try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class)) {
             jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo).thenReturn(Optional.of(userPrincipal()));
 
-            Mockito.when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
-            Mockito.when(categoryRepository.findById(any(UUID.class))).thenReturn(Optional.of(makeCategoryForSaving("Category A")));
+            when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+            when(categoryRepository.findById(any(UUID.class))).thenReturn(Optional.of(makeCategoryForSaving("Category A")));
 
             PostEntity savedPostEntity = makePostForSaving("Title A", "Description A");
-            Mockito.when(postRepository.save(any(PostEntity.class))).thenReturn(savedPostEntity);
+            when(postRepository.save(any(PostEntity.class))).thenReturn(savedPostEntity);
 
             var expectedPostResponse = postMapper.toPostResponse(savedPostEntity);
 
@@ -101,7 +102,7 @@ public class PostApiDelegateImplTests {
     public void givenUserRequestForListPost_whenRequestListPost_thenReturnsListPost() throws Exception {
         var postEntityList = preparePostsEntitySaving();
 
-        Mockito.when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
+        when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
                 .thenReturn(new PageImpl<>(postEntityList));
 
         var expectedPostList = postMapper.toListPostResponse(postEntityList);
