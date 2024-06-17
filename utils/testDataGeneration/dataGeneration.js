@@ -1,9 +1,9 @@
 const moment = require('moment');
 
 // Function to generate random category ID from an array
-const getRandomCategoryId = (categoryIds) => {
-    const randomIndex = Math.floor(Math.random() * categoryIds.length);
-    return categoryIds[randomIndex];
+const getRandomId = (ids) => {
+    const randomIndex = Math.floor(Math.random() * ids.length);
+    return ids[randomIndex];
 };
 
 // Function to calculate the date with offset
@@ -25,7 +25,7 @@ const processPosts = async (url, token, getCategoryList, postData, postTemplate)
         const {posts} = postTemplate;
 
         for (const post of posts) {
-            post.categoryId = getRandomCategoryId(categoryIds);
+            post.categoryId = getRandomId(categoryIds);
 
             if (post.createdDate) {
                 const calculatedDate = calculateDateWithOffset(post.createdDate);
