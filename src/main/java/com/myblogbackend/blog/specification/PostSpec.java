@@ -20,6 +20,7 @@ public class PostSpec {
     public static final String TAGS = "tags";
     public static final String ID = "id";
     public static final String NAME = "name";
+    public static final String TITLE = "title";
 
     private PostSpec() {
     }
@@ -30,6 +31,18 @@ public class PostSpec {
                 .and(hasCategoryId(postFilterRequest.getCategoryId()))
                 .and(hasUserId(postFilterRequest.getUserId()))
                 .and(hasStatusTrue());
+    }
+
+    public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest, final UUID postId) {
+        Specification<PostEntity> spec = Specification
+                .where(hasTags(filterRequest.getTags()))
+                .and(hasTitleContaining(filterRequest.getTitle()));
+
+        if (postId != null) {
+            spec = spec.and((root, query, cb) -> cb.notEqual(root.get(ID), postId));
+        }
+
+        return spec;
     }
 
     private static Specification<PostEntity> hasStatusTrue() {
@@ -64,6 +77,13 @@ public class PostSpec {
             Join<PostEntity, UserEntity> userJoin = root.join(USER);
             return criteriaBuilder.equal(userJoin.get(ID), userId);
         };
+    }
+
+    private static Specification<PostEntity> hasTitleContaining(final String title) {
+        if (title == null || title.isBlank()) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> criteriaBuilder.like(criteriaBuilder.lower(root.get(TITLE)), "%" + title.toLowerCase() + "%");
     }
 
 

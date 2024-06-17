@@ -24,4 +24,6 @@ public interface PostService {
     PaginationPage<PostResponse> getAllPostByFilter(Integer offset, Integer limited, PostFilterRequest filter);
 
 
+    PaginationPage<PostResponse> getRelatedPosts(final Integer offset, final Integer limited, final PostFilterRequest filter, final UUID postId);
+
 }

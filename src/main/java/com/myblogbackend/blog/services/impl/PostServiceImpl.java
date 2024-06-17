@@ -177,6 +177,19 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public PaginationPage<PostResponse> getRelatedPosts(final Integer offset, final Integer limited, final PostFilterRequest filter, final UUID postId) {
+
+        var spec = PostSpec.findRelatedArticles(filter, postId);
+        var pageable = buildPageable(offset, limited, filter);
+        var postEntities = postRepository.findAll(spec, pageable);
+        UUID userId = getUserId();
+        var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
+
+        logger.info("Get related post list by filter succeeded with offset: {} and limited {}", offset, limited);
+        return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
+    }
+
+    @Override
     public PostResponse getPostById(final UUID id) {
         var post = postRepository
                 .findById(id)

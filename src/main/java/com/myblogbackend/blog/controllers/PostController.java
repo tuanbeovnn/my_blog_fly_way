@@ -80,6 +80,27 @@ public class PostController {
                 .build();
     }
 
+    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/related-articles")
+    public ResponseEntity<?> getRelatedPosts(@RequestParam(value = "offset", defaultValue = "0") final Integer offset,
+                                             @RequestParam(value = "limit", defaultValue = "9") final Integer limit,
+                                             @RequestParam(value = "tags", required = false) final Set<PostTag> tags,
+                                             @RequestParam(value = "postId", required = true) final UUID postId,
+                                             @RequestParam(defaultValue = "createdDate") final String sortField,
+                                             @RequestParam(defaultValue = "DESC") final String sortDirection) {
+
+        var filter = PostFilterRequest.builder()
+                .tags(tags)
+                .sortField(sortField)
+                .sortDirection(sortDirection)
+                .build();
+
+        var postFeeds = postService.getRelatedPosts(offset, limit, filter, postId);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(postFeeds)
+                .build();
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updatePost(@PathVariable(value = "id") final UUID id,
                                         final PostRequest postRequest) {
