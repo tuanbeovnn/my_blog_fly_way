@@ -36,9 +36,19 @@ async function commentsData(url, data, token) {
         console.error('Error posting data:', error.response ? error.response.data : error.message);
     }
 }
+async function getListFeeds(baseUrl, token) {
+    try {
+        const response = await axios.get(baseUrl + "/api/v1/public/posts/feed");
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching feed list:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+}
 
 module.exports = {
     postData,
     commentsData,
+    getListFeeds,
     getCategoryList
 };

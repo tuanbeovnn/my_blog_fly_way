@@ -1,8 +1,48 @@
 {
     "comments": [
         {
-            "content": "Java is a versatile and powerful programming language that is used for building a wide range of applications",
-            "postId": "42d8fc97-b802-4c15-a60f-5b5f3c69a071",
+            "content": "This article really opened my eyes to new possibilities. The insights shared here are invaluable!",
+            "postId": "${postId}",
+            "parentCommentId": ""
+        },
+        {
+            "content": "I appreciate the effort put into explaining complex concepts in such a clear manner. Great job!",
+            "postId": "${postId}",
+            "parentCommentId": ""
+        },
+        {
+            "content": "The author has done a commendable job in researching and presenting this information. Kudos!",
+            "postId": "${postId}",
+            "parentCommentId": ""
+        },
+        {
+            "content": "This post serves as an excellent resource for anyone looking to delve deeper into this topic.",
+            "postId": "${postId}",
+            "parentCommentId": ""
+        },
+        {
+            "content": "The examples provided really helped clarify some confusing aspects. Well done!",
+            "postId": "${postId}",
+            "parentCommentId": ""
+        },
+        {
+            "content": "I found this article to be both informative and engaging. Looking forward to more content like this!",
+            "postId": "${postId}",
+            "parentCommentId": ""
+        },
+        {
+            "content": "The depth of analysis in this article is impressive. It really enhances understanding of the subject.",
+            "postId": "${postId}",
+            "parentCommentId": ""
+        },
+        {
+            "content": "I enjoyed reading this post. It offered a fresh perspective that I hadn't considered before.",
+            "postId": "${postId}",
+            "parentCommentId": ""
+        },
+        {
+            "content": "While some points could be elaborated further, overall, this was an insightful read.",
+            "postId": "${postId}",
             "parentCommentId": ""
         }
     ]
