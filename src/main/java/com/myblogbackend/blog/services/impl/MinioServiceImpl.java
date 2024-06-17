@@ -1,7 +1,7 @@
 package com.myblogbackend.blog.services.impl;
 
 
-import com.myblogbackend.blog.feign.APIClient;
+import com.myblogbackend.blog.feign.OutboundUploadMultiFiles;
 import com.myblogbackend.blog.response.FileResponse;
 import com.myblogbackend.blog.services.MinioService;
 import lombok.RequiredArgsConstructor;
@@ -17,12 +17,12 @@ import java.util.List;
 public class MinioServiceImpl implements MinioService {
     private final static Logger LOGGER = LogManager.getLogger(MinioServiceImpl.class);
 
-    private final APIClient apiClient;
+    private final OutboundUploadMultiFiles outboundUploadMultiFiles;
 
     @Override
     public List<FileResponse> uploadMultiFiles(final MultipartFile[] multipartFile) {
         try {
-            return apiClient.uploadMultipleFiles(multipartFile);
+            return outboundUploadMultiFiles.uploadMultipleFiles(multipartFile);
         } catch (Exception e) {
             LOGGER.error("Error occurred while uploading files", e);
             throw new RuntimeException("Failed to upload files", e);

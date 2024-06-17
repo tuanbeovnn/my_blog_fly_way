@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.feign;
+package com.myblogbackend.blog.feign.configs;
 
 import feign.auth.BasicAuthRequestInterceptor;
 import org.springframework.beans.factory.annotation.Value;

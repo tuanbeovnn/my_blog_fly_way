@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.feign;
+package com.myblogbackend.blog.feign.configs;
 
 import feign.codec.Encoder;
 import feign.form.spring.SpringFormEncoder;

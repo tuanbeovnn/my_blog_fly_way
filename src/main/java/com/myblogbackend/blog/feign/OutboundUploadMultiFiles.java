@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.feign;
 
+import com.myblogbackend.blog.feign.configs.UploadFilesFeignWithBasicAuthenticationConfig;
 import com.myblogbackend.blog.response.FileResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
@@ -10,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @FeignClient(value = "uploadFiles", url = "${file.upload.url}", configuration = UploadFilesFeignWithBasicAuthenticationConfig.class)
-public interface APIClient {
+public interface OutboundUploadMultiFiles {
     @PostMapping(value = "/minio/upload/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     List<FileResponse> uploadMultipleFiles(@RequestPart("files") final MultipartFile[] files);
 
