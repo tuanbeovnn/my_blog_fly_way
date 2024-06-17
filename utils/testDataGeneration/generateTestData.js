@@ -1,7 +1,7 @@
 const {processPosts, processComments} = require('./dataGeneration');
 const {postData, getCategoryList, commentsData} = require('./axiosClient');
-const postTemplate = require('./postTemplate.json');
-const commentTemplate = require('./commentTemplate.json');
+const postTemplate = require('./templates/postTemplate.json');
+const commentTemplate = require('./templates/commentTemplate.json');
 
 const main = async () => {
     const args = process.argv.slice(2);

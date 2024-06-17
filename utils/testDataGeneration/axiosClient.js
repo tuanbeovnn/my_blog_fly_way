@@ -1,6 +1,5 @@
 const axios = require('axios');
 
-// Function to post data
 async function postData(url, data, token) {
     try {
         const response = await axios.post(url + "/api/v1/posts", data, {
@@ -15,7 +14,6 @@ async function postData(url, data, token) {
     }
 }
 
-// Function to get category list
 async function getCategoryList(baseUrl, token) {
     try {
         const response = await axios.get(baseUrl + "/api/v1/public/category");
