@@ -25,8 +25,22 @@ async function getCategoryList(baseUrl, token) {
         throw error;
     }
 }
+async function commentsData(url, data, token) {
+    try {
+        const response = await axios.post(url + "/api/v1/comments", data, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        console.log('Data posted successfully:', response.data);
+    } catch (error) {
+        console.error('Error posting data:', error.response ? error.response.data : error.message);
+    }
+}
 
 module.exports = {
     postData,
+    commentsData,
     getCategoryList
 };

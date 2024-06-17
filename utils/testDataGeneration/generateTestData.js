@@ -1,5 +1,6 @@
-const { postData, getCategoryList } = require('./axiosClient');
+const {postData, getCategoryList, commentsData} = require('./axiosClient');
 const postTemplate = require('./postTemplate.json'); // Import JSON file
+const commentTemplate = require('./commentTemplate.json');
 const moment = require('moment');
 
 // Function to generate random category ID from an array
@@ -11,12 +12,12 @@ const getRandomCategoryId = (categoryIds) => {
 // Function to calculate the date with offset
 const calculateDateWithOffset = (offset) => {
     if (offset.startsWith('{') && offset.endsWith(' days}')) {
-        const daysOffset = parseInt(offset.substring(1, offset.length - 6)); // Extracting the number from the offset string
+        const daysOffset = parseInt(offset.substring(1, offset.length - 6));
         if (!isNaN(daysOffset)) {
             return moment().subtract(daysOffset, 'days').toISOString();
         }
     }
-    return null; // Return null if offset format is invalid
+    return null;
 };
 
 async function main() {
@@ -38,7 +39,7 @@ async function main() {
 
             const categoryIds = categories.details.records.map(category => category.id);
 
-            const { posts } = postTemplate; // Access posts array from JSON
+            const {posts} = postTemplate; // Access posts array from JSON
 
             for (const post of posts) {
                 // Modify the categoryId field with a random category ID
@@ -59,6 +60,22 @@ async function main() {
         } catch (error) {
             console.error('Error:', error);
         }
+    } else if (args.length >= 3 && args[0] === 'Comment') {
+        if (args.length === 4) {
+            action = args[3].toLowerCase();
+        }
+        const url = args[1];
+        const token = args[2];
+        try {
+            const {comments} = commentTemplate;
+
+            for (const comment of comments) {
+                await commentsData(url, comment, token);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+
     } else {
         console.log('Usage: node generateTestData Post <URL> <Token> [test|production]');
     }
