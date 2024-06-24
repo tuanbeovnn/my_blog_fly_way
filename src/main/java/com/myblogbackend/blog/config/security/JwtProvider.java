@@ -86,6 +86,15 @@ public class JwtProvider {
                 .compact();
     }
 
+    public String generateRefreshTokenToken(final Instant expiryDate) {
+        return Jwts.builder()
+                .setIssuer(ISSUER_GENERATE_REFRESH_TOKEN)
+                .setIssuedAt(Date.from(Instant.now()))
+                .setExpiration(Date.from(expiryDate))
+                .signWith(SignatureAlgorithm.HS512, SIGNING_KEY)
+                .compact();
+    }
+
     public String getUserNameFromJwtToken(final String token) {
         return Jwts.parser()
                 .setSigningKey(SIGNING_KEY)
