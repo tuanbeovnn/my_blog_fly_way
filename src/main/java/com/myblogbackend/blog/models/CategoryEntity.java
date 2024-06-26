@@ -37,6 +37,10 @@ public class CategoryEntity extends BaseEntity {
     @Column(name = "status")
     private Boolean status;
 
+    @Column(name = "slug", unique = true)
+    private String slug;
+
+
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     private List<PostEntity> posts;
 

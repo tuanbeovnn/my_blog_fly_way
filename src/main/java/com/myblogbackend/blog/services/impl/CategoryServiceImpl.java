@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.myblogbackend.blog.utils.SlugUtil.makeSlug;
+
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
@@ -58,6 +60,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse createCategory(final CategoryRequest categoryRequest) {
         var category = categoryMapper.toCategoryEntity(categoryRequest);
         category.setStatus(Boolean.TRUE);
+        category.setSlug(makeSlug(categoryRequest.getName()));
         var createdCategory = categoryRepository.save(category);
         logger.info("Create category successfully!");
         return categoryMapper.toCategoryResponse(createdCategory);
