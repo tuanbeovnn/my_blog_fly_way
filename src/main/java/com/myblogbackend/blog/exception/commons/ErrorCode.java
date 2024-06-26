@@ -12,6 +12,7 @@ public enum ErrorCode implements CommonErrorCode {
     UNABLE_EDIT(HttpStatus.UNAUTHORIZED, "Unable to edit"),
     COULD_NOT_FOUND(HttpStatus.NOT_FOUND, "Could not found"),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "Could not found comment"),
+    INVALID_OPERATION(HttpStatus.BAD_REQUEST, "You cannot follow yourself"),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "error.could not send email");
     private final HttpStatus status;
     private final String message;

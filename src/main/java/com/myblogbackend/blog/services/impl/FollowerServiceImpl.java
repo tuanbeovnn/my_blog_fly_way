@@ -28,6 +28,12 @@ public class FollowerServiceImpl implements FollowerService {
     @Transactional
     public void persistOrDelete(final UUID userIdToFollow) {
         var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+
+        if (signedInUser.getId().equals(userIdToFollow)) {
+            logger.warn("User {} cannot follow themselves", signedInUser.getId());
+            throw new BlogRuntimeException(ErrorCode.INVALID_OPERATION, "You cannot follow yourself.");
+        }
+
         var existingFollower = followerRepository.findByFollowerIdAndFollowedUserId(signedInUser.getId(), userIdToFollow);
         var followedUser = usersRepository.findById(userIdToFollow)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
