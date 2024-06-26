@@ -210,6 +210,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public PostResponse updatePost(final UUID id, final PostRequest postRequest) {
+        var userId = getUserId();
         var post = postRepository.findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
         var category = validateCategory(postRequest.getCategoryId());
@@ -220,7 +221,7 @@ public class PostServiceImpl implements PostService {
         post.setCategory(category);
         var updatedPost = postRepository.save(post);
         logger.info("Update post successfully with id {} ", id);
-        return postMapper.toPostResponse(updatedPost);
+        return getPostResponse(post, userId);
     }
 
     private CategoryEntity validateCategory(final UUID categoryId) {
