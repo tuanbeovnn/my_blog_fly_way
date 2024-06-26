@@ -199,11 +199,12 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostResponse getPostBySlug(final String slug) {
+        var userId = getUserId();
         var post = postRepository
                 .findBySlug(slug)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
         logger.info("Get post successfully by slug {} ", slug);
-        return postMapper.toPostResponse(post);
+        return getPostResponse(post, userId);
     }
 
     @Override
