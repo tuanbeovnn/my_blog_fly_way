@@ -3,6 +3,7 @@ package com.myblogbackend.blog.controllers;
 import com.myblogbackend.blog.controllers.route.CommentRoutes;
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.request.CommentRequest;
+import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,10 @@ public class CommentController {
             @RequestParam(name = "limit", defaultValue = "10") final Integer limit,
             @PathVariable(value = "postId") final UUID postId) {
         var commentResponseList = commentService.getListCommentsByPostId(offset, limit, postId);
-        return ResponseEntity.ok(commentResponseList);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(commentResponseList)
+                .build();
+
     }
 }

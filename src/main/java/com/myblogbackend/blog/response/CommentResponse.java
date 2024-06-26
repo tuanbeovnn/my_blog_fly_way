@@ -10,6 +10,5 @@ import java.util.UUID;
 public class CommentResponse {
     private String content;
     private String userName;
-    private String status;
     private UUID postId;
 }

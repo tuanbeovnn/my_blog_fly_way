@@ -71,8 +71,7 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v1/auth/**").permitAll();
-                    auth.requestMatchers("/api/v1/public/posts/**").permitAll();
-                    auth.requestMatchers("api/v1/public/category").permitAll();
+                    auth.requestMatchers("/api/v1/public/**").permitAll();
                     auth.requestMatchers("/minio/**").permitAll();
                     auth.requestMatchers("/api/v1/notifications/**").permitAll();
                     auth.requestMatchers("/auth/**", "/oauth2/**").permitAll();
