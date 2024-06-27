@@ -3,6 +3,9 @@ package com.myblogbackend.blog.response;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -12,4 +15,7 @@ public class CommentResponse {
     private String content;
     private String userName;
     private UUID postId;
+    private String userId;
+    private Date createdDate;
+    private List<CommentResponse> replies = new ArrayList<>();
 }
