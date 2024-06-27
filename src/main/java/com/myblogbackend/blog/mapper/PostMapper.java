@@ -27,12 +27,6 @@ public interface PostMapper {
     @Mapping(target = "createdBy", source = "user")
     PostResponse toPostResponse(PostEntity postEntity);
 
-    List<PostResponse> toListPostResponse(List<PostEntity> postEntityList);
-
-    PostResponse toPostResponseFromObject(Object object);
-
-    List<PostResponse> toListPostResponseFromObject(List<Object> objectList);
-
     @Named("mapImages")
     default String mapImages(List<String> s3Ids) {
         return GsonUtils.arrayToString(s3Ids);
