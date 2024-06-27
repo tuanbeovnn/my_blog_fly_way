@@ -28,6 +28,7 @@ import com.myblogbackend.blog.request.TopicNotificationRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.UserFollowingResponse;
 import com.myblogbackend.blog.response.UserLikedPostResponse;
+import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.specification.PostSpec;
 import com.myblogbackend.blog.utils.GsonUtils;
@@ -280,6 +281,16 @@ public class PostServiceImpl implements PostService {
         var postResponse = postMapper.toPostResponse(post);
         postResponse.setUsersLikedPost(mapUserLikedPosts(post));
         postResponse.setFavoriteType(getUserFavoriteType(post, userId));
+        var followers = followersRepository.findByFollowedUserId(postResponse.getCreatedBy().getId());
+        var usersFollowing = getUserFollowingResponses(followers);
+        var userResponse = UserResponse.builder()
+                .id(postResponse.getCreatedBy().getId())
+                .email(postResponse.getCreatedBy().getEmail())
+                .name(postResponse.getCreatedBy().getName())
+                .followers(postResponse.getCreatedBy().getFollowers())
+                .usersFollowing(usersFollowing)
+                .build();
+        postResponse.setCreatedBy(userResponse);
         return postResponse;
     }
 
