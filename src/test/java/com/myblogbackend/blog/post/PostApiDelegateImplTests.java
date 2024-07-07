@@ -30,7 +30,9 @@ import java.util.UUID;
 import static com.myblogbackend.blog.category.CategoryTestApi.makeCategoryForSaving;
 import static com.myblogbackend.blog.login.LoginTestApi.userEntityBasicInfo;
 import static com.myblogbackend.blog.login.LoginTestApi.userPrincipal;
-import static com.myblogbackend.blog.post.PostTestApi.*;
+import static com.myblogbackend.blog.post.PostTestApi.makePostForSaving;
+import static com.myblogbackend.blog.post.PostTestApi.preparePostForRequest;
+import static com.myblogbackend.blog.post.PostTestApi.preparePostsEntitySaving;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -101,7 +103,6 @@ public class PostApiDelegateImplTests {
     @Test
     public void givenUserRequestForListPost_whenRequestListPost_thenReturnsListPost() throws Exception {
         var postEntityList = preparePostsEntitySaving();
-
         when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
                 .thenReturn(new PageImpl<>(postEntityList));
 
