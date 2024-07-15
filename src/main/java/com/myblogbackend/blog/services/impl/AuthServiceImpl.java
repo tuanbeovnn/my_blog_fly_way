@@ -65,7 +65,7 @@ import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_C
 @Service
 public class AuthServiceImpl implements AuthService {
     private static final Logger logger = LogManager.getLogger(AuthServiceImpl.class);
-    public static final long TWO_HOURS_IN_MILLIS = 7200000;
+    public static final long ONE_DAY_IN_MILLIS = 86400000;
     public static final String JSON = "json";
 
     @NonFinal
@@ -306,8 +306,8 @@ public class AuthServiceImpl implements AuthService {
 
     private RefreshTokenEntity createRefreshToken() {
         return RefreshTokenEntity.builder()
-                .expiryDate(Instant.now().plusMillis(TWO_HOURS_IN_MILLIS))
-                .token(jwtProvider.generateRefreshTokenToken(Instant.now().plusMillis(TWO_HOURS_IN_MILLIS)))
+                .expiryDate(Instant.now().plusMillis(ONE_DAY_IN_MILLIS))
+                .token(jwtProvider.generateRefreshTokenToken(Instant.now().plusMillis(ONE_DAY_IN_MILLIS)))
                 .refreshCount(0L)
                 .build();
     }
