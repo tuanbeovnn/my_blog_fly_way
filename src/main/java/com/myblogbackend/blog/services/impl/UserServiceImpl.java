@@ -60,8 +60,8 @@ public class UserServiceImpl implements UserService {
         var userEntity = getUserById(id);
         logger.info("Find user with id successfully: {}", id);
         var followers = followersRepository.findByFollowedUserId(id);
-        List<UserFollowingResponse> usersFollowing = getUserFollowingResponses(followers);
-        UserResponse userResponse = userMapper.toUserDTO(userEntity);
+        var usersFollowing = getUserFollowingResponses(followers);
+        var userResponse = userMapper.toUserDTO(userEntity);
         userResponse.setUsersFollowing(usersFollowing);
 
         logger.info("Find user with id successfully: {}", id);
@@ -75,7 +75,7 @@ public class UserServiceImpl implements UserService {
         var followers = followersRepository.findByFollowedUserId(signedInUser.getId());
         var usersFollowing = getUserFollowingResponses(followers);
         logger.info("Get sign in user information");
-        UserResponse userResponse = userMapper.toUserDTO(userEntity);
+        var userResponse = userMapper.toUserDTO(userEntity);
         userResponse.setUsersFollowing(usersFollowing);
         return userResponse;
     }
@@ -97,10 +97,4 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
     }
 
-    private Date calculateExpiryDate(final int expiryTimeInMinutes) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Timestamp(cal.getTime().getTime()));
-        cal.add(Calendar.MINUTE, expiryTimeInMinutes);
-        return new Date(cal.getTime().getTime());
-    }
 }
