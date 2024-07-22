@@ -217,7 +217,7 @@ public class PostServiceImpl implements PostService {
         post.setTitle(postRequest.getTitle());
         post.setContent(postRequest.getContent());
         post.setImages(GsonUtils.arrayToString(postRequest.getImages()));
-        post.setThumnails(GsonUtils.arrayToString(postRequest.getThumnails()));
+        post.setThumbnails(GsonUtils.arrayToString(postRequest.getThumbnails()));
         post.setCategory(category);
         var updatedPost = postRepository.save(post);
         logger.info("Update post successfully with id {} ", id);

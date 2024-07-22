@@ -17,12 +17,12 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface PostMapper {
     @Mapping(target = "images", source = "images", qualifiedByName = "mapImages")
-    @Mapping(target = "thumnails", source = "thumnails", qualifiedByName = "mapImages")
+    @Mapping(target = "thumbnails", source = "thumbnails", qualifiedByName = "mapImages")
     @Mapping(target = "tags", source = "tags", qualifiedByName = "mapPostTagsToTagEntities")
     PostEntity toPostEntity(PostRequest postRequest);
 
     @Mapping(target = "images", source = "images", qualifiedByName = "mapImagesInformation")
-    @Mapping(target = "thumnails", source = "thumnails", qualifiedByName = "mapImagesInformation")
+    @Mapping(target = "thumbnails", source = "thumbnails", qualifiedByName = "mapImagesInformation")
     @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTagEntitiesToPostTags")
     @Mapping(target = "createdBy", source = "user")
     PostResponse toPostResponse(PostEntity postEntity);

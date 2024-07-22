@@ -27,7 +27,7 @@ public class PostRequest {
     @NotBlank(message = "Short Description info cannot be blank")
     private String shortDescription;
     @NotEmpty(message = "At least one valid is required.")
-    private List<String> thumnails;
+    private List<String> thumbnails;
     private List<String> images;
     @NotEmpty(message = "At least one valid food tag is required.")
     private Set<PostTag> tags;

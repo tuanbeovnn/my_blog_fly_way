@@ -45,8 +45,8 @@ public class PostEntity extends BaseEntity {
     private String content;
     @Column(name = "short_description")
     private String shortDescription;
-    @Column(name = "thumnails", columnDefinition = "TEXT")
-    private String thumnails;
+    @Column(name = "thumbnails", columnDefinition = "TEXT")
+    private String thumbnails;
     @Column(name = "images", columnDefinition = "TEXT")
     private String images;
     @Column(name = "slug", columnDefinition = "TEXT", unique = true)

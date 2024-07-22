@@ -29,7 +29,7 @@ public final class PostTestApi {
                 .title(title)
                 .content(content)
                 .shortDescription("")
-                .thumnails("c4feb3223.png")
+                .thumbnails("c4feb3223.png")
                 .images("c4feb3223.png")
                 .category(makeCategoryForSaving("Category A"))
                 .tags(tags)
@@ -41,7 +41,7 @@ public final class PostTestApi {
                 .title("Post title A")
                 .categoryId(UUID.fromString("86286271-7c2b-4fad-9125-a32e2ec9dc7c"))
                 .shortDescription("Post title A")
-                .thumnails(List.of("c4feb3223.png"))
+                .thumbnails(List.of("c4feb3223.png"))
                 .images(List.of("c4feb3223.png"))
                 .tags(Set.of(PostTag.AI, PostTag.INFORMATION))
                 .build();

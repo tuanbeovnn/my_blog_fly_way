@@ -1,0 +1,1 @@
+ALTER TABLE blog_dbo2.posts RENAME COLUMN thumnails TO thumbnails;

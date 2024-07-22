@@ -26,7 +26,7 @@ public class PostResponse {
     private String content;
     private String shortDescription;
     private String slug;
-    private List<String> thumnails;
+    private List<String> thumbnails;
     private List<String> images;
     private UserResponse createdBy;
     private List<UserLikedPostResponse> usersLikedPost = new ArrayList<>();
