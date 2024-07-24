@@ -8,9 +8,6 @@
             "thumbnails": [
                 "da101765c35b42f5984c250c4feb3223.png"
             ],
-            "images": [
-                "da101765c35b42f5984c250c4feb3223.png"
-            ],
             "tags": [
                 "WEB"
             ]
@@ -21,9 +18,6 @@
             "categoryId": "39c5b10d-b08e-42a9-a62e-df4065488f4e",
             "shortDescription": "JavaScript is a dynamic and versatile programming language that is essential for modern web development. It is used for creating interactive web pages, building single-page applications, and developing server-side applications. With its wide range of frameworks and libraries, JavaScript empowers developers to build complex and feature-rich web applications with ease. JavaScript is also known for its ease of use and flexibility, making it a popular choice for both beginner and experienced developers. Whether you're building a simple website or a complex web application, JavaScript is a powerful tool that can help you bring your ideas to life.",
             "thumbnails": [
-                "da101765c35b42f5984c250c4feb3224.png"
-            ],
-            "images": [
                 "da101765c35b42f5984c250c4feb3224.png"
             ],
             "tags": [
@@ -38,9 +32,6 @@
             "thumbnails": [
                 "python_thumbnail.png"
             ],
-            "images": [
-                "python_image.png"
-            ],
             "tags": [
                 "WEB",
                 "INFORMATION"
@@ -53,9 +44,6 @@
             "shortDescription": "Machine learning is a subset of artificial intelligence that focuses on building systems that can learn from data and improve over time without being explicitly programmed. It has become increasingly important in modern technology, powering applications and services across various industries. Machine learning enables businesses to optimize processes, improve customer experiences, and make informed decisions by analyzing large datasets and extracting valuable insights.",
             "thumbnails": [
                 "machine_learning_thumbnail.png"
-            ],
-            "images": [
-                "machine_learning_image.png"
             ],
             "tags": [
                 "TECHNOLOGY",
@@ -70,9 +58,6 @@
             "thumbnails": [
                 "da101765c35b42f5984c250c4feb3225.png"
             ],
-            "images": [
-                "da101765c35b42f5984c250c4feb3225.png"
-            ],
             "tags": [
                 "WEB"
             ]
@@ -84,9 +69,6 @@
             "shortDescription": "Data structures and algorithms are fundamental concepts in computer science that every developer should understand. They enable developers to solve complex problems and optimize performance by efficiently organizing and manipulating data. In this post, we'll explore various data structures and algorithms in JavaScript, including arrays, linked lists, stacks, queues, trees, and graphs, providing practical examples and code snippets along the way.",
             "thumbnails": [
                 "data_structures_thumbnail.png"
-            ],
-            "images": [
-                "data_structures_image.png"
             ],
             "tags": [
                 "WEB",
@@ -101,9 +83,6 @@
             "thumbnails": [
                 "ai_thumbnail.png"
             ],
-            "images": [
-                "ai_image.png"
-            ],
             "tags": [
                 "AI",
                 "TECHNOLOGY"
@@ -116,9 +95,6 @@
             "shortDescription": "Mobile app development has undergone significant evolution over the past decade, driven by advancements in technology and changes in user behavior. From simple utility apps to sophisticated augmented reality experiences, mobile apps have become an integral part of everyday life for billions of people around the world. In this post, we'll explore the evolution of mobile app development, discussing the latest trends and technologies shaping the future of mobile apps.",
             "thumbnails": [
                 "mobile_thumbnail.png"
-            ],
-            "images": [
-                "mobile_image.png"
             ],
             "tags": [
                 "MOBILE",
