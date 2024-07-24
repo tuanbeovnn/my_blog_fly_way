@@ -7,12 +7,16 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.FollowersEntity;
+import com.myblogbackend.blog.models.ProfileEntity;
+import com.myblogbackend.blog.models.SocialLinks;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.repositories.FollowersRepository;
+import com.myblogbackend.blog.repositories.ProfileRepository;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
 import com.myblogbackend.blog.repositories.UserDeviceRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.LogOutRequest;
+import com.myblogbackend.blog.request.UserProfileRequest;
 import com.myblogbackend.blog.response.UserFollowingResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
@@ -25,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private final UsersRepository usersRepository;
     private final UserMapper userMapper;
     private final FollowersRepository followersRepository;
+    private final ProfileRepository profileRepository;
 
     @Override
     public void logoutUser(final LogOutRequest logOutRequest, final UserPrincipal currentUser) {
@@ -52,6 +58,53 @@ public class UserServiceImpl implements UserService {
         var logoutSuccessEvent = new OnUserLogoutSuccessEvent(currentUser.getEmail(), logOutRequest.getToken(), logOutRequest);
         applicationEventPublisher.publishEvent(logoutSuccessEvent);
         logger.info("User logout successfully");
+    }
+
+    @Transactional
+    public UserResponse updateProfile(final UserProfileRequest updateProfileRequest) {
+        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+        var userEntity = getUserById(signedInUser.getId());
+
+        var profileEntity = userEntity.getProfile();
+        if (profileEntity == null) {
+            profileEntity = new ProfileEntity();
+            profileEntity.setUser(userEntity);
+        }
+
+        profileEntity.setBio(updateProfileRequest.getBio());
+        profileEntity.setWebsite(updateProfileRequest.getWebsite());
+        profileEntity.setLocation(updateProfileRequest.getLocation());
+        profileEntity.setAvatarUrl(updateProfileRequest.getAvatarUrl());
+
+        // Update SocialLinks
+        var socialLinks = profileEntity.getSocial();
+        if (socialLinks == null) {
+            socialLinks = new SocialLinks();
+        }
+        socialLinks.setTwitter(updateProfileRequest.getTwitter());
+        socialLinks.setLinkedin(updateProfileRequest.getLinkedin());
+        socialLinks.setGithub(updateProfileRequest.getGithub());
+
+        profileEntity.setSocial(socialLinks);
+
+        profileRepository.save(profileEntity);
+
+        // Return the updated user profile information
+        var userResponse = userMapper.toUserDTO(userEntity);
+        var profileResponse = ProfileResponseDTO.builder()
+                .bio(profileEntity.getBio())
+                .website(profileEntity.getWebsite())
+                .location(profileEntity.getLocation())
+                .avatarUrl(profileEntity.getAvatarUrl())
+                .social(SocialLinksDTO.builder()
+                        .twitter(profileEntity.getSocial().getTwitter())
+                        .linkedin(profileEntity.getSocial().getLinkedin())
+                        .github(profileEntity.getSocial().getGithub())
+                        .build())
+                .build();
+        userResponse.setProfile(profileResponse);
+
+        return userResponse;
     }
 
     @Override

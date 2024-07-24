@@ -5,6 +5,7 @@ import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.controllers.route.UserRoutes;
 import com.myblogbackend.blog.request.LogOutRequest;
+import com.myblogbackend.blog.request.UserProfileRequest;
 import com.myblogbackend.blog.response.ApiResponse;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.response.UserResponse;
@@ -40,6 +41,15 @@ public class UserController {
     @GetMapping("/byID/{id}")
     public ResponseEntity<?> getUserProfileById(final @PathVariable(value = "id") UUID id) {
         UserResponse userProfile = userService.findUserById(id);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(userProfile)
+                .build();
+    }
+
+    @PutMapping("/user-update")
+    public ResponseEntity<?> updateUserProfile(final @RequestBody UserProfileRequest userProfileRequest) {
+        UserResponse userProfile = userService.updateProfile(userProfileRequest);
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(userProfile)

@@ -1,6 +1,7 @@
 package com.myblogbackend.blog.services;
 
 import com.myblogbackend.blog.request.LogOutRequest;
+import com.myblogbackend.blog.request.UserProfileRequest;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.config.security.UserPrincipal;
 
@@ -12,6 +13,8 @@ public interface UserService {
     UserResponse findUserById(UUID id);
 
     UserResponse aboutMe();
+
+    UserResponse updateProfile(UserProfileRequest userProfileRequest);
 
 
 }
