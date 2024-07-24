@@ -15,6 +15,8 @@ import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.LogOutRequest;
 import com.myblogbackend.blog.response.UserFollowingResponse;
 import com.myblogbackend.blog.response.UserResponse;
+import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
+import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
 import com.myblogbackend.blog.services.UserService;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +76,23 @@ public class UserServiceImpl implements UserService {
         logger.info("Get sign in user information");
         var userResponse = userMapper.toUserDTO(userEntity);
         userResponse.setUsersFollowing(usersFollowing);
+        // Fetch and set profile information
+        var profileEntity = userEntity.getProfile();
+        if (profileEntity != null) {
+            var profileResponse = ProfileResponseDTO.builder()
+                    .bio(profileEntity.getBio())
+                    .website(profileEntity.getWebsite())
+                    .location(profileEntity.getLocation())
+                    .avatarUrl(profileEntity.getAvatarUrl())
+                    .social(SocialLinksDTO.builder()
+                            .twitter(profileEntity.getSocial().getTwitter())
+                            .linkedin(profileEntity.getSocial().getLinkedin())
+                            .github(profileEntity.getSocial().getGithub())
+                            .build())
+                    .build();
+            userResponse.setProfile(profileResponse);
+        }
+
         return userResponse;
     }
 

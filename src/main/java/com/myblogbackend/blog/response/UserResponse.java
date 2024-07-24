@@ -3,6 +3,7 @@ package com.myblogbackend.blog.response;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -19,5 +20,30 @@ public class UserResponse {
     private String name;
     private Long followers = 0L;
     private List<UserFollowingResponse> usersFollowing = new ArrayList<>();
+    private ProfileResponseDTO profile;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ProfileResponseDTO {
+        private String bio;
+        private String website;
+        private String location;
+        private String avatarUrl;
+        private SocialLinksDTO social;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SocialLinksDTO {
+        private String twitter;
+        private String linkedin;
+        private String github;
+    }
 
 }
