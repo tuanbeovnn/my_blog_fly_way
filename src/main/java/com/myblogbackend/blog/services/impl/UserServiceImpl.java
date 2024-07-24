@@ -64,7 +64,7 @@ public class UserServiceImpl implements UserService {
         userResponse.setUsersFollowing(usersFollowing);
 
         logger.info("Find user with id successfully: {}", id);
-        return userResponse;
+        return getUserResponse(userEntity, userResponse);
     }
 
     @Override
@@ -77,6 +77,10 @@ public class UserServiceImpl implements UserService {
         var userResponse = userMapper.toUserDTO(userEntity);
         userResponse.setUsersFollowing(usersFollowing);
         // Fetch and set profile information
+        return getUserResponse(userEntity, userResponse);
+    }
+
+    private static UserResponse getUserResponse(final UserEntity userEntity, final UserResponse userResponse) {
         var profileEntity = userEntity.getProfile();
         if (profileEntity != null) {
             var profileResponse = ProfileResponseDTO.builder()
