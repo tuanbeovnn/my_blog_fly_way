@@ -42,7 +42,6 @@ public final class PostTestApi {
                 .categoryId(UUID.fromString("86286271-7c2b-4fad-9125-a32e2ec9dc7c"))
                 .shortDescription("Post title A")
                 .thumbnails(List.of("c4feb3223.png"))
-                .images(List.of("c4feb3223.png"))
                 .tags(Set.of(PostTag.AI, PostTag.INFORMATION))
                 .build();
     }
