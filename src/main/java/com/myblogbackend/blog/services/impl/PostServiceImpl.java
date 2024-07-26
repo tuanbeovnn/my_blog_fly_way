@@ -1,6 +1,7 @@
 package com.myblogbackend.blog.services.impl;
 
 import com.myblogbackend.blog.config.security.UserPrincipal;
+import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.enums.RatingType;
 import com.myblogbackend.blog.enums.TopicType;
@@ -9,7 +10,6 @@ import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.*;
-import com.myblogbackend.blog.pagination.OffsetPageRequest;
 import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.*;
 import com.myblogbackend.blog.request.PostFilterRequest;
@@ -18,6 +18,7 @@ import com.myblogbackend.blog.request.TopicNotificationRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.UserFollowingResponse;
 import com.myblogbackend.blog.response.UserLikedPostResponse;
+import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.specification.PostSpec;
 import com.myblogbackend.blog.utils.GsonUtils;
@@ -134,18 +135,6 @@ public class PostServiceImpl implements PostService {
                             .build();
                 })
                 .toList();
-    }
-
-    @Override
-    public PaginationPage<PostResponse> getAllPostsByUserId(final UUID userId, final Integer offset, final Integer limited) {
-
-        var pageable = new OffsetPageRequest(offset, limited);
-        var postEntities = postRepository.findAllByUserIdAndStatusTrueOrderByCreatedDateDesc(userId, pageable);
-
-        var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
-
-        logger.info("Post get succeeded with offset: {} and limited {}", postEntities.getNumber(), postEntities.getSize());
-        return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
     }
 
     @Override
@@ -293,7 +282,27 @@ public class PostServiceImpl implements PostService {
         var postResponse = postMapper.toPostResponse(post);
         postResponse.setUsersLikedPost(mapUserLikedPosts(post));
         postResponse.setFavoriteType(getUserFavoriteType(post, userId));
+        var userResponse = getUserResponse(post.getUser(), userId);
+        postResponse.setCreatedBy(userResponse);
         return postResponse;
+    }
+
+    private UserResponse getUserResponse(final UserEntity creator, final UUID userId) {
+        if (creator == null) {
+            return null;
+        }
+        var userResponse = userMapper.toUserDTO(creator);
+        userResponse.setFollowType(getUserFollowingType(userId, creator.getId()));
+        return userResponse;
+    }
+
+    private FollowType getUserFollowingType(final UUID followerId, final UUID followedUserId) {
+        if (followerId == null || followedUserId == null) {
+            return FollowType.UNFOLLOW;
+        }
+        return followersRepository.findByFollowerIdAndFollowedUserId(followerId, followedUserId)
+                .map(FollowersEntity::getType)
+                .orElse(FollowType.UNFOLLOW);
     }
 
     private List<UserLikedPostResponse> mapUserLikedPosts(final PostEntity post) {

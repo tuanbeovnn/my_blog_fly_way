@@ -1,10 +1,7 @@
 package com.myblogbackend.blog.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.myblogbackend.blog.enums.FollowType;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +18,7 @@ public class UserResponse {
     private Long followers = 0L;
     private List<UserFollowingResponse> usersFollowing = new ArrayList<>();
     private ProfileResponseDTO profile;
+    private FollowType followType;
 
     @Getter
     @Setter

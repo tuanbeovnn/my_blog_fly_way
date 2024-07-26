@@ -9,7 +9,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 public interface PostService {
-    PaginationPage<PostResponse> getAllPostsByUserId(UUID userId, Integer offset, Integer limited);
 
 //    PaginationPage<PostResponse> getAllPostsByCategoryId(Integer offset, Integer limited, UUID categoryId);
 

@@ -11,7 +11,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring", uses = MappingUtil.class)
 public interface PostMapper {
-//    @Mapping(target = "images", source = "images", qualifiedByName = "mapImages")
+    //    @Mapping(target = "images", source = "images", qualifiedByName = "mapImages")
     @Mapping(target = "thumbnails", source = "thumbnails", qualifiedByName = "mapImages")
     @Mapping(target = "tags", source = "tags", qualifiedByName = "mapPostTagsToTagEntities")
     PostEntity toPostEntity(PostRequest postRequest);

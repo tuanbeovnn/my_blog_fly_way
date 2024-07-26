@@ -4,9 +4,12 @@ import com.myblogbackend.blog.models.FollowersEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 
 public interface FollowersRepository extends JpaRepository<FollowersEntity, UUID> {
     List<FollowersEntity> findByFollowedUserId(UUID followedUserId);
+
+    Optional<FollowersEntity> findByFollowerIdAndFollowedUserId(UUID followerId, UUID followedUserId);
 }
