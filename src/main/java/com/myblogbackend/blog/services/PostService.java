@@ -26,4 +26,7 @@ public interface PostService {
 
     PaginationPage<PostResponse> getRelatedPosts(final Integer offset, final Integer limited, final PostFilterRequest filter, final UUID postId);
 
+    void disablePost(UUID postId);
+
+
 }

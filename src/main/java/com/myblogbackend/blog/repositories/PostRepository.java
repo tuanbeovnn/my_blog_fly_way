@@ -21,4 +21,6 @@ public interface PostRepository extends JpaRepository<PostEntity, UUID>, JpaSpec
 
     Optional<PostEntity> findBySlug(String slug);
 
+    Optional<PostEntity> findByIdAndUserId(UUID postId, UUID userId);
+
 }

@@ -8,20 +8,10 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.CategoryEntity;
-import com.myblogbackend.blog.models.FollowersEntity;
-import com.myblogbackend.blog.models.PostEntity;
-import com.myblogbackend.blog.models.TagEntity;
-import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
-import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.models.*;
 import com.myblogbackend.blog.pagination.OffsetPageRequest;
 import com.myblogbackend.blog.pagination.PaginationPage;
-import com.myblogbackend.blog.repositories.CategoryRepository;
-import com.myblogbackend.blog.repositories.FavoriteRepository;
-import com.myblogbackend.blog.repositories.FirebaseUserRepository;
-import com.myblogbackend.blog.repositories.FollowersRepository;
-import com.myblogbackend.blog.repositories.PostRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.repositories.*;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.request.TopicNotificationRequest;
@@ -43,11 +33,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -66,6 +52,7 @@ public class PostServiceImpl implements PostService {
     private final NotificationService notificationService;
     private final FollowersRepository followersRepository;
     private final FirebaseUserRepository firebaseUserRepository;
+    private final CommentRepository commentRepository;
 
     @Override
     @Transactional
@@ -186,6 +173,32 @@ public class PostServiceImpl implements PostService {
         logger.info("Get related post list by filter succeeded with offset: {} and limited {}", offset, limited);
         return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
     }
+
+    @Override
+    public void disablePost(final UUID postId) {
+        // Fetch the post by ID and owner user ID
+        var post = postRepository
+                .findByIdAndUserId(postId, getSignedInUser().getId())
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+
+        logger.info("Disabling post successfully by id {}", postId);
+        post.setStatus(false);
+        postRepository.save(post);
+        disableAllComments(postId);
+    }
+
+    private void disableAllComments(final UUID postId) {
+        // Disable all comments following this post
+        var comments = commentRepository.findByPostId(postId);
+        comments.stream()
+                .filter(comment -> comment.getPost().getId().equals(postId))
+                .forEach(comment -> {
+                    comment.setStatus(false);
+                    commentRepository.save(comment);
+                });
+        logger.info("Disabled post and associated comments successfully");
+    }
+
 
     @Override
     public PostResponse getPostById(final UUID id) {
