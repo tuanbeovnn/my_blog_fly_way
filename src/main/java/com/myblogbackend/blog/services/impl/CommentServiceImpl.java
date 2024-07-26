@@ -83,6 +83,22 @@ public class CommentServiceImpl implements CommentService {
         return commentMapper.toCommentResponse(updatedComment);
     }
 
+    @Transactional
+    @Override
+    public void disableComment(final UUID commentId) {
+        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+        // Fetch the comment by ID and owner user ID
+        var comment = commentRepository
+                .findByIdAndUserId(commentId, signedInUser.getId())
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+
+        logger.info("Disabling post successfully by id {}", comment);
+        comment.setStatus(false);
+        commentRepository.save(comment);
+        // Disable child comments recursively
+        disableChildComments(comment);
+    }
+
     private void disableChildComments(final CommentEntity parentComment) {
         // Fetch all child comments of the parent comment
         var childComments = commentRepository.findByParentComment(parentComment);

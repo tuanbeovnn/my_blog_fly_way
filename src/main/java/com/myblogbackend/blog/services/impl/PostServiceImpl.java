@@ -175,6 +175,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
     public void disablePost(final UUID postId) {
         // Fetch the post by ID and owner user ID
         var post = postRepository

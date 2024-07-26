@@ -13,4 +13,6 @@ public interface CommentService {
 
     CommentResponse updateComment(UUID commentId, CommentRequest commentRequest);
 
+    void disableComment(UUID commentId);
+
 }
