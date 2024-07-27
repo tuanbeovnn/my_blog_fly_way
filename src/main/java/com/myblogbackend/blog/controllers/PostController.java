@@ -102,7 +102,7 @@ public class PostController {
     }
 
 
-    @PutMapping("/disable/{postId}")
+    @PutMapping(PostRoutes.BASE_URL + "/disable/{postId}")
     public ResponseEntity<?> disablePost(@PathVariable final UUID postId) {
         postService.disablePost(postId);
         return ResponseEntityBuilder.getBuilder()
