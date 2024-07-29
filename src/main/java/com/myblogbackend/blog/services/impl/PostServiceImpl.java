@@ -151,9 +151,9 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PaginationPage<PostResponse> getRelatedPosts(final Integer offset, final Integer limited, final PostFilterRequest filter, final UUID postId) {
+    public PaginationPage<PostResponse> getRelatedPosts(final Integer offset, final Integer limited, final PostFilterRequest filter) {
 
-        var spec = PostSpec.findRelatedArticles(filter, postId);
+        var spec = PostSpec.findRelatedArticles(filter);
         var pageable = buildPageable(offset, limited, filter);
         var postEntities = postRepository.findAll(spec, pageable);
         UUID userId = getUserId();

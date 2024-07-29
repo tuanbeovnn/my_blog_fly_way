@@ -18,6 +18,8 @@ public class PostFilterRequest {
     private UUID categoryId;
     private UUID userId;
     private String title;
+    private String content;
+    private String shortDescription;
 
     private String sortField = "createdDate"; // Default sort field
     private String sortDirection = "DESC"; // Default sort direction

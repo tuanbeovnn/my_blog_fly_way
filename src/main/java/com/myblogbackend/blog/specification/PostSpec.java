@@ -33,16 +33,12 @@ public class PostSpec {
                 .and(hasStatusTrue());
     }
 
-    public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest, final UUID postId) {
-        Specification<PostEntity> spec = Specification
-                .where(hasTags(filterRequest.getTags()))
-                .and(hasTitleContaining(filterRequest.getTitle()));
-
-        if (postId != null) {
-            spec = spec.and((root, query, cb) -> cb.notEqual(root.get(ID), postId));
-        }
-
-        return spec;
+    public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest) {
+        return Specification
+                .where(hasTitleContaining(filterRequest.getTitle()))
+                .or(hasShortDescContaining(filterRequest.getShortDescription()))
+                .or(hasContentContaining(filterRequest.getContent()))
+                .and(hasStatusTrue());
     }
 
     private static Specification<PostEntity> hasStatusTrue() {
@@ -84,6 +80,20 @@ public class PostSpec {
             return null;
         }
         return (root, query, criteriaBuilder) -> criteriaBuilder.like(criteriaBuilder.lower(root.get(TITLE)), "%" + title.toLowerCase() + "%");
+    }
+
+    private static Specification<PostEntity> hasContentContaining(final String title) {
+        if (title == null || title.isBlank()) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> criteriaBuilder.like(criteriaBuilder.lower(root.get("content")), "%" + title.toLowerCase() + "%");
+    }
+
+    private static Specification<PostEntity> hasShortDescContaining(final String title) {
+        if (title == null || title.isBlank()) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> criteriaBuilder.like(criteriaBuilder.lower(root.get("shortDescription")), "%" + title.toLowerCase() + "%");
     }
 
 
