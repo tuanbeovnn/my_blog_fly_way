@@ -20,6 +20,11 @@ spring:
                     lob:
                         non_contextual_creation: true
         show-sql: true
+    kafka:
+        bootstrap-servers: localhost:9094
+        producer:
+            key-serializer: org.apache.kafka.common.serialization.StringSerializer
+            value-serializer: org.apache.kafka.common.serialization.StringSerializer
     mvc:
         pathmatch:
             matching-strategy: ant_path_matcher
