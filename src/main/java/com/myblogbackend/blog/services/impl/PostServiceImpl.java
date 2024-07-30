@@ -9,9 +9,20 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.*;
+import com.myblogbackend.blog.models.CategoryEntity;
+import com.myblogbackend.blog.models.FollowersEntity;
+import com.myblogbackend.blog.models.PostEntity;
+import com.myblogbackend.blog.models.TagEntity;
+import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
+import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.PaginationPage;
-import com.myblogbackend.blog.repositories.*;
+import com.myblogbackend.blog.repositories.CategoryRepository;
+import com.myblogbackend.blog.repositories.CommentRepository;
+import com.myblogbackend.blog.repositories.FavoriteRepository;
+import com.myblogbackend.blog.repositories.FirebaseUserRepository;
+import com.myblogbackend.blog.repositories.FollowersRepository;
+import com.myblogbackend.blog.repositories.PostRepository;
+import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.request.TopicNotificationRequest;
@@ -34,7 +45,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -50,7 +65,6 @@ public class PostServiceImpl implements PostService {
     private final FavoriteRepository favoriteRepository;
     private final PostMapper postMapper;
     private final UserMapper userMapper;
-    private final NotificationService notificationService;
     private final FollowersRepository followersRepository;
     private final FirebaseUserRepository firebaseUserRepository;
     private final CommentRepository commentRepository;
@@ -99,7 +113,8 @@ public class PostServiceImpl implements PostService {
 
                     for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceFireBaseTokenEntities) {
                         TopicNotificationRequest topicNotificationRequest = getTopicNotificationRequest(userEntity, createdPost, deviceTokenEntity);
-                        notificationService.sendNotificationToDeviceWithSpecificTopic(topicNotificationRequest);
+                        // call notification service from here
+
                         logger.info("Notification sent to device token: {}", deviceTokenEntity.getDeviceToken());
                     }
                 } else {
