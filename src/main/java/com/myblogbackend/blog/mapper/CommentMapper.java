@@ -20,6 +20,7 @@ public interface CommentMapper {
     @Mapping(source = "commentEntity.user.name", target = "userName")
     @Mapping(source = "commentEntity.post.id", target = "postId")
     @Mapping(source = "commentEntity.user.id", target = "userId")
+    @Mapping(source = "commentEntity.user.profile.avatarUrl", target = "avatar")
     CommentResponse toCommentResponse(CommentEntity commentEntity);
 
     default List<CommentResponse> toListCommentResponse(List<CommentEntity> commentEntityList) {

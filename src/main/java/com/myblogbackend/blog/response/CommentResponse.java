@@ -17,5 +17,6 @@ public class CommentResponse {
     private UUID postId;
     private String userId;
     private Date createdDate;
+    private String avatar;
     private List<CommentResponse> replies = new ArrayList<>();
 }
