@@ -67,6 +67,9 @@ public class AuthServiceImpl implements AuthService {
     private static final Logger logger = LogManager.getLogger(AuthServiceImpl.class);
     public static final long ONE_DAY_IN_MILLIS = 86400000;
     public static final String JSON = "json";
+    public static final String TEMPLATES_INVALIDTOKEN_HTML = "/templates/invalidtoken.html";
+    public static final String TEMPLATES_ALREADYCONFIRMED_HTML = "/templates/alreadyconfirmed.html";
+    public static final String TEMPLATES_EMAIL_ACTIVATED_HTML = "/templates/emailActivated.html";
 
     @NonFinal
     @Value("${outbound.identity.client-id}")
@@ -161,17 +164,17 @@ public class AuthServiceImpl implements AuthService {
         responseHeaders.setContentType(MediaType.TEXT_HTML);
 
         if (verificationToken == null || isTokenExpired(verificationToken)) {
-            return loadHtmlTemplate("/templates/invalidtoken.html", responseHeaders);
+            return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
         }
 
         UserEntity userEntity = verificationToken.getUser();
         if (!userEntity.getIsPending()) {
-            return loadHtmlTemplate("/templates/alreadyconfirmed.html", responseHeaders);
+            return loadHtmlTemplate(TEMPLATES_ALREADYCONFIRMED_HTML, responseHeaders);
         }
         userEntity.setIsPending(false);
         userEntity.setActive(false);
         usersRepository.save(userEntity);
-        return loadHtmlTemplate("/templates/emailActivated.html", responseHeaders);
+        return loadHtmlTemplate(TEMPLATES_EMAIL_ACTIVATED_HTML, responseHeaders);
     }
 
 
