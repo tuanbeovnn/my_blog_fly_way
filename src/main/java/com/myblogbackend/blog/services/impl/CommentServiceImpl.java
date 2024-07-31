@@ -20,8 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -61,10 +60,46 @@ public class CommentServiceImpl implements CommentService {
         var pageable = new OffsetPageRequest(offset, limited);
         var post = postRepository.findById(postId)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        var comments = commentRepository.findByPostIdAndStatusTrueOrderByCreatedDateDesc(post.getId(), pageable);
+
+        // Fetch only parent comments with pagination
+        Page<CommentEntity> parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
+
+        // Extract parent comment IDs
+        List<UUID> parentCommentIds = parentCommentsPage.getContent().stream()
+                .map(CommentEntity::getId)
+                .toList();
+
+        // Fetch replies for the parent comments
+        List<CommentEntity> allReplies = new ArrayList<>();
+        if (!parentCommentIds.isEmpty()) {
+            allReplies = commentRepository.findAllByParentCommentIdIn(parentCommentIds);
+        }
+
+        // Create a map of parent comments and their replies
+        Map<UUID, CommentResponse> commentResponseMap = new HashMap<>();
+        List<CommentResponse> parentComments = new ArrayList<>();
+
+        // Convert parent comments to response
+        for (CommentEntity commentEntity : parentCommentsPage.getContent()) {
+            CommentResponse commentResponse = commentMapper.toCommentResponse(commentEntity);
+            commentResponse.setReplies(new ArrayList<>()); // Initialize replies
+            commentResponseMap.put(commentResponse.getId(), commentResponse);
+            parentComments.add(commentResponse);
+        }
+
+        // Convert replies to response and map them
+        for (CommentEntity replyEntity : allReplies) {
+            CommentResponse replyResponse = commentMapper.toCommentResponse(replyEntity);
+            CommentResponse parentResponse = commentResponseMap.get(replyEntity.getParentComment().getId());
+            if (parentResponse != null) {
+                parentResponse.getReplies().add(replyResponse);
+            }
+        }
+
         logger.info("Retrieved comments for post ID {}", postId);
-        var commentResponses = commentMapper.toListCommentResponse(comments.getContent());
-        return getCommentResponsePaginationPage(offset, limited, commentResponses, comments);
+
+        // Return the paginated result with comments
+        return getCommentResponsePaginationPage(offset, limited, parentComments, parentCommentsPage);
     }
 
     @Transactional
