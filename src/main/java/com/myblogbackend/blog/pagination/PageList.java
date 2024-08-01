@@ -12,7 +12,7 @@ import java.util.List;
 public class PageList<T> {
     private int offset;
     private int limit;
-    private long totalRecords;
-//    private int totalPage;
+//    private long totalRecords;
+    private int totalPage;
     private List<T> records;
 }

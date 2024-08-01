@@ -190,8 +190,8 @@ public class CommentServiceImpl implements CommentService {
                 .records(responses)
                 .limit(pageSize)
                 .offset(currentPage)
-                .totalRecords(total)
-//                .totalPage((int) Math.ceil(total * 1.0 / pageSize))
+//                .totalRecords(total)
+                .totalPage((int) Math.ceil(total * 1.0 / pageSize))
                 .build();
     }
 
