@@ -14,8 +14,6 @@ import java.util.UUID;
 
 @Repository
 public interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
-    Page<CommentEntity> findByPostIdAndStatusTrueOrderByCreatedDateDesc(UUID postId, Pageable pageable);
-
     List<CommentEntity> findByParentComment(CommentEntity parentComment);
 
     List<CommentEntity> findByPostId(UUID postId);
@@ -24,10 +22,7 @@ public interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
 
     // Fetch only parent comments with pagination
     @Query("SELECT c FROM CommentEntity c WHERE c.post.id = :postId AND c.parentComment IS NULL AND c.status = true ORDER BY c.createdDate DESC")
-    List<CommentEntity> findParentCommentsByPostIdAndStatusTrue(@Param("postId") UUID postId, Pageable pageable);
-
-    @Query("SELECT COUNT(c) FROM CommentEntity c WHERE c.post.id = :postId AND c.status = TRUE AND c.parentComment IS NULL")
-    long countParentCommentsByPostIdAndStatusTrue(@Param("postId") UUID postId);
+    Page<CommentEntity> findParentCommentsByPostIdAndStatusTrue(@Param("postId") UUID postId, Pageable pageable);
 
     // Fetch replies by parent comment IDs
     @Query("SELECT c FROM CommentEntity c WHERE c.parentComment.id IN :parentCommentIds")
