@@ -16,6 +16,7 @@ import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -67,13 +67,12 @@ public class CommentServiceImpl implements CommentService {
         var post = postRepository.findById(postId)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
 
-        // Fetch parent comments with pagination and count from the repository
-        Page<CommentEntity> parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
+        var parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
 
         // Extract parent comment IDs
-        List<UUID> parentCommentIds = parentCommentsPage.getContent().stream()
+        var parentCommentIds = parentCommentsPage.getContent().stream()
                 .map(CommentEntity::getId)
-                .collect(Collectors.toList());
+                .toList();
 
         // Fetch replies for the parent comments
         List<CommentEntity> allReplies = new ArrayList<>();
@@ -81,6 +80,15 @@ public class CommentServiceImpl implements CommentService {
             allReplies = commentRepository.findAllByParentCommentIdIn(parentCommentIds);
         }
 
+        var parentComments = getCommentResponses(parentCommentsPage, allReplies);
+
+        logger.info("Retrieved comments for post ID {}", postId);
+        long totalRecords = parentCommentsPage.getTotalElements();
+        return buildPaginatingResponse(parentComments, pageable.getPageSize(), pageable.getPageNumber(), totalRecords);
+
+    }
+
+    private @NotNull List<CommentResponse> getCommentResponses(final Page<CommentEntity> parentCommentsPage, final List<CommentEntity> allReplies) {
         // Create a map of parent comments and their replies
         Map<UUID, CommentResponse> commentResponseMap = new HashMap<>();
         List<CommentResponse> parentComments = new ArrayList<>();
@@ -92,7 +100,6 @@ public class CommentServiceImpl implements CommentService {
             commentResponseMap.put(commentResponse.getId(), commentResponse);
             parentComments.add(commentResponse);
         }
-
         // Convert replies to response and map them
         for (CommentEntity replyEntity : allReplies) {
             CommentResponse replyResponse = commentMapper.toCommentResponse(replyEntity);
@@ -101,21 +108,7 @@ public class CommentServiceImpl implements CommentService {
                 parentResponse.getReplies().add(replyResponse);
             }
         }
-
-        logger.info("Retrieved comments for post ID {}", postId);
-
-        // Use total elements from the Page object
-        long totalRecords = parentCommentsPage.getTotalElements();
-
-        // Return the paginated result with comments
-        return buildPaginatingResponse(parentComments, pageable.getPageSize(), pageable.getPageNumber(), totalRecords);
-
-    }
-
-    private List<CommentResponse> mapPostEntitiesToCommentResponses(final List<CommentEntity> commentEntities) {
-        return commentEntities.stream()
-                .map(commentMapper::toCommentResponse)
-                .toList();
+        return parentComments;
     }
 
     @Transactional
