@@ -10,6 +10,8 @@ import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -81,11 +83,12 @@ public class PostController {
     }
 
     @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/search-articles")
-    public ResponseEntity<?> getRelatedPosts(@RequestParam(value = "offset", defaultValue = "0") final Integer offset,
-                                             @RequestParam(value = "limit", defaultValue = "9") final Integer limit,
-                                             @RequestParam(value = "search", required = true) final String search,
-                                             @RequestParam(defaultValue = "createdDate") final String sortField,
-                                             @RequestParam(defaultValue = "DESC") final String sortDirection) {
+    public ResponseEntity<?> searchPost(
+            @RequestParam(value = "offset", defaultValue = "0") final Integer offset,
+            @RequestParam(value = "limit", defaultValue = "9") final Integer limit,
+            @RequestParam(value = "search", required = true) final String search,
+            @RequestParam(defaultValue = "createdDate") final String sortField,
+            @RequestParam(defaultValue = "DESC") final String sortDirection) {
 
         var filter = PostFilterRequest.builder()
                 .content(search)
@@ -94,8 +97,10 @@ public class PostController {
                 .sortField(sortField)
                 .sortDirection(sortDirection)
                 .build();
+        var pageable = PageRequest.of(offset, limit, Sort.Direction.fromString(sortDirection), sortField);
 
-        var postFeeds = postService.getRelatedPosts(offset, limit, filter);
+        var postFeeds = postService.searchPosts(pageable, filter);
+
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(postFeeds)

@@ -15,6 +15,7 @@ import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
 import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.pagination.PageList;
 import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.CategoryRepository;
 import com.myblogbackend.blog.repositories.CommentRepository;
@@ -166,16 +167,16 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PaginationPage<PostResponse> getRelatedPosts(final Integer offset, final Integer limited, final PostFilterRequest filter) {
+    public PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter) {
 
         var spec = PostSpec.findRelatedArticles(filter);
-        var pageable = buildPageable(offset, limited, filter);
-        var postEntities = postRepository.findAll(spec, pageable);
+        var pageableBuild = buildPageable(pageable.getPageNumber(), pageable.getPageSize(), filter);
+        long totalRecords = postRepository.count(spec);
+        var postEntities = postRepository.findAll(spec, pageableBuild);
         UUID userId = getUserId();
         var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
-
-        logger.info("Get related post list by filter succeeded with offset: {} and limited {}", offset, limited);
-        return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
+        logger.info("Get related post list by filter succeeded with offset: {} and limited {}", pageable.getPageNumber(), pageable.getPageSize());
+        return buildPaginatingResponse(postResponses, pageable.getPageSize(), pageable.getPageNumber(), totalRecords);
     }
 
     @Override
@@ -277,14 +278,6 @@ public class PostServiceImpl implements PostService {
         }
     }
 
-    private Pageable buildPageable(final Integer offset, final Integer limited, final PostFilterRequest filter) {
-        return PageRequest.of(
-                offset,
-                limited,
-                Sort.Direction.fromString(filter.getSortDirection().toUpperCase()),
-                filter.getSortField()
-        );
-    }
 
     private List<PostResponse> mapPostEntitiesToPostResponses(final Page<PostEntity> postEntities, final UUID userId) {
         return postEntities.getContent().stream()
@@ -343,6 +336,28 @@ public class PostServiceImpl implements PostService {
         return favoriteRepository.findByUserIdAndPostId(userId, post.getId())
                 .map(favoriteEntity -> RatingType.valueOf(favoriteEntity.getType().name()))
                 .orElse(RatingType.UNLIKE);
+    }
+
+    private PageList<PostResponse> buildPaginatingResponse(final List<PostResponse> responses,
+                                                           final int pageSize,
+                                                           final int currentPage,
+                                                           final long total) {
+        return PageList.<PostResponse>builder()
+                .records(responses)
+                .limit(pageSize)
+                .offset(currentPage)
+                .totalRecords(total)
+                .totalPage((int) Math.ceil(total * 1.0 / pageSize))
+                .build();
+    }
+
+    private Pageable buildPageable(final Integer offset, final Integer limited, final PostFilterRequest filter) {
+        return PageRequest.of(
+                offset,
+                limited,
+                Sort.Direction.fromString(filter.getSortDirection().toUpperCase()),
+                filter.getSortField()
+        );
     }
 
 }
