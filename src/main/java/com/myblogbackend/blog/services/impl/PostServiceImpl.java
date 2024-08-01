@@ -16,7 +16,6 @@ import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.CategoryRepository;
 import com.myblogbackend.blog.repositories.CommentRepository;
 import com.myblogbackend.blog.repositories.FavoriteRepository;
@@ -157,14 +156,13 @@ public class PostServiceImpl implements PostService {
     public PageList<PostResponse> getAllPostByFilter(final Pageable pageable, final PostFilterRequest filter) {
         var spec = PostSpec.filterBy(filter);
         var pageableBuild = buildPageable(pageable.getPageNumber(), pageable.getPageSize(), filter);
-        long totalRecords = postRepository.count(spec);
         var postEntities = postRepository.findAll(spec, pageableBuild);
 
         UUID userId = getUserId();
         var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
 
         logger.info("Get feed list by filter succeeded with offset: {} and limited {}", pageable.getPageNumber(), pageable.getPageSize());
-        return buildPaginatingResponse(postResponses, pageable.getPageSize(), pageable.getPageNumber(), totalRecords);
+        return buildPaginatingResponse(postResponses, pageable.getPageSize(), pageable.getPageNumber(), postEntities.getTotalElements());
     }
 
     @Override
@@ -172,12 +170,11 @@ public class PostServiceImpl implements PostService {
 
         var spec = PostSpec.findRelatedArticles(filter);
         var pageableBuild = buildPageable(pageable.getPageNumber(), pageable.getPageSize(), filter);
-        long totalRecords = postRepository.count(spec);
         var postEntities = postRepository.findAll(spec, pageableBuild);
         UUID userId = getUserId();
         var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
         logger.info("Get related post list by filter succeeded with offset: {} and limited {}", pageable.getPageNumber(), pageable.getPageSize());
-        return buildPaginatingResponse(postResponses, pageable.getPageSize(), pageable.getPageNumber(), totalRecords);
+        return buildPaginatingResponse(postResponses, pageable.getPageSize(), pageable.getPageNumber(), postEntities.getTotalElements());
     }
 
     @Override
@@ -246,17 +243,6 @@ public class PostServiceImpl implements PostService {
     private CategoryEntity validateCategory(final UUID categoryId) {
         return categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-    }
-
-    private static PaginationPage<PostResponse> getPostResponsePaginationPage(final Integer offset,
-                                                                              final Integer limited,
-                                                                              final List<PostResponse> postResponses,
-                                                                              final Page<PostEntity> postEntities) {
-        return new PaginationPage<PostResponse>()
-                .setRecords(postResponses)
-                .setOffset(offset)
-                .setLimit(limited)
-                .setTotalRecords(postEntities.getTotalElements());
     }
 
     @NotNull
@@ -348,7 +334,7 @@ public class PostServiceImpl implements PostService {
                 .limit(pageSize)
                 .offset(currentPage)
                 .totalRecords(total)
-                .totalPage((int) Math.ceil(total * 1.0 / pageSize))
+                .totalPage((int) Math.ceil((double) total / pageSize))
                 .build();
     }
 

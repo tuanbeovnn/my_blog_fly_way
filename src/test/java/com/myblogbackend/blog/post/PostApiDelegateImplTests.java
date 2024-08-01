@@ -15,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.MediaType;
@@ -102,17 +104,27 @@ public class PostApiDelegateImplTests {
 
     @Test
     public void givenUserRequestForListPost_whenRequestListPost_thenReturnsListPost() throws Exception {
-        var postEntityList = preparePostsEntitySaving();
-        when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
-                .thenReturn(new PageImpl<>(postEntityList));
+        // Prepare a list of post entities and specify total records
+        var postEntityList = preparePostsEntitySaving(); // This should return a list with the posts you want to test
+        int totalRecords = postEntityList.size(); // Assuming you want to test with all the posts in the list
+        Pageable pageable = PageRequest.of(0, 9); // Define pageable for the test
 
+        // Create a PageImpl with the posts, pageable, and total record count
+        Page<PostEntity> page = new PageImpl<>(postEntityList, pageable, totalRecords);
+
+        // Mock the repository to return the PageImpl
+        when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
+                .thenReturn(page);
+
+        // Convert the post entities to post responses
         var expectedPostList = postMapper.toListPostResponse(postEntityList);
 
+        // Perform the request and assert the response
         mockMvc.perform(MockMvcRequestBuilders.get(PUBLIC_FEED_URL)
                         .param("page", "0")
                         .param("size", "9"))
                 .andExpect(status().isOk())
-//                .andExpect(jsonPath("$.details.totalRecords", is(postEntityList.size())))
+                .andExpect(jsonPath("$.details.totalRecords", is(totalRecords)))
                 .andExpect(jsonPath("$.details.records[0].title", is(expectedPostList.get(0).getTitle())))
                 .andExpect(jsonPath("$.details.records[1].title", is(expectedPostList.get(1).getTitle())));
     }
