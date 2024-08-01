@@ -63,36 +63,24 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public PageList<CommentResponse> getListCommentsByPostId(final Pageable pageable, final UUID postId) {
-//        var post = postRepository.findById(postId)
-//                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-//
-//        // Fetch only parent comments with pagination
-//        List<CommentEntity> parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
-//        var commentResponses = mapPostEntitiesToCommentResponses(parentCommentsPage);
-//
-//
-//        logger.info("Retrieved comments for post ID {}", postId);
-//        // Return the paginated result with comments
-//        return buildPaginatingResponse(commentResponses, pageable.getPageSize(), pageable.getPageNumber(), parentCommentsPage.size());
-
 
         var post = postRepository.findById(postId)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-
         // Fetch only parent comments with pagination
         List<CommentEntity> parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
+
+        // Fetch total count of parent comments
+        long totalParentComments = commentRepository.countParentCommentsByPostIdAndStatusTrue(postId);
 
         // Extract parent comment IDs
         List<UUID> parentCommentIds = parentCommentsPage.stream()
                 .map(CommentEntity::getId)
                 .collect(Collectors.toList());
-
         // Fetch replies for the parent comments
         List<CommentEntity> allReplies = new ArrayList<>();
         if (!parentCommentIds.isEmpty()) {
             allReplies = commentRepository.findAllByParentCommentIdIn(parentCommentIds);
         }
-
         // Create a map of parent comments and their replies
         Map<UUID, CommentResponse> commentResponseMap = new HashMap<>();
         List<CommentResponse> parentComments = new ArrayList<>();
@@ -104,7 +92,6 @@ public class CommentServiceImpl implements CommentService {
             commentResponseMap.put(commentResponse.getId(), commentResponse);
             parentComments.add(commentResponse);
         }
-
         // Convert replies to response and map them
         for (CommentEntity replyEntity : allReplies) {
             CommentResponse replyResponse = commentMapper.toCommentResponse(replyEntity);
@@ -113,10 +100,8 @@ public class CommentServiceImpl implements CommentService {
                 parentResponse.getReplies().add(replyResponse);
             }
         }
-
         logger.info("Retrieved comments for post ID {}", postId);
-
-        return buildPaginatingResponse(parentComments, pageable.getPageSize(), pageable.getPageNumber(), parentCommentsPage.size());
+        return buildPaginatingResponse(parentComments, pageable.getPageSize(), pageable.getPageNumber(), totalParentComments);
 
     }
 
