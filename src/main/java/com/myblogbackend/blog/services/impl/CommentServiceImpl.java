@@ -5,7 +5,6 @@ import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.CommentMapper;
 import com.myblogbackend.blog.models.CommentEntity;
 import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.CommentRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
@@ -31,11 +30,11 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
+    private static final Logger logger = LogManager.getLogger(PostServiceImpl.class);
     private final PostRepository postRepository;
     private final CommentMapper commentMapper;
     private final UsersRepository usersRepository;
     private final CommentRepository commentRepository;
-    private static final Logger logger = LogManager.getLogger(PostServiceImpl.class);
 
     @Override
     public CommentResponse createComment(final CommentRequest commentRequest) {
@@ -154,18 +153,6 @@ public class CommentServiceImpl implements CommentService {
             disableChildComments(childComment);
         });
     }
-
-    private static PaginationPage<CommentResponse> getCommentResponsePaginationPage(final Integer offset,
-                                                                                    final Integer limited,
-                                                                                    final List<CommentResponse> commentResponses,
-                                                                                    final Page<CommentEntity> comments) {
-        return new PaginationPage<CommentResponse>()
-                .setRecords(commentResponses)
-                .setOffset(offset)
-                .setLimit(limited)
-                .setTotalRecords(comments.getTotalElements());
-    }
-
 
     private PageList<CommentResponse> buildPaginatingResponse(final List<CommentResponse> responses,
                                                               final int pageSize,
