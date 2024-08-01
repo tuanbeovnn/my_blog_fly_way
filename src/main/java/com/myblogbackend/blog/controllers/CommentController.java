@@ -7,6 +7,8 @@ import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.CommentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,15 +35,17 @@ public class CommentController {
 
     @GetMapping("/public" + CommentRoutes.BASE_URL + "/{postId}")
     public ResponseEntity<?> getListCommentsByPostId(
-            @RequestParam(name = "offset", defaultValue = "0") final Integer offset,
-            @RequestParam(name = "limit", defaultValue = "10") final Integer limit,
+            @RequestParam(name = "offset", defaultValue = "0") final int offset,
+            @RequestParam(name = "limit", defaultValue = "10") final int limit,
             @PathVariable(value = "postId") final UUID postId) {
-        var commentResponseList = commentService.getListCommentsByPostId(offset, limit, postId);
+
+        var pageable = PageRequest.of(offset, limit, Sort.by(Sort.Order.desc("createdDate")));
+        var commentResponseList = commentService.getListCommentsByPostId(pageable, postId);
+
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(commentResponseList)
                 .build();
-
     }
 
     @PutMapping(CommentRoutes.BASE_URL + "/{commentId}")

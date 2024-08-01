@@ -24,7 +24,7 @@ public interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
 
     // Fetch only parent comments with pagination
     @Query("SELECT c FROM CommentEntity c WHERE c.post.id = :postId AND c.parentComment IS NULL AND c.status = true ORDER BY c.createdDate DESC")
-    Page<CommentEntity> findParentCommentsByPostIdAndStatusTrue(@Param("postId") UUID postId, Pageable pageable);
+    List<CommentEntity> findParentCommentsByPostIdAndStatusTrue(@Param("postId") UUID postId, Pageable pageable);
 
     // Fetch replies by parent comment IDs
     @Query("SELECT c FROM CommentEntity c WHERE c.parentComment.id IN :parentCommentIds")

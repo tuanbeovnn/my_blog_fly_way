@@ -4,7 +4,7 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.CommentMapper;
 import com.myblogbackend.blog.models.CommentEntity;
-import com.myblogbackend.blog.pagination.OffsetPageRequest;
+import com.myblogbackend.blog.pagination.PageList;
 import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.repositories.CommentRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
@@ -17,10 +17,16 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,18 +62,30 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public PaginationPage<CommentResponse> getListCommentsByPostId(final Integer offset, final Integer limited, final UUID postId) {
-        var pageable = new OffsetPageRequest(offset, limited);
+    public PageList<CommentResponse> getListCommentsByPostId(final Pageable pageable, final UUID postId) {
+//        var post = postRepository.findById(postId)
+//                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+//
+//        // Fetch only parent comments with pagination
+//        List<CommentEntity> parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
+//        var commentResponses = mapPostEntitiesToCommentResponses(parentCommentsPage);
+//
+//
+//        logger.info("Retrieved comments for post ID {}", postId);
+//        // Return the paginated result with comments
+//        return buildPaginatingResponse(commentResponses, pageable.getPageSize(), pageable.getPageNumber(), parentCommentsPage.size());
+
+
         var post = postRepository.findById(postId)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
 
         // Fetch only parent comments with pagination
-        Page<CommentEntity> parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
+        List<CommentEntity> parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
 
         // Extract parent comment IDs
-        List<UUID> parentCommentIds = parentCommentsPage.getContent().stream()
+        List<UUID> parentCommentIds = parentCommentsPage.stream()
                 .map(CommentEntity::getId)
-                .toList();
+                .collect(Collectors.toList());
 
         // Fetch replies for the parent comments
         List<CommentEntity> allReplies = new ArrayList<>();
@@ -80,7 +98,7 @@ public class CommentServiceImpl implements CommentService {
         List<CommentResponse> parentComments = new ArrayList<>();
 
         // Convert parent comments to response
-        for (CommentEntity commentEntity : parentCommentsPage.getContent()) {
+        for (CommentEntity commentEntity : parentCommentsPage) {
             CommentResponse commentResponse = commentMapper.toCommentResponse(commentEntity);
             commentResponse.setReplies(new ArrayList<>()); // Initialize replies
             commentResponseMap.put(commentResponse.getId(), commentResponse);
@@ -98,8 +116,14 @@ public class CommentServiceImpl implements CommentService {
 
         logger.info("Retrieved comments for post ID {}", postId);
 
-        // Return the paginated result with comments
-        return getCommentResponsePaginationPage(offset, limited, parentComments, parentCommentsPage);
+        return buildPaginatingResponse(parentComments, pageable.getPageSize(), pageable.getPageNumber(), parentCommentsPage.size());
+
+    }
+
+    private List<CommentResponse> mapPostEntitiesToCommentResponses(final List<CommentEntity> commentEntities) {
+        return commentEntities.stream()
+                .map(commentMapper::toCommentResponse)
+                .toList();
     }
 
     @Transactional
@@ -156,4 +180,20 @@ public class CommentServiceImpl implements CommentService {
                 .setLimit(limited)
                 .setTotalRecords(comments.getTotalElements());
     }
+
+
+    private PageList<CommentResponse> buildPaginatingResponse(final List<CommentResponse> responses,
+                                                              final int pageSize,
+                                                              final int currentPage,
+                                                              final long total) {
+        return PageList.<CommentResponse>builder()
+                .records(responses)
+                .limit(pageSize)
+                .offset(currentPage)
+                .totalRecords(total)
+//                .totalPage((int) Math.ceil(total * 1.0 / pageSize))
+                .build();
+    }
+
+
 }
