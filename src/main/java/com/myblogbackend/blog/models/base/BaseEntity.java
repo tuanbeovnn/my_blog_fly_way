@@ -1,8 +1,6 @@
 package com.myblogbackend.blog.models.base;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedBy;
@@ -30,7 +28,18 @@ public abstract class BaseEntity {
     @CreatedBy
     private String createdBy;
 
-    @Column(name = "modified_by" )
+    @Column(name = "modified_by")
     @LastModifiedBy
     private String modifiedBy;
+
+    @PrePersist
+    protected void onCreate() {
+        createdDate = new Date();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedDate = new Date();
+    }
+
 }
