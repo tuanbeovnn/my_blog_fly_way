@@ -154,16 +154,17 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PaginationPage<PostResponse> getAllPostByFilter(final Integer offset, final Integer limited, final PostFilterRequest filter) {
+    public PageList<PostResponse> getAllPostByFilter(final Pageable pageable, final PostFilterRequest filter) {
         var spec = PostSpec.filterBy(filter);
-        var pageable = buildPageable(offset, limited, filter);
-        var postEntities = postRepository.findAll(spec, pageable);
+        var pageableBuild = buildPageable(pageable.getPageNumber(), pageable.getPageSize(), filter);
+        long totalRecords = postRepository.count(spec);
+        var postEntities = postRepository.findAll(spec, pageableBuild);
 
         UUID userId = getUserId();
         var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
 
-        logger.info("Get feed list by filter succeeded with offset: {} and limited {}", offset, limited);
-        return getPostResponsePaginationPage(offset, limited, postResponses, postEntities);
+        logger.info("Get feed list by filter succeeded with offset: {} and limited {}", pageable.getPageNumber(), pageable.getPageSize());
+        return buildPaginatingResponse(postResponses, pageable.getPageSize(), pageable.getPageNumber(), totalRecords);
     }
 
     @Override

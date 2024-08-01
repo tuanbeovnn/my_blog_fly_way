@@ -1,7 +1,6 @@
 package com.myblogbackend.blog.services;
 
 import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.pagination.PaginationPage;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
@@ -22,7 +21,7 @@ public interface PostService {
 
     PostResponse updatePost(UUID id, PostRequest postRequest);
 
-    PaginationPage<PostResponse> getAllPostByFilter(Integer offset, Integer limited, PostFilterRequest filter);
+    PageList<PostResponse> getAllPostByFilter(final Pageable pageable, PostFilterRequest filter);
 
 
     PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter);

@@ -74,8 +74,9 @@ public class PostController {
                 .sortField(sortField)
                 .sortDirection(sortDirection)
                 .build();
+        var pageable = PageRequest.of(offset, limit, Sort.Direction.fromString(sortDirection), sortField);
 
-        var postFeeds = postService.getAllPostByFilter(offset, limit, filter);
+        var postFeeds = postService.getAllPostByFilter(pageable, filter);
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(postFeeds)
