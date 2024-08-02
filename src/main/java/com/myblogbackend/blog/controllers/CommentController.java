@@ -27,7 +27,7 @@ import java.util.UUID;
 public class CommentController {
     private final CommentService commentService;
 
-    @PostMapping(CommentRoutes.BASE_URL)
+    @PostMapping(CommonRoutes.VERSION + CommentRoutes.BASE_URL)
     public ResponseEntity<?> createComment(@RequestBody final CommentRequest commentRequest) {
         var commentResponse = commentService.createComment(commentRequest);
         return ResponseEntity.ok(commentResponse);
