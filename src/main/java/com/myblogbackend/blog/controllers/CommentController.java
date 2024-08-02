@@ -64,7 +64,7 @@ public class CommentController {
     }
 
 
-    @GetMapping("/v2/" + "/public" + CommentRoutes.BASE_URL + "/child/{parentId}")
+    @GetMapping("/v2" + "/public" + CommentRoutes.BASE_URL + "/child/{parentId}")
     public ResponseEntity<?> retrieveChildCommentByPostIdV2(@PathVariable("parentId") final UUID parentId,
                                                             @RequestParam(name = "offset", defaultValue = "0") final Integer offset,
                                                             @RequestParam(name = "limit", defaultValue = "10") final Integer limit) {
