@@ -19,5 +19,7 @@ public class CommentResponse {
     private Date createdDate;
     private Date modifiedDate;
     private String avatar;
+    private Integer totalChildComment;
+    private Boolean isHasChildComment;
     private List<CommentResponse> replies = new ArrayList<>();
 }

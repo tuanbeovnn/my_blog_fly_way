@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION)
+@RequestMapping(CommonRoutes.BASE_API)
 @RequiredArgsConstructor
 public class CommentController {
     private final CommentService commentService;
@@ -33,7 +33,7 @@ public class CommentController {
         return ResponseEntity.ok(commentResponse);
     }
 
-    @GetMapping("/public" + CommentRoutes.BASE_URL + "/{postId}")
+    @GetMapping(CommonRoutes.VERSION + "/public" + CommentRoutes.BASE_URL + "/{postId}")
     public ResponseEntity<?> getListCommentsByPostId(
             @RequestParam(name = "offset", defaultValue = "0") final int offset,
             @RequestParam(name = "limit", defaultValue = "10") final int limit,
@@ -48,7 +48,38 @@ public class CommentController {
                 .build();
     }
 
-    @PutMapping(CommentRoutes.BASE_URL + "/{commentId}")
+    @GetMapping("/v2" + "/public" + CommentRoutes.BASE_URL + "/{postId}")
+    public ResponseEntity<?> retrieveCommentByPostIdV2(
+            @RequestParam(name = "offset", defaultValue = "0") final int offset,
+            @RequestParam(name = "limit", defaultValue = "10") final int limit,
+            @PathVariable(value = "postId") final UUID postId) {
+
+        var pageable = PageRequest.of(offset, limit, Sort.by(Sort.Order.desc("createdDate")));
+        var commentResponseList = commentService.retrieveCommentByPostIdV2(pageable, postId);
+
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(commentResponseList)
+                .build();
+    }
+
+
+    @GetMapping("/v2/" + "/public" + CommentRoutes.BASE_URL + "/child/{parentId}")
+    public ResponseEntity<?> retrieveChildCommentByPostIdV2(@PathVariable("parentId") final UUID parentId,
+                                                            @RequestParam(name = "offset", defaultValue = "0") final Integer offset,
+                                                            @RequestParam(name = "limit", defaultValue = "10") final Integer limit) {
+
+        var pageable = PageRequest.of(offset, limit, Sort.by(Sort.Order.desc("createdDate")));
+        var commentResponseList = commentService.retrieveCommentByPostIdV2(pageable, parentId);
+
+        var response = commentService.retrieveChildCommentByParentId(parentId, pageable);
+        return ResponseEntityBuilder.getBuilder()
+                .setDetails(response)
+                .build();
+    }
+
+
+    @PutMapping(CommonRoutes.VERSION + CommentRoutes.BASE_URL + "/{commentId}")
     public ResponseEntity<?> updateComment(@PathVariable final UUID commentId,
                                            @RequestBody @Valid final CommentRequest request) {
         var post = commentService.updateComment(commentId, request);
@@ -57,7 +88,7 @@ public class CommentController {
                 .build();
     }
 
-    @PutMapping(CommentRoutes.BASE_URL + "/disable/{commentId}")
+    @PutMapping(CommonRoutes.VERSION + CommentRoutes.BASE_URL + "/disable/{commentId}")
     public ResponseEntity<?> disablePost(@PathVariable final UUID commentId) {
         commentService.disableComment(commentId);
         return ResponseEntityBuilder.getBuilder()

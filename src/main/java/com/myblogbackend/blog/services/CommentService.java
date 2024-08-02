@@ -16,4 +16,8 @@ public interface CommentService {
 
     void disableComment(UUID commentId);
 
+    PageList<CommentResponse> retrieveCommentByPostIdV2(Pageable pageable, UUID postId);
+
+    PageList<CommentResponse> retrieveChildCommentByParentId(UUID parentId, Pageable pageable);
+
 }

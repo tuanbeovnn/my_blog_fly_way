@@ -61,6 +61,35 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    public PageList<CommentResponse> retrieveCommentByPostIdV2(final Pageable pageable, final UUID postId) {
+        var parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
+        return getCommentResponsePageList(pageable, parentCommentsPage);
+    }
+
+    private PageList<CommentResponse> getCommentResponsePageList(final Pageable pageable, final Page<CommentEntity> parentCommentsPage) {
+        var response = parentCommentsPage.getContent().stream()
+                .map(item -> {
+                    var commentResponse = commentMapper.toCommentResponse(item);
+                    // Calculate total child comments
+                    int totalChildComments = commentRepository.countByParentCommentId(item.getId());
+                    commentResponse.setTotalChildComment(totalChildComments);
+                    // Determine if there are child comments
+                    commentResponse.setIsHasChildComment(totalChildComments > 0);
+                    return commentResponse;
+                }).toList();
+        return buildPaginatingResponse(response, pageable.getPageSize(), pageable.getPageNumber(), parentCommentsPage.getTotalElements());
+    }
+
+    @Override
+    public PageList<CommentResponse> retrieveChildCommentByParentId(final UUID parentId, final Pageable pageable) {
+
+        // Fetch child comments from repository
+        var childCommentsPage = commentRepository.findChildCommentsByParentId(parentId, pageable);
+        // Map entities to DTOs and check if they have children
+        return getCommentResponsePageList(pageable, childCommentsPage);
+    }
+
+    @Override
     public PageList<CommentResponse> getListCommentsByPostId(final Pageable pageable, final UUID postId) {
 
         var post = postRepository.findById(postId)
@@ -141,6 +170,7 @@ public class CommentServiceImpl implements CommentService {
         // Disable child comments recursively
         disableChildComments(comment);
     }
+
 
     private void disableChildComments(final CommentEntity parentComment) {
         // Fetch all child comments of the parent comment
