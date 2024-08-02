@@ -21,7 +21,7 @@ spring:
                         non_contextual_creation: true
         show-sql: true
     kafka:
-        bootstrap-servers: http://code4fun.xyz:9094
+        bootstrap-servers: http://nocng.id.vn:9192
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
