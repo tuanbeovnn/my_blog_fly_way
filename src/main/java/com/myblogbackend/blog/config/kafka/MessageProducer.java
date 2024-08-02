@@ -12,7 +12,7 @@ public class MessageProducer {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    public void sendMessage(String topic, String message) {
+    public void sendMessage(final String topic, final String message) {
         kafkaTemplate.send(topic, message);
     }
 
