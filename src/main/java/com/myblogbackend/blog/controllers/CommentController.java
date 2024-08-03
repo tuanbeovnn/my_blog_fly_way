@@ -48,8 +48,6 @@ public class CommentController {
                                                             @RequestParam(name = "limit", defaultValue = "10") final Integer limit) {
 
         var pageable = PageRequest.of(offset, limit, Sort.by(Sort.Order.desc("createdDate")));
-        var commentResponseList = commentService.retrieveCommentByPostIdV2(pageable, parentId);
-
         var response = commentService.retrieveChildCommentByParentId(parentId, pageable);
         return ResponseEntityBuilder.getBuilder()
                 .setDetails(response)
