@@ -10,7 +10,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
@@ -23,7 +30,10 @@ public class CommentController {
     @PostMapping(CommonRoutes.VERSION + CommentRoutes.BASE_URL)
     public ResponseEntity<?> createComment(@RequestBody final CommentRequest commentRequest) {
         var commentResponse = commentService.createComment(commentRequest);
-        return ResponseEntity.ok(commentResponse);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(commentResponse)
+                .build();
     }
 
     @GetMapping("/v2" + "/public" + CommentRoutes.BASE_URL + "/{postId}")
@@ -49,7 +59,8 @@ public class CommentController {
 
         var pageable = PageRequest.of(offset, limit, Sort.by(Sort.Order.desc("createdDate")));
         var response = commentService.retrieveChildCommentByParentId(parentId, pageable);
-        return ResponseEntityBuilder.getBuilder()
+        return ResponseEntityBuilder
+                .getBuilder()
                 .setDetails(response)
                 .build();
     }
@@ -59,7 +70,8 @@ public class CommentController {
     public ResponseEntity<?> updateComment(@PathVariable final UUID commentId,
                                            @RequestBody @Valid final CommentRequest request) {
         var post = commentService.updateComment(commentId, request);
-        return ResponseEntityBuilder.getBuilder()
+        return ResponseEntityBuilder
+                .getBuilder()
                 .setDetails(post)
                 .build();
     }
@@ -67,7 +79,8 @@ public class CommentController {
     @PutMapping(CommonRoutes.VERSION + CommentRoutes.BASE_URL + "/disable/{commentId}")
     public ResponseEntity<?> disablePost(@PathVariable final UUID commentId) {
         commentService.disableComment(commentId);
-        return ResponseEntityBuilder.getBuilder()
+        return ResponseEntityBuilder
+                .getBuilder()
                 .build();
     }
 }

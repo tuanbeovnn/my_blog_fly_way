@@ -1,15 +1,14 @@
 package com.myblogbackend.blog.services;
 
-import com.myblogbackend.blog.pagination.PaginationPage;
+import com.myblogbackend.blog.pagination.PageList;
 import com.myblogbackend.blog.request.CategoryRequest;
 import com.myblogbackend.blog.response.CategoryResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
 public interface CategoryService {
-    PaginationPage<CategoryResponse> getAllCategories(Integer offset, Integer limited);
-
-    CategoryResponse getCategoryById(UUID id);
+    PageList<CategoryResponse> getAllCategories(Pageable pageable);
 
     CategoryResponse createCategory(CategoryRequest categoryRequest);
 

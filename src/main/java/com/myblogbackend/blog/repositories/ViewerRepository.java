@@ -10,8 +10,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ViewerRepository extends JpaRepository<ViewersEntity, UUID> {
-    Boolean existsByPostId(UUID postId);
-
     @Modifying
     @Query("UPDATE ViewersEntity SET viewCounter = viewCounter + 1 where postId = :postId")
     void updateViewer(@Param("postId") UUID postId);

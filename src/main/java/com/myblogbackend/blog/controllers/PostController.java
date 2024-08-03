@@ -37,7 +37,10 @@ public class PostController {
     @PostMapping("/posts")
     public ResponseEntity<?> createPost(@RequestBody @Valid final PostRequest postRequest) throws ExecutionException, InterruptedException {
         PostResponse post = postService.createPost(postRequest);
-        return ResponseEntity.ok(post);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(post)
+                .build();
     }
 
     @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/{id}")
@@ -112,14 +115,18 @@ public class PostController {
     public ResponseEntity<?> updatePost(@PathVariable(value = "id") final UUID id,
                                         final PostRequest postRequest) {
         var post = postService.updatePost(id, postRequest);
-        return ResponseEntity.ok(post);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(post)
+                .build();
     }
 
 
     @PutMapping(PostRoutes.BASE_URL + "/disable/{postId}")
     public ResponseEntity<?> disablePost(@PathVariable final UUID postId) {
         postService.disablePost(postId);
-        return ResponseEntityBuilder.getBuilder()
+        return ResponseEntityBuilder
+                .getBuilder()
                 .build();
     }
 

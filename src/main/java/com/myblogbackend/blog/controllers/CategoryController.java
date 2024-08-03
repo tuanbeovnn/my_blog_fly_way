@@ -6,6 +6,7 @@ import com.myblogbackend.blog.request.CategoryRequest;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,7 +30,8 @@ public class CategoryController {
     @GetMapping(PUBLIC_URL + CategoryRoutes.BASE_URL)
     public ResponseEntity<?> getAllCategories(@RequestParam(name = "offset", defaultValue = "0") final Integer offset,
                                               @RequestParam(name = "limit", defaultValue = "10") final Integer limit) {
-        var categoryList = categoryService.getAllCategories(offset, limit);
+        var pageable = PageRequest.of(offset, limit);
+        var categoryList = categoryService.getAllCategories(pageable);
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(categoryList)

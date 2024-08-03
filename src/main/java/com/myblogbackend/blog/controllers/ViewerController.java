@@ -2,6 +2,7 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.controllers.route.ViewerRoutes;
+import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.ViewerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,9 @@ public class ViewerController {
     @PostMapping("/{postId}")
     public ResponseEntity<?> upgradeViewerByPostId(@PathVariable(value = "postId") final UUID postId) {
         viewerService.countUserViewer(postId);
-        return ResponseEntity.ok("Success");
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setMessage("Success")
+                .build();
     }
 }

@@ -11,8 +11,6 @@ import java.util.UUID;
 public interface FavoriteRepository extends JpaRepository<FavoriteEntity, UUID> {
     Optional<FavoriteEntity> findByUserIdAndPostId(UUID userId, UUID postId);
 
-    FavoriteEntity findByPostId(UUID postId);
-
     List<FavoriteEntity> findAllByPostId(UUID postId);
 
 }

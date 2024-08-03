@@ -3,8 +3,7 @@ package com.myblogbackend.blog.services.impl;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.CategoryMapper;
-import com.myblogbackend.blog.pagination.OffsetPageRequest;
-import com.myblogbackend.blog.pagination.PaginationPage;
+import com.myblogbackend.blog.pagination.PageList;
 import com.myblogbackend.blog.repositories.CategoryRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.request.CategoryRequest;
@@ -13,11 +12,12 @@ import com.myblogbackend.blog.services.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.myblogbackend.blog.utils.SlugUtil.makeSlug;
 
@@ -30,29 +30,14 @@ public class CategoryServiceImpl implements CategoryService {
     private final PostRepository postRepository;
 
     @Override
-    public PaginationPage<CategoryResponse> getAllCategories(final Integer offset, final Integer limited) {
-        var pageable = new OffsetPageRequest(offset, limited);
+    public PageList<CategoryResponse> getAllCategories(final Pageable pageable) {
         var categoryList = categoryRepository.findAllByStatusTrue(pageable);
         var categoryResponse = categoryList.getContent()
                 .stream()
                 .map(categoryMapper::toCategoryResponse)
-                .collect(Collectors.toList());
+                .toList();
         logger.info("Get all category with pagination successfully");
-        return new PaginationPage<CategoryResponse>()
-                .setRecords(categoryResponse)
-                .setLimit(categoryList.getSize())
-                .setTotalRecords(categoryList.getTotalElements())
-                .setOffset(categoryList.getNumber());
-
-    }
-
-    @Override
-    public CategoryResponse getCategoryById(final UUID id) {
-        var category = categoryRepository
-                .findById(id)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        logger.info("Get category successfully by id {}", id);
-        return categoryMapper.toCategoryResponse(category);
+        return buildPaginatingResponse(categoryResponse, pageable.getPageSize(), pageable.getPageNumber(), categoryList.getTotalElements());
 
     }
 
@@ -99,5 +84,18 @@ public class CategoryServiceImpl implements CategoryService {
         postRepository.saveAll(updatedPosts);
 
         logger.info("Update category and related post statuses successfully");
+    }
+
+    private PageList<CategoryResponse> buildPaginatingResponse(final List<CategoryResponse> responses,
+                                                               final int pageSize,
+                                                               final int currentPage,
+                                                               final long total) {
+        return PageList.<CategoryResponse>builder()
+                .records(responses)
+                .limit(pageSize)
+                .offset(currentPage)
+                .totalRecords(total)
+                .totalPage((int) Math.ceil((double) total / pageSize))
+                .build();
     }
 }

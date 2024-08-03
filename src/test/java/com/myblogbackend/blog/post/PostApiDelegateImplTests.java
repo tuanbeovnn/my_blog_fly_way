@@ -85,8 +85,8 @@ public class PostApiDelegateImplTests {
                             .content(objectMapper.writeValueAsString(preparePostForRequest()))
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(expectedPostResponse.getId().toString()))
-                    .andExpect(jsonPath("$.title").value(expectedPostResponse.getTitle()));
+                    .andExpect(jsonPath("$.details.id").value(expectedPostResponse.getId().toString()))
+                    .andExpect(jsonPath("$.details.title").value(expectedPostResponse.getTitle()));
         }
     }
 
