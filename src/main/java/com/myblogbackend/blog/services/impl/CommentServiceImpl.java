@@ -54,7 +54,7 @@ public class CommentServiceImpl implements CommentService {
         commentEntity.setParentComment(parentComment);
         commentEntity.setStatus(true);
         commentEntity.setCreatedBy(signedInUser.getName());
-        var createdComment = commentRepository.save(commentEntity);
+        var createdComment = commentRepository.saveAndFlush(commentEntity);
         logger.info("Created the comment for post ID {} by user ID {}",
                 commentRequest.getPostId(), signedInUser.getId());
         return commentMapper.toCommentResponse(createdComment);
