@@ -10,8 +10,6 @@ import java.util.UUID;
 public interface CommentService {
     CommentResponse createComment(CommentRequest commentRequest);
 
-    PageList<CommentResponse> getListCommentsByPostId(Pageable pageable, UUID postId);
-
     CommentResponse updateComment(UUID commentId, CommentRequest commentRequest);
 
     void disableComment(UUID commentId);

@@ -10,14 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -31,21 +24,6 @@ public class CommentController {
     public ResponseEntity<?> createComment(@RequestBody final CommentRequest commentRequest) {
         var commentResponse = commentService.createComment(commentRequest);
         return ResponseEntity.ok(commentResponse);
-    }
-
-    @GetMapping(CommonRoutes.VERSION + "/public" + CommentRoutes.BASE_URL + "/{postId}")
-    public ResponseEntity<?> getListCommentsByPostId(
-            @RequestParam(name = "offset", defaultValue = "0") final int offset,
-            @RequestParam(name = "limit", defaultValue = "10") final int limit,
-            @PathVariable(value = "postId") final UUID postId) {
-
-        var pageable = PageRequest.of(offset, limit, Sort.by(Sort.Order.desc("createdDate")));
-        var commentResponseList = commentService.getListCommentsByPostId(pageable, postId);
-
-        return ResponseEntityBuilder
-                .getBuilder()
-                .setDetails(commentResponseList)
-                .build();
     }
 
     @GetMapping("/v2" + "/public" + CommentRoutes.BASE_URL + "/{postId}")

@@ -15,16 +15,12 @@ import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -66,77 +62,10 @@ public class CommentServiceImpl implements CommentService {
         return getCommentResponsePageList(pageable, parentCommentsPage);
     }
 
-    private PageList<CommentResponse> getCommentResponsePageList(final Pageable pageable, final Page<CommentEntity> parentCommentsPage) {
-        var response = parentCommentsPage.getContent().stream()
-                .map(item -> {
-                    var commentResponse = commentMapper.toCommentResponse(item);
-                    // Calculate total child comments
-                    int totalChildComments = commentRepository.countByParentCommentId(item.getId());
-                    commentResponse.setTotalChildComment(totalChildComments);
-                    // Determine if there are child comments
-                    commentResponse.setIsHasChildComment(totalChildComments > 0);
-                    return commentResponse;
-                }).toList();
-        return buildPaginatingResponse(response, pageable.getPageSize(), pageable.getPageNumber(), parentCommentsPage.getTotalElements());
-    }
-
     @Override
     public PageList<CommentResponse> retrieveChildCommentByParentId(final UUID parentId, final Pageable pageable) {
-
-        // Fetch child comments from repository
         var childCommentsPage = commentRepository.findChildCommentsByParentId(parentId, pageable);
-        // Map entities to DTOs and check if they have children
         return getCommentResponsePageList(pageable, childCommentsPage);
-    }
-
-    @Override
-    public PageList<CommentResponse> getListCommentsByPostId(final Pageable pageable, final UUID postId) {
-
-        var post = postRepository.findById(postId)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-
-        var parentCommentsPage = commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable);
-
-        // Extract parent comment IDs
-        var parentCommentIds = parentCommentsPage.getContent().stream()
-                .map(CommentEntity::getId)
-                .toList();
-
-        // Fetch replies for the parent comments
-        List<CommentEntity> allReplies = new ArrayList<>();
-        if (!parentCommentIds.isEmpty()) {
-            allReplies = commentRepository.findAllByParentCommentIdIn(parentCommentIds);
-        }
-
-        var parentComments = getCommentResponses(parentCommentsPage, allReplies);
-
-        logger.info("Retrieved comments for post ID {}", postId);
-        long totalRecords = parentCommentsPage.getTotalElements();
-        return buildPaginatingResponse(parentComments, pageable.getPageSize(), pageable.getPageNumber(), totalRecords);
-
-    }
-
-    private @NotNull List<CommentResponse> getCommentResponses(final Page<CommentEntity> parentCommentsPage, final List<CommentEntity> allReplies) {
-        // Create a map of parent comments and their replies
-        Map<UUID, CommentResponse> commentResponseMap = new HashMap<>();
-        List<CommentResponse> parentComments = new ArrayList<>();
-
-        // Convert parent comments to response
-        for (CommentEntity commentEntity : parentCommentsPage.getContent()) {
-            CommentResponse commentResponse = commentMapper.toCommentResponse(commentEntity);
-            commentResponse.setReplies(new ArrayList<>()); // Initialize replies
-            commentResponseMap.put(commentResponse.getId(), commentResponse);
-            parentComments.add(commentResponse);
-        }
-        // Convert replies to response and map them
-        for (CommentEntity replyEntity : allReplies) {
-            CommentResponse replyResponse = commentMapper.toCommentResponse(replyEntity);
-            CommentResponse parentResponse = commentResponseMap.get(replyEntity.getParentComment().getId());
-            if (parentResponse != null) {
-                parentResponse.getReplies().add(replyResponse);
-            }
-        }
-        return parentComments;
     }
 
     @Transactional
@@ -195,6 +124,20 @@ public class CommentServiceImpl implements CommentService {
                 .totalRecords(total)
                 .totalPage((int) Math.ceil(total * 1.0 / pageSize))
                 .build();
+    }
+
+    private PageList<CommentResponse> getCommentResponsePageList(final Pageable pageable, final Page<CommentEntity> parentCommentsPage) {
+        var response = parentCommentsPage.getContent().stream()
+                .map(item -> {
+                    var commentResponse = commentMapper.toCommentResponse(item);
+                    // Calculate total child comments
+                    int totalChildComments = commentRepository.countByParentCommentId(item.getId());
+                    commentResponse.setTotalChildComment(totalChildComments);
+                    // Determine if there are child comments
+                    commentResponse.setIsHasChildComment(totalChildComments > 0);
+                    return commentResponse;
+                }).toList();
+        return buildPaginatingResponse(response, pageable.getPageSize(), pageable.getPageNumber(), parentCommentsPage.getTotalElements());
     }
 
 
