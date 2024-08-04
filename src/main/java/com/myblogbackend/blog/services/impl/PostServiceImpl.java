@@ -5,24 +5,14 @@ import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.enums.RatingType;
 import com.myblogbackend.blog.enums.TopicType;
+import com.myblogbackend.blog.event.dto.NotificationEvent;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.CategoryEntity;
-import com.myblogbackend.blog.models.FollowersEntity;
-import com.myblogbackend.blog.models.PostEntity;
-import com.myblogbackend.blog.models.TagEntity;
-import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
-import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.models.*;
 import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.repositories.CategoryRepository;
-import com.myblogbackend.blog.repositories.CommentRepository;
-import com.myblogbackend.blog.repositories.FavoriteRepository;
-import com.myblogbackend.blog.repositories.FirebaseUserRepository;
-import com.myblogbackend.blog.repositories.FollowersRepository;
-import com.myblogbackend.blog.repositories.PostRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.repositories.*;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.request.TopicNotificationRequest;
@@ -42,14 +32,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -68,6 +55,7 @@ public class PostServiceImpl implements PostService {
     private final FollowersRepository followersRepository;
     private final FirebaseUserRepository firebaseUserRepository;
     private final CommentRepository commentRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     @Transactional
@@ -91,35 +79,45 @@ public class PostServiceImpl implements PostService {
         postEntity.setTags(tagEntities);
         var createdPost = postRepository.save(postEntity);
 
-        sendNotificationsToUser(userEntity, createdPost);
-
+        sendAMessageFromKafkaToNotificationService(userEntity, createdPost);
         logger.info("Post was created with id: {}", createdPost.getId());
         return postMapper.toPostResponse(createdPost);
 
     }
 
-    private void sendNotificationsToUser(final UserEntity userEntity, final PostEntity createdPost)
+    private void sendAMessageFromKafkaToNotificationService(final UserEntity userEntity, final PostEntity createdPost)
             throws ExecutionException, InterruptedException {
         // Step 1: Get list of users who are following the user creating the post
         var followers = followersRepository.findByFollowedUserId(userEntity.getId());
         var usersFollowing = getUserFollowingResponses(followers);
         logger.info("User {} has {} followers.", userEntity.getId(), usersFollowing.size());
+
         if (!usersFollowing.isEmpty()) {
-            // Step 2: Send notifications to each follower
+            // Step 2: Aggregate notifications by device token
+            Map<String, List<UUID>> tokenToUserMap = new HashMap<>();
+
             for (UserFollowingResponse follower : usersFollowing) {
-                List<UserDeviceFireBaseTokenEntity> userDeviceFireBaseTokenEntities = firebaseUserRepository.findAllByUserId(follower.getId());
-                if (!userDeviceFireBaseTokenEntities.isEmpty()) {
-                    logger.info("Follower {} has {} device tokens.", follower.getId(), userDeviceFireBaseTokenEntities.size());
+                List<UserDeviceFireBaseTokenEntity> userDeviceTokens = firebaseUserRepository.findAllByUserId(follower.getId());
 
-                    for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceFireBaseTokenEntities) {
-                        TopicNotificationRequest topicNotificationRequest = getTopicNotificationRequest(userEntity, createdPost, deviceTokenEntity);
-                        // call notification service from here
-
-                        logger.info("Notification sent to device token: {}", deviceTokenEntity.getDeviceToken());
-                    }
-                } else {
-                    logger.info("Follower {} has no device tokens.", follower.getId());
+                for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceTokens) {
+                    String token = deviceTokenEntity.getDeviceToken();
+                    tokenToUserMap.computeIfAbsent(token, k -> new ArrayList<>()).add(follower.getId());
                 }
+            }
+
+            // Step 3: Send aggregated notifications asynchronously
+            for (Map.Entry<String, List<UUID>> entry : tokenToUserMap.entrySet()) {
+                String token = entry.getKey();
+                List<UUID> userIds = entry.getValue();
+
+                NotificationEvent notificationEvent = new NotificationEvent();
+                notificationEvent.setPostId(createdPost.getId());
+                notificationEvent.setUserIds(userIds);
+                notificationEvent.setDeviceTokenId(token);
+
+                // Send the message to Kafka asynchronously
+                kafkaTemplate.send("notification-topic", token, notificationEvent);
+                logger.info("Notification event sent to token: {}", token);
             }
         } else {
             logger.info("User {} has no followers.", userEntity.getId());
