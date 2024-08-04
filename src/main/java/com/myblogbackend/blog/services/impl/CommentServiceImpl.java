@@ -135,6 +135,7 @@ public class CommentServiceImpl implements CommentService {
                     commentResponse.setTotalChildComment(totalChildComments);
                     // Determine if there are child comments
                     commentResponse.setIsHasChildComment(totalChildComments > 0);
+                    commentResponse.setParentId(item.getParentComment() != null ? item.getParentComment().getId() : null);
                     return commentResponse;
                 }).toList();
         return buildPaginatingResponse(response, pageable.getPageSize(), pageable.getPageNumber(), parentCommentsPage.getTotalElements());

@@ -21,5 +21,6 @@ public class CommentResponse {
     private String avatar;
     private Integer totalChildComment;
     private Boolean isHasChildComment;
+    private UUID parentId;
     private List<CommentResponse> replies = new ArrayList<>();
 }
