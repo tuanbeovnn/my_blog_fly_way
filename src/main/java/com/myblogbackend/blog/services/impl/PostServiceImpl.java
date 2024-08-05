@@ -115,9 +115,15 @@ public class PostServiceImpl implements PostService {
                 notificationEvent.setUserIds(userIds);
                 notificationEvent.setDeviceTokenId(token);
 
-                // Send the message to Kafka asynchronously
-                kafkaTemplate.send("notification-topic", token, notificationEvent);
-                logger.info("Notification event sent to token: {}", token);
+                // Synchronous send with error handling
+                try {
+                    kafkaTemplate.send("notification-topic", token, notificationEvent).get();
+                    logger.info("Notification event sent to token: {}", token);
+                } catch (ExecutionException | InterruptedException e) {
+                    // Log and handle the error, e.g., retry logic, alerting, etc.
+                    logger.error("Error sending notification event to token: {}", token, e);
+                    throw e; // or handle the error as needed
+                }
             }
         } else {
             logger.info("User {} has no followers.", userEntity.getId());
