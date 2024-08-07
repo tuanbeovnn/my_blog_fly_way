@@ -10,9 +10,20 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.*;
+import com.myblogbackend.blog.models.CategoryEntity;
+import com.myblogbackend.blog.models.FollowersEntity;
+import com.myblogbackend.blog.models.PostEntity;
+import com.myblogbackend.blog.models.TagEntity;
+import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
+import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.repositories.*;
+import com.myblogbackend.blog.repositories.CategoryRepository;
+import com.myblogbackend.blog.repositories.CommentRepository;
+import com.myblogbackend.blog.repositories.FavoriteRepository;
+import com.myblogbackend.blog.repositories.FirebaseUserRepository;
+import com.myblogbackend.blog.repositories.FollowersRepository;
+import com.myblogbackend.blog.repositories.PostRepository;
+import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.request.TopicNotificationRequest;
@@ -33,10 +44,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -92,41 +110,46 @@ public class PostServiceImpl implements PostService {
         var usersFollowing = getUserFollowingResponses(followers);
         logger.info("User {} has {} followers.", userEntity.getId(), usersFollowing.size());
 
-        if (!usersFollowing.isEmpty()) {
-            // Step 2: Aggregate notifications by device token
-            Map<String, List<UUID>> tokenToUserMap = new HashMap<>();
-
-            for (UserFollowingResponse follower : usersFollowing) {
-                List<UserDeviceFireBaseTokenEntity> userDeviceTokens = firebaseUserRepository.findAllByUserId(follower.getId());
-
-                for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceTokens) {
-                    String token = deviceTokenEntity.getDeviceToken();
-                    tokenToUserMap.computeIfAbsent(token, k -> new ArrayList<>()).add(follower.getId());
-                }
-            }
-
-            // Step 3: Send aggregated notifications asynchronously
-            for (Map.Entry<String, List<UUID>> entry : tokenToUserMap.entrySet()) {
-                String token = entry.getKey();
-                List<UUID> userIds = entry.getValue();
-
-                NotificationEvent notificationEvent = new NotificationEvent();
-                notificationEvent.setPostId(createdPost.getId());
-                notificationEvent.setUserIds(userIds);
-                notificationEvent.setDeviceTokenId(token);
-
-                // Synchronous send with error handling
-                try {
-                    kafkaTemplate.send("notification-topic", token, notificationEvent).get();
-                    logger.info("Notification event sent to token: {}", token);
-                } catch (ExecutionException | InterruptedException e) {
-                    // Log and handle the error, e.g., retry logic, alerting, etc.
-                    logger.error("Error sending notification event to token: {}", token, e);
-                    throw e; // or handle the error as needed
-                }
-            }
-        } else {
+        if (usersFollowing.isEmpty()) {
             logger.info("User {} has no followers.", userEntity.getId());
+            return;
+        }
+
+        // Step 2: Aggregate notifications by device token
+        Map<String, List<UUID>> tokenToUserMap = new HashMap<>();
+
+        for (UserFollowingResponse follower : usersFollowing) {
+            List<UserDeviceFireBaseTokenEntity> userDeviceTokens = firebaseUserRepository.findAllByUserId(follower.getId());
+
+            for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceTokens) {
+                String token = deviceTokenEntity.getDeviceToken();
+                tokenToUserMap.computeIfAbsent(token, k -> new LinkedList<>()).add(follower.getId());
+            }
+        }
+
+        // Step 3: Send aggregated notifications asynchronously
+        for (Map.Entry<String, List<UUID>> entry : tokenToUserMap.entrySet()) {
+            String token = entry.getKey();
+            List<UUID> userIds = entry.getValue();
+
+            NotificationEvent notificationEvent = new NotificationEvent();
+            notificationEvent.setPostId(createdPost.getId());
+            notificationEvent.setUserIds(userIds);
+            notificationEvent.setDeviceTokenId(token);
+
+            try {
+                CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("notification-topic", notificationEvent);
+                future.whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        logger.error("Error sending notification event to token {}: ", token, ex);
+                        // Save to db an event if it failed.
+                    } else {
+                        logger.info("Notification event sent to token {} successfully.", token);
+                    }
+                });
+            } catch (Exception e) {
+                logger.error("Exception occurred while sending notification event to token {}: ", token, e);
+            }
         }
     }
 
