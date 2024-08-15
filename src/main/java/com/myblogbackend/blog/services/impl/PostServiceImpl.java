@@ -304,11 +304,14 @@ public class PostServiceImpl implements PostService {
         var postResponse = postMapper.toPostResponse(post);
         postResponse.setUsersLikedPost(mapUserLikedPosts(post));
         postResponse.setFavoriteType(getUserFavoriteType(post, userId));
+        postResponse.setTotalComments(countCommentByPostId(post));
         var userResponse = getUserResponse(post.getUser(), userId);
         postResponse.setCreatedBy(userResponse);
         return postResponse;
     }
-
+    private int countCommentByPostId(final PostEntity post) {
+        return commentRepository.countByPostIdAndStatusTrueOrderByCreatedDateDesc(post.getId());
+    }
     private UserResponse getUserResponse(final UserEntity creator, final UUID userId) {
         if (creator == null) {
             return null;

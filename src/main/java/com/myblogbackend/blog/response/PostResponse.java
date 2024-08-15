@@ -31,6 +31,8 @@ public class PostResponse {
     private UserResponse createdBy;
     private List<UserLikedPostResponse> usersLikedPost = new ArrayList<>();
     private RatingType favoriteType;
+    private Long favourite;
+    private int totalComments;
     private CategoryResponse category;
     private Set<PostTag> tags = new HashSet<>();
     private Date createdDate;

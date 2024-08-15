@@ -30,5 +30,8 @@ public interface CommentRepository extends JpaRepository<CommentEntity, UUID> {
     @Query("SELECT c FROM CommentEntity c WHERE c.parentComment.id = :parentId AND c.status = TRUE")
     Page<CommentEntity> findChildCommentsByParentId(@Param("parentId") UUID parentId, Pageable pageable);
 
+    int countByPostIdAndStatusTrueOrderByCreatedDateDesc(UUID postId);
+
+
 
 }
