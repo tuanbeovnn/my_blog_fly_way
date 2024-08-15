@@ -14,6 +14,7 @@ node("master") {
     stage('Run check style') {
        sh '''
          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
+         cp /.env src/main/resources/
          mvn checkstyle:check
        '''
     }
