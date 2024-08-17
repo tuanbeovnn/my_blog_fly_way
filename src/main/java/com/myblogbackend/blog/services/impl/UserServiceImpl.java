@@ -160,9 +160,10 @@ public class UserServiceImpl implements UserService {
                     return UserFollowingResponse.builder()
                             .id(followerUser.getId())
                             .name(followerUser.getName())
+                            .userName(followerUser.getUserName())
                             .build();
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private UserEntity getUserById(final UUID id) {

@@ -174,6 +174,7 @@ public class PostServiceImpl implements PostService {
                     return UserFollowingResponse.builder()
                             .id(followerUser.getId())
                             .name(followerUser.getName())
+                            .userName(followerUser.getUserName())
                             .build();
                 })
                 .toList();
