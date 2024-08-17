@@ -15,6 +15,7 @@ import com.myblogbackend.blog.repositories.ProfileRepository;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
 import com.myblogbackend.blog.repositories.UserDeviceRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.request.ChangePasswordRequest;
 import com.myblogbackend.blog.request.LogOutRequest;
 import com.myblogbackend.blog.request.UserProfileRequest;
 import com.myblogbackend.blog.response.UserFollowingResponse;
@@ -28,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final FollowersRepository followersRepository;
     private final ProfileRepository profileRepository;
+    private final PasswordEncoder encoder;
 
     @Override
     public void logoutUser(final LogOutRequest logOutRequest, final UserPrincipal currentUser) {
@@ -105,6 +108,22 @@ public class UserServiceImpl implements UserService {
 
         return userResponse;
     }
+
+    @Override
+    public void changePassword(final ChangePasswordRequest changePasswordRequest) {
+        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+        var userEntity = usersRepository.findById(signedInUser.getId())
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        if (!encoder.matches(changePasswordRequest.getOldPassword(), userEntity.getPassword())) {
+            throw new BlogRuntimeException(ErrorCode.PASSWORD_DOES_NOT_MATCH);
+        }
+        if (!changePasswordRequest.getNewPassword().equals(changePasswordRequest.getConfirmPassword())) {
+            throw new BlogRuntimeException(ErrorCode.PASSWORD_DOES_NOT_MATCH);
+        }
+        userEntity.setPassword(encoder.encode(changePasswordRequest.getNewPassword()));
+        usersRepository.save(userEntity);
+    }
+
 
     @Override
     public UserResponse findUserById(final UUID id) {

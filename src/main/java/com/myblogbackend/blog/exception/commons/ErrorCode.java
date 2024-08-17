@@ -13,6 +13,8 @@ public enum ErrorCode implements CommonErrorCode {
     COULD_NOT_FOUND(HttpStatus.NOT_FOUND, "Could not found"),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "Could not found comment"),
     INVALID_OPERATION(HttpStatus.BAD_REQUEST, "You cannot follow yourself"),
+    PASSWORD_DOES_NOT_MATCH(HttpStatus.UNAUTHORIZED, "Password does not match"),
+
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "error.could not send email");
     private final HttpStatus status;
     private final String message;

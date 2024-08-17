@@ -4,6 +4,7 @@ import com.myblogbackend.blog.config.security.CurrentUser;
 import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.controllers.route.UserRoutes;
+import com.myblogbackend.blog.request.ChangePasswordRequest;
 import com.myblogbackend.blog.request.LogOutRequest;
 import com.myblogbackend.blog.request.UserProfileRequest;
 import com.myblogbackend.blog.response.ApiResponse;
@@ -44,6 +45,15 @@ public class UserController {
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(userProfile)
+                .build();
+    }
+
+    @PutMapping("/users/changePassWord")
+    public ResponseEntity<?> changePassWord(@RequestBody @Valid final ChangePasswordRequest changePasswordRequest) {
+        userService.changePassword(changePasswordRequest);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setMessage("User change password successfully!")
                 .build();
     }
 
