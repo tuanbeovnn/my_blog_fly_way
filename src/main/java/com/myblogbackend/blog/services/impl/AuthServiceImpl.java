@@ -22,6 +22,7 @@ import com.myblogbackend.blog.repositories.UserTokenRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.DeviceInfoRequest;
 import com.myblogbackend.blog.request.ExchangeTokenRequest;
+import com.myblogbackend.blog.request.ForgotPasswordRequest;
 import com.myblogbackend.blog.request.LoginFormOutboundRequest;
 import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.request.SignUpFormRequest;
@@ -60,6 +61,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.myblogbackend.blog.enums.NotificationType.EMAIL_FORGOT_PASSWORD;
 import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_CONFIRMATION;
 import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 
@@ -96,6 +98,7 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final OutboundIdentityClient outboundIdentityClient;
     private final OutboundUserClient outboundUserClient;
+
 
     public AuthServiceImpl(final UsersRepository usersRepository, final AuthenticationManager authenticationManager,
                            final JwtProvider jwtProvider, final UserDeviceRepository userDeviceRepository,
@@ -186,6 +189,8 @@ public class AuthServiceImpl implements AuthService {
         var exp = 0;
         if (notificationType.equals(EMAIL_REGISTRATION_CONFIRMATION)) {
             exp = 15;
+        } else if (notificationType.equals(EMAIL_FORGOT_PASSWORD)) {
+            exp = 20;
         }
         UserVerificationTokenEntity myToken = UserVerificationTokenEntity.builder()
                 .verificationToken(token)
@@ -220,6 +225,36 @@ public class AuthServiceImpl implements AuthService {
                 .refreshToken(refreshTokenEntity.getToken())
                 .expiryDuration(jwtProvider.getExpiryDuration())
                 .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void forgotPassword(final ForgotPasswordRequest forgotPasswordDto) {
+        UserEntity userEntity = checkValidUserLogin(forgotPasswordDto.getEmail());
+        if (!userEntity.getActive()) {
+            logger.info("Sending activation email to '{}'", userEntity);
+            var newPassword = UUID.randomUUID().toString().substring(0, 8);
+            userEntity.setPassword(encoder.encode(newPassword));
+            UserEntity result = usersRepository.save(userEntity);
+            createVerificationToken(result, newPassword, EMAIL_FORGOT_PASSWORD);
+            try {
+                mailStrategy.sendForgotPasswordEmail(result, newPassword);
+            } catch (Exception e) {
+                // Roll back the transaction if email sending fails
+                logger.error("Failed to send activation email", e);
+                throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
+            }
+        }
+    }
+
+    private UserEntity checkValidUserLogin(final String forgotPasswordDto) {
+        UserEntity userEntity = usersRepository
+                .findByEmail(forgotPasswordDto)
+                .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User not found."));
+        if (!userEntity.getProvider().equals(OAuth2Provider.LOCAL)) {
+            throw new RuntimeException("Email already existed with sign in by oauth2 method!");
+        }
+        return userEntity;
     }
 
     private UserEntity createNewUser(final String email, final String name) {

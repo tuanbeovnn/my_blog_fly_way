@@ -10,4 +10,7 @@ public interface MailStrategy {
     @Async
     void sendActivationEmail(UserEntity user, String token) throws TemplateException, IOException;
 
+
+    @Async
+    void sendForgotPasswordEmail(UserEntity user, String password) throws TemplateException, IOException;
 }

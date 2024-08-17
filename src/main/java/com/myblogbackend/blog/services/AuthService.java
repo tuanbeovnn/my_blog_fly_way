@@ -2,6 +2,7 @@ package com.myblogbackend.blog.services;
 
 import com.myblogbackend.blog.enums.NotificationType;
 import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.request.ForgotPasswordRequest;
 import com.myblogbackend.blog.request.LoginFormOutboundRequest;
 import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.request.SignUpFormRequest;
@@ -25,6 +26,8 @@ public interface AuthService {
     void createVerificationToken(UserEntity userEntity, String token, NotificationType notificationType);
 
     JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest);
+
+    void forgotPassword(ForgotPasswordRequest forgotPasswordDto);
 
 
 }

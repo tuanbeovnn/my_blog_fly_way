@@ -2,6 +2,7 @@ package com.myblogbackend.blog.strategyPattern;
 
 import com.myblogbackend.blog.config.mail.EmailProperties;
 import com.myblogbackend.blog.models.UserEntity;
+import freemarker.template.TemplateException;
 import freemarker.template.TemplateNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -9,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -18,6 +20,7 @@ import java.util.Optional;
 public class GmailStrategy implements MailStrategy {
     private final Logger log = LogManager.getLogger(GmailStrategy.class);
     private static final String CONFIRMATION_TOKEN = "confirmationToken";
+    private static final String NEW_PASSWORD = "newPassword";
     private static final String UNKNOWN_EMAIL = "unknown";
     private final EmailProperties emailProperties;
     private final NotificationMessageMapper notificationMessageMapper;
@@ -36,6 +39,25 @@ public class GmailStrategy implements MailStrategy {
             // Log the error and throw a custom exception to indicate template not found
             log.error("Template not found for sending activation email to '{}'", user.getEmail(), e);
             throw new TemplateNotFoundException(emailProperties.getRegistrationConfirmation().getTemplate(), null,
+                    "Template not found for sending activation email to '" + user.getEmail() + "'");
+        } catch (Exception e) {
+            // Log other errors
+            logErrorSendingEmail(e, simpleMailMessage);
+        }
+    }
+
+    @Override
+    public void sendForgotPasswordEmail(final UserEntity user, final String password) throws TemplateException, IOException {
+        Map<String, Object> dataBindings = new java.util.HashMap<>(Map.of(NEW_PASSWORD, password));
+        var simpleMailMessage = notificationMessageMapper.toSimpleMailMessage(emailProperties.getForgotPasswordEmail());
+        simpleMailMessage.setTo(user.getEmail());
+        try {
+            javaEmailSendHandler.send(emailProperties.getForgotPasswordEmail().getTemplate(), simpleMailMessage, dataBindings);
+            log.info("Sending activation email to '{}'", user.getEmail());
+        } catch (TemplateNotFoundException e) {
+            // Log the error and throw a custom exception to indicate template not found
+            log.error("Template not found for sending activation email to '{}'", user.getEmail(), e);
+            throw new TemplateNotFoundException(emailProperties.getForgotPasswordEmail().getTemplate(), null,
                     "Template not found for sending activation email to '" + user.getEmail() + "'");
         } catch (Exception e) {
             // Log other errors

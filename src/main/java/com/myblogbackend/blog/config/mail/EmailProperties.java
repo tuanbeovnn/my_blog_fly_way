@@ -13,6 +13,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class EmailProperties {
 
     private EmailInfo registrationConfirmation;
+    private EmailInfo forgotPasswordEmail;
 
     @Getter
     @AllArgsConstructor
