@@ -15,6 +15,7 @@ public class UserResponse {
     private UUID id;
     private String email;
     private String name;
+    private String userName;
     private Long followers = 0L;
     private List<UserFollowingResponse> usersFollowing = new ArrayList<>();
     private ProfileResponseDTO profile;

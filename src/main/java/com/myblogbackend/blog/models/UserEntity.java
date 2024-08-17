@@ -53,6 +53,9 @@ public class UserEntity extends BaseEntity {
     @Column
     private String name;
 
+    @Column
+    private String userName;
+
     @Column(nullable = false)
     private Boolean active;
 

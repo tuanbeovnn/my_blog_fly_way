@@ -61,6 +61,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_CONFIRMATION;
+import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -135,6 +136,7 @@ public class AuthServiceImpl implements AuthService {
         newUser.setIsPending(true);
         newUser.setFollowers(0L);
         newUser.setName(signUpRequest.getName());
+        newUser.setUserName(splitFromEmail(signUpRequest.getEmail()));
         newUser.setProvider(OAuth2Provider.LOCAL);
         newUser.setRoles(roles);
 
@@ -230,6 +232,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(email)
                 .followers(0L)
                 .name(name)
+                .userName(splitFromEmail(email))
                 .active(false)
                 .isPending(false)
                 .roles(roles)
