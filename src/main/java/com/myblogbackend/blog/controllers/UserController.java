@@ -21,16 +21,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
+import static com.myblogbackend.blog.controllers.route.PostRoutes.PUBLIC_URL;
 
 
 @RestController
-@RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION + UserRoutes.BASE_URL)
+@RequestMapping(CommonRoutes.BASE_API + CommonRoutes.VERSION)
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
 
-    @GetMapping("/me")
+    @GetMapping(UserRoutes.BASE_URL + "/me")
     public ResponseEntity<?> getCurrentUser() {
         UserResponse userProfile = userService.aboutMe();
         return ResponseEntityBuilder
@@ -39,16 +39,16 @@ public class UserController {
                 .build();
     }
 
-    @GetMapping("/byID/{id}")
-    public ResponseEntity<?> getUserProfileById(final @PathVariable(value = "id") UUID id) {
-        UserResponse userProfile = userService.findUserById(id);
+    @GetMapping(PUBLIC_URL + UserRoutes.BASE_URL + "/byUserName/{userName}")
+    public ResponseEntity<?> getUserProfileByUserName(final @PathVariable(value = "userName") String userName) {
+        UserResponse userProfile = userService.findUserByUserName(userName);
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(userProfile)
                 .build();
     }
 
-    @PutMapping("/users/changePassWord")
+    @PutMapping(UserRoutes.BASE_URL + "/users/changePassWord")
     public ResponseEntity<?> changePassWord(@RequestBody @Valid final ChangePasswordRequest changePasswordRequest) {
         userService.changePassword(changePasswordRequest);
         return ResponseEntityBuilder
@@ -57,7 +57,7 @@ public class UserController {
                 .build();
     }
 
-    @PutMapping("/user-update")
+    @PutMapping(UserRoutes.BASE_URL + "/user-update")
     public ResponseEntity<?> updateUserProfile(final @RequestBody UserProfileRequest userProfileRequest) {
         UserResponse userProfile = userService.updateProfile(userProfileRequest);
         return ResponseEntityBuilder
@@ -66,7 +66,7 @@ public class UserController {
                 .build();
     }
 
-    @PutMapping("/logout")
+    @PutMapping(UserRoutes.BASE_URL + "/logout")
     public ResponseEntity<ApiResponse> logoutUser(final @CurrentUser UserPrincipal currentUser,
                                                   final @Valid @RequestBody LogOutRequest logOutRequest) {
         userService.logoutUser(logOutRequest, currentUser);

@@ -139,6 +139,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserResponse findUserByUserName(final String userName) {
+        var userEntity = usersRepository.findByUserName(userName)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        logger.info("Find user with user name successfully: {}", userName);
+        var followers = followersRepository.findByFollowedUserId(userEntity.getId());
+        var usersFollowing = getUserFollowingResponses(followers);
+        var userResponse = userMapper.toUserDTO(userEntity);
+        userResponse.setUsersFollowing(usersFollowing);
+
+        logger.info("Find user with user name successfully: {}", userName);
+        return getUserResponse(userEntity, userResponse);
+    }
+
+    @Override
     public UserResponse aboutMe() {
         var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
         var userEntity = getUserById(signedInUser.getId());

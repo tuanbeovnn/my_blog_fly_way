@@ -13,6 +13,8 @@ public interface UserService {
 
     UserResponse findUserById(UUID id);
 
+    UserResponse findUserByUserName(String userName);
+
     UserResponse aboutMe();
 
     UserResponse updateProfile(UserProfileRequest userProfileRequest);
