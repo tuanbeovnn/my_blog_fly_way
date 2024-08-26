@@ -180,8 +180,19 @@ public class UserServiceImpl implements UserService {
                             .build())
                     .build();
             userResponse.setProfile(profileResponse);
+        } else {
+            userResponse.setProfile(ProfileResponseDTO.builder()
+                    .bio("")
+                    .website("")
+                    .location("")
+                    .avatarUrl("")
+                    .social(SocialLinksDTO.builder()
+                            .twitter("")
+                            .linkedin("")
+                            .github("")
+                            .build())
+                    .build());
         }
-
         return userResponse;
     }
 
