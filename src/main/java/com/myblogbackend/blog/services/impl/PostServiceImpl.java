@@ -31,6 +31,8 @@ import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.UserFollowingResponse;
 import com.myblogbackend.blog.response.UserLikedPostResponse;
 import com.myblogbackend.blog.response.UserResponse;
+import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
+import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
 import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.specification.PostSpec;
 import com.myblogbackend.blog.utils.GsonUtils;
@@ -310,17 +312,53 @@ public class PostServiceImpl implements PostService {
         postResponse.setCreatedBy(userResponse);
         return postResponse;
     }
+
     private int countCommentByPostId(final PostEntity post) {
         return commentRepository.countByPostIdAndStatusTrueOrderByCreatedDateDesc(post.getId());
     }
+
     private UserResponse getUserResponse(final UserEntity creator, final UUID userId) {
         if (creator == null) {
             return null;
         }
         var userResponse = userMapper.toUserDTO(creator);
         userResponse.setFollowType(getUserFollowingType(userId, creator.getId()));
+        var userProfile = getUserResponse(creator, userResponse);
+        userResponse.setProfile(userProfile.getProfile());
         return userResponse;
     }
+
+    private static UserResponse getUserResponse(final UserEntity userEntity, final UserResponse userResponse) {
+        var profileEntity = userEntity.getProfile();
+        if (profileEntity != null) {
+            var profileResponse = ProfileResponseDTO.builder()
+                    .bio(profileEntity.getBio())
+                    .website(profileEntity.getWebsite())
+                    .location(profileEntity.getLocation())
+                    .avatarUrl(profileEntity.getAvatarUrl())
+                    .social(SocialLinksDTO.builder()
+                            .twitter(profileEntity.getSocial().getTwitter())
+                            .linkedin(profileEntity.getSocial().getLinkedin())
+                            .github(profileEntity.getSocial().getGithub())
+                            .build())
+                    .build();
+            userResponse.setProfile(profileResponse);
+        } else {
+            userResponse.setProfile(ProfileResponseDTO.builder()
+                    .bio("")
+                    .website("")
+                    .location("")
+                    .avatarUrl("")
+                    .social(SocialLinksDTO.builder()
+                            .twitter("")
+                            .linkedin("")
+                            .github("")
+                            .build())
+                    .build());
+        }
+        return userResponse;
+    }
+
 
     private FollowType getUserFollowingType(final UUID followerId, final UUID followedUserId) {
         if (followerId == null || followedUserId == null) {
