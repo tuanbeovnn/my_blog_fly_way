@@ -48,7 +48,7 @@ public class UserController {
                 .build();
     }
 
-    @PutMapping(UserRoutes.BASE_URL + "/users/changePassWord")
+    @PutMapping(UserRoutes.BASE_URL + "/changePassWord")
     public ResponseEntity<?> changePassWord(@RequestBody @Valid final ChangePasswordRequest changePasswordRequest) {
         userService.changePassword(changePasswordRequest);
         return ResponseEntityBuilder
