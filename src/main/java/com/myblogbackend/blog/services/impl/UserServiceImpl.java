@@ -1,6 +1,7 @@
 package com.myblogbackend.blog.services.impl;
 
 import com.myblogbackend.blog.config.security.UserPrincipal;
+import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
 import com.myblogbackend.blog.exception.UserLogoutException;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
@@ -146,10 +147,22 @@ public class UserServiceImpl implements UserService {
         var followers = followersRepository.findByFollowedUserId(userEntity.getId());
         var usersFollowing = getUserFollowingResponses(followers);
         var userResponse = userMapper.toUserDTO(userEntity);
+        var userLoggedUUid = getUserId();
+        var followType = getUserFollowingType(userLoggedUUid, userEntity.getId());
+        userResponse.setFollowType(followType);
         userResponse.setUsersFollowing(usersFollowing);
-
-        logger.info("Find user with user name successfully: {}", userName);
+        logger.info("User response generated successfully for user name: {}", userName);
         return getUserResponse(userEntity, userResponse);
+    }
+
+    private UUID getUserId() {
+        try {
+            var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+            return signedInUser.getId();
+        } catch (Exception e) {
+            logger.info("No user logged in, proceeding without user context");
+            return null;
+        }
     }
 
     @Override
@@ -194,6 +207,15 @@ public class UserServiceImpl implements UserService {
                     .build());
         }
         return userResponse;
+    }
+
+    private FollowType getUserFollowingType(final UUID followerId, final UUID followedUserId) {
+        if (followerId == null || followedUserId == null) {
+            return FollowType.UNFOLLOW;
+        }
+        return followersRepository.findByFollowerIdAndFollowedUserId(followerId, followedUserId)
+                .map(FollowersEntity::getType)
+                .orElse(FollowType.UNFOLLOW);
     }
 
     private @NotNull List<UserFollowingResponse> getUserFollowingResponses(final List<FollowersEntity> followers) {
