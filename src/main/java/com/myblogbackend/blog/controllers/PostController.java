@@ -79,12 +79,14 @@ public class PostController {
                                                    @RequestParam(value = "tags", required = false) final Set<PostTag> tags,
                                                    @RequestParam(value = "categoryId", required = false) final UUID categoryId,
                                                    @RequestParam(value = "userId", required = false) final UUID userId,
+                                                   @RequestParam(value = "userName", required = false) final String userName,
                                                    @RequestParam(defaultValue = "createdDate") final String sortField,
                                                    @RequestParam(defaultValue = "DESC") final String sortDirection) {
 
         var filter = PostFilterRequest.builder()
                 .categoryId(categoryId)
                 .userId(userId)
+                .userName(userName)
                 .tags(tags)
                 .sortField(sortField)
                 .sortDirection(sortDirection)

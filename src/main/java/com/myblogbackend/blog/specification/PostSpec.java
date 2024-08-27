@@ -30,6 +30,7 @@ public class PostSpec {
                 .where(hasTags(postFilterRequest.getTags()))
                 .and(hasCategoryId(postFilterRequest.getCategoryId()))
                 .and(hasUserId(postFilterRequest.getUserId()))
+                .and(hasUserName(postFilterRequest.getUserName()))
                 .and(hasStatusTrue());
     }
 
@@ -72,6 +73,15 @@ public class PostSpec {
         return (root, query, criteriaBuilder) -> {
             Join<PostEntity, UserEntity> userJoin = root.join(USER);
             return criteriaBuilder.equal(userJoin.get(ID), userId);
+        };
+    }
+    private static Specification<PostEntity> hasUserName(final String userName) {
+        if (userName == null) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> {
+            Join<PostEntity, UserEntity> userJoin = root.join(USER);
+            return criteriaBuilder.equal(userJoin.get("userName"), userName);
         };
     }
 
