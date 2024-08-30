@@ -61,24 +61,24 @@ public class CommentDelegateImplTests {
 
     @Test
     public void givenValidCommentData_whenCreatingNewComment_thenReturnComment() throws Exception {
-        MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class);
-            jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo).thenReturn(Optional.of(userPrincipal()));
+        try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class)) {
 
-//            when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
-//            when(postRepository.findById(any(UUID.class))).thenReturn(Optional.of(makePostForSaving("Title B", "Description B")));
+            jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo).thenReturn(Optional.of(userPrincipal()));
+            when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+            when(postRepository.findById(any(UUID.class))).thenReturn(Optional.of(makePostForSaving("Title B", "Description B")));
 
             CommentEntity savedCommentEntity = makeCommentForSaving("this post is great");
-            when(commentRepository.save(any(CommentEntity.class))).thenReturn(savedCommentEntity);
+            when(commentRepository.saveAndFlush(any(CommentEntity.class))).thenReturn(savedCommentEntity);
 
             var expectedCommentResponse = commentMapper.toCommentResponse(savedCommentEntity);
 
             mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
-                        .content(objectMapper.writeValueAsString(prepareCommentRequest()))
-                        .contentType(MediaType.APPLICATION_JSON))
+                            .content(objectMapper.writeValueAsString(prepareCommentRequest()))
+                            .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.details.id").value(expectedCommentResponse.getId().toString()))
                     .andExpect(jsonPath("$.details.content").value(expectedCommentResponse.getContent()));
-
+        }
     }
 
     @Test
@@ -88,8 +88,8 @@ public class CommentDelegateImplTests {
         commentRequest.setContent("");
 
         mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
-                .content(objectMapper.writeValueAsString(commentRequest))
-                .contentType(MediaType.APPLICATION_JSON))
+                        .content(objectMapper.writeValueAsString(commentRequest))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details.content").value("Content cannot be blank"));
 
