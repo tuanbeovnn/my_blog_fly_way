@@ -8,6 +8,7 @@ import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -24,8 +25,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.myblogbackend.blog.comment.CommentTestApi.makeCommentForSaving;
-import static com.myblogbackend.blog.comment.CommentTestApi.prepareCommentRequest;
+import static com.myblogbackend.blog.comment.CommentTestApi.*;
 import static com.myblogbackend.blog.login.LoginTestApi.userEntityBasicInfo;
 import static com.myblogbackend.blog.login.LoginTestApi.userPrincipal;
 import static com.myblogbackend.blog.post.PostTestApi.makePostForSaving;
@@ -40,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 public class CommentDelegateImplTests {
     private static final String API_URL = "/api/v1/comments";
+    private static final String API_URL_UPDATE = "/api/v1/comments/{id}";
 
     @Autowired
     private MockMvc mockMvc;
@@ -58,6 +59,12 @@ public class CommentDelegateImplTests {
 
     @Autowired
     private CommentMapper commentMapper;
+
+    private  UUID commentId;
+    @BeforeEach
+    void setUp() {
+         commentId = UUID.randomUUID();
+    }
 
     @Test
     public void givenValidCommentData_whenCreatingNewComment_thenReturnComment() throws Exception {
@@ -83,16 +90,71 @@ public class CommentDelegateImplTests {
 
     @Test
     public void givenEmtpyPostId_whenCreatingNewComment_thenReturnsBadRequestWithValidationErrorMessage() throws Exception {
+        try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class)) {
 
-        var commentRequest = prepareCommentRequest();
-        commentRequest.setContent("");
+            jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo).thenReturn(Optional.of(userPrincipal()));
+            when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+            when(postRepository.findById(any(UUID.class))).thenReturn(Optional.of(makePostForSaving("Title B", "Description B")));
 
-        mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
-                        .content(objectMapper.writeValueAsString(commentRequest))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.details.content").value("Content cannot be blank"));
+            var commentRequest = prepareCommentRequest();
+            commentRequest.setContent("");
 
+            mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
+                            .content(objectMapper.writeValueAsString(commentRequest))
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.details.content").value("Content cannot be blank"));
+
+        }
     }
 
+        @Test
+        public void givenInvalidPostId_whenCreatingNewComment_thenReturnsNotFound() throws Exception {
+            try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class)) {
+                jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo).thenReturn(Optional.of(userPrincipal()));
+                when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+
+                // Simulate non-existing postId by returning an empty Optional
+                when(postRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+                var commentRequest = prepareCommentRequest();
+
+                mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
+                                .content(objectMapper.writeValueAsString(commentRequest))
+                                .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.message").value("Could not find the Id"));
+            }
+        }
+
+        @Test
+        public void givenCommentUpdate_whenUpdatingComment_thenReturnUpdatedComment() throws Exception {
+            try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class)) {
+                jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo).thenReturn(Optional.of(userPrincipal()));
+                when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+                when(postRepository.findById(any(UUID.class))).thenReturn(Optional.of(makePostForSaving("Title B", "Description B")));
+                when(commentRepository.findById(commentId)).thenReturn(Optional.of(exsitingCommentEntity()));
+
+                var updateComment = prepareCommentRequest();
+                updateComment.setContent("Update comment");
+
+                var updateCommentAfterSave = makeCommentForSaving("Update comment");
+
+                when(commentRepository.saveAndFlush(any(CommentEntity.class))).thenReturn(updateCommentAfterSave);
+
+                var expectedCommentResponse = commentMapper.toCommentResponse(updateCommentAfterSave);
+
+                mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/comments/{commentId}", commentId)
+                                .content(objectMapper.writeValueAsString(updateComment))
+                                .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.details.content").value(expectedCommentResponse.getContent()));
+            }
+
+            }
+
+
+
+
 }
+

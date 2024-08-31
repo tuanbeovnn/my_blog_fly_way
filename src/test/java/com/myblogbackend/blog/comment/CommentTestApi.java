@@ -35,4 +35,14 @@ public final class CommentTestApi {
                 makeCommentForSaving("what a detailed post")
                 );
     }
+
+    public static CommentEntity exsitingCommentEntity()
+    {
+        return CommentEntity.builder()
+                .id(UUID.fromString("14ea3eb3-3d78-441d-b8f7-1be52e3861a4"))
+                .content("existing comment entity")
+                .post(makePostForSaving("Title B", "Description B"))
+                .status(true)
+                .build();
+    }
 }

@@ -28,7 +28,7 @@ public class CommentController {
     private final CommentService commentService;
 
     @PostMapping(CommonRoutes.VERSION + CommentRoutes.BASE_URL)
-    public ResponseEntity<?> createComment(@RequestBody final CommentRequest commentRequest) {
+    public ResponseEntity<?> createComment(@Valid @RequestBody final CommentRequest commentRequest) {
         var commentResponse = commentService.createComment(commentRequest);
         return ResponseEntityBuilder
                 .getBuilder()
