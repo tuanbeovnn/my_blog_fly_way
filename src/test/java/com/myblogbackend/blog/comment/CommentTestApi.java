@@ -8,6 +8,7 @@ import javax.xml.stream.events.Comment;
 import java.util.List;
 import java.util.UUID;
 
+import static com.myblogbackend.blog.login.LoginTestApi.userEntityBasicInfo;
 import static com.myblogbackend.blog.post.PostTestApi.makePostForSaving;
 
 public final class CommentTestApi {
@@ -43,6 +44,7 @@ public final class CommentTestApi {
                 .content("existing comment entity")
                 .post(makePostForSaving("Title B", "Description B"))
                 .status(true)
+                .user(userEntityBasicInfo())
                 .build();
     }
 }

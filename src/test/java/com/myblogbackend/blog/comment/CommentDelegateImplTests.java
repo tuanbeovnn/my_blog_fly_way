@@ -8,7 +8,6 @@ import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -59,12 +58,6 @@ public class CommentDelegateImplTests {
 
     @Autowired
     private CommentMapper commentMapper;
-
-    private  UUID commentId;
-    @BeforeEach
-    void setUp() {
-         commentId = UUID.randomUUID();
-    }
 
     @Test
     public void givenValidCommentData_whenCreatingNewComment_thenReturnComment() throws Exception {
@@ -130,18 +123,19 @@ public class CommentDelegateImplTests {
         @Test
         public void givenCommentUpdate_whenUpdatingComment_thenReturnUpdatedComment() throws Exception {
             try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class)) {
+                var  commentId = UUID.randomUUID();
                 jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo).thenReturn(Optional.of(userPrincipal()));
                 when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
                 when(postRepository.findById(any(UUID.class))).thenReturn(Optional.of(makePostForSaving("Title B", "Description B")));
                 when(commentRepository.findById(commentId)).thenReturn(Optional.of(exsitingCommentEntity()));
-
+                // create an update request object
                 var updateComment = prepareCommentRequest();
                 updateComment.setContent("Update comment");
-
+                // mock object after saving
                 var updateCommentAfterSave = makeCommentForSaving("Update comment");
-
-                when(commentRepository.saveAndFlush(any(CommentEntity.class))).thenReturn(updateCommentAfterSave);
-
+                // save update object
+                when(commentRepository.save(any(CommentEntity.class))).thenReturn(updateCommentAfterSave);
+                // response object after saving
                 var expectedCommentResponse = commentMapper.toCommentResponse(updateCommentAfterSave);
 
                 mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/comments/{commentId}", commentId)
@@ -150,11 +144,6 @@ public class CommentDelegateImplTests {
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.details.content").value(expectedCommentResponse.getContent()));
             }
-
-            }
-
-
-
-
+    }
 }
 
