@@ -55,4 +55,14 @@ public class CategoryController {
         categoryService.updateCategoryStatus(id, status);
         return ResponseEntity.ok("Update category status successfully");
     }
+
+    @GetMapping(PUBLIC_URL + CategoryRoutes.BASE_URL + "/get-by-name")
+    public ResponseEntity<?> getCategoryByName(@RequestParam(name = "categoryName") final String categoryName) {
+        var categoryResponse = categoryService.getCategoryByName(categoryName);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(categoryResponse)
+                .build();
+    }
+
 }

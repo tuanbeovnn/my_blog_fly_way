@@ -86,6 +86,15 @@ public class CategoryServiceImpl implements CategoryService {
         logger.info("Update category and related post statuses successfully");
     }
 
+    @Override
+    public CategoryResponse getCategoryByName(final String categoryName) {
+        var category = categoryRepository
+                .findByName(categoryName)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        logger.info("Find By name {} category successfully", categoryName);
+        return categoryMapper.toCategoryResponse(category);
+    }
+
     private PageList<CategoryResponse> buildPaginatingResponse(final List<CategoryResponse> responses,
                                                                final int pageSize,
                                                                final int currentPage,
