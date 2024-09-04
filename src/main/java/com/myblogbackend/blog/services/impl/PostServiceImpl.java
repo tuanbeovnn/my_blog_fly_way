@@ -99,9 +99,12 @@ public class PostServiceImpl implements PostService {
         postEntity.setTags(tagEntities);
         var createdPost = postRepository.save(postEntity);
 
-        sendAMessageFromKafkaToNotificationService(userEntity, createdPost);
+//        sendAMessageFromKafkaToNotificationService(userEntity, createdPost);
         logger.info("Post was created with id: {}", createdPost.getId());
-        return postMapper.toPostResponse(createdPost);
+        var userResponse = getUserResponse(createdPost.getUser(), userEntity.getId());
+        var postResponse = postMapper.toPostResponse(createdPost);
+        postResponse.setCreatedBy(userResponse);
+        return postResponse;
 
     }
 
