@@ -56,6 +56,16 @@ public class PostSpec {
         };
     }
 
+    private static Specification<PostEntity> hasCategoryName(final UUID categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        return (root, query, criteriaBuilder) -> {
+            Join<PostEntity, CategoryEntity> categoryJoin = root.join(CATEGORY);
+            return criteriaBuilder.equal(categoryJoin.get(NAME), categoryId);
+        };
+    }
+
     private static Specification<PostEntity> hasTags(final Set<PostTag> tags) {
         if (tags == null || tags.isEmpty()) {
             return null;
@@ -75,6 +85,7 @@ public class PostSpec {
             return criteriaBuilder.equal(userJoin.get(ID), userId);
         };
     }
+
     private static Specification<PostEntity> hasUserName(final String userName) {
         if (userName == null) {
             return null;

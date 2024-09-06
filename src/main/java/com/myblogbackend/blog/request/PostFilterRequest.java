@@ -21,6 +21,7 @@ public class PostFilterRequest {
     private String title;
     private String content;
     private String shortDescription;
+    private String categoryName;
 
     private String sortField = "createdDate"; // Default sort field
     private String sortDirection = "DESC"; // Default sort direction
