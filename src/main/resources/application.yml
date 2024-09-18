@@ -3,11 +3,11 @@ spring:
         import: optional:classpath:.env[.properties]
     datasource:
         password: P@ssword*123
-        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
         username: dev
     flyway:
         password: P@ssword*123
-        url: jdbc:postgresql://nocng.id.vn:5432/blogs?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
         user: dev
     jpa:
         generate-ddl: true
@@ -22,9 +22,9 @@ spring:
         show-sql: true
     kafka:
         bootstrap-servers:
-            - http://nocng.id.vn:9192
-            - http://nocng.id.vn:9292
-            - http://nocng.id.vn:9392
+            - http://code4fun.xyz:9192
+            - http://code4fun.xyz:9292
+            - http://code4fun.xyz:9392
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.apache.kafka.common.serialization.StringSerializer

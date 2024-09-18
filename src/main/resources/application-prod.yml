@@ -3,11 +3,11 @@ spring:
         import: optional:classpath:.env[.properties]
     datasource:
         password: P@ssword*123
-        url: jdbc:postgresql://nocng.id.vn:5432/blogs_prod?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
         username: dev
     flyway:
         password: P@ssword*123
-        url: jdbc:postgresql://nocng.id.vn:5432/blogs_prod?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
         user: dev
     jpa:
         generate-ddl: true
@@ -22,9 +22,9 @@ spring:
         show-sql: false
     kafka:
         bootstrap-servers:
-            - http://nocng.id.vn:9192
-            - http://nocng.id.vn:9292
-            - http://nocng.id.vn:9392
+            - http://code4fun.xyz:9192
+            - http://code4fun.xyz:9292
+            - http://code4fun.xyz:9392
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -64,7 +64,7 @@ email:
         template: registration-confirmation-en.html
         subject: Registration Confirmation
         from: noreply@pezzie.com
-        base-url: http://nocng.id.vn:9091/api/v1/auth/registrationConfirm?token=%s
+        base-url: http://code4fun.xyz:9091/api/v1/auth/registrationConfirm?token=%s
     forgot-password-email:
         template: password-forgot.html
         subject: New Password
@@ -92,4 +92,4 @@ api:
 
 file:
     upload:
-        url: http://nocng.id.vn:8081
+        url: http://code4fun.xyz:8081
