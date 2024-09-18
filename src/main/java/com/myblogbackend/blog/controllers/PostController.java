@@ -77,14 +77,16 @@ public class PostController {
     public ResponseEntity<?> getAllPostByFiltering(@RequestParam(value = "offset", defaultValue = "0") final Integer offset,
                                                    @RequestParam(value = "limit", defaultValue = "9") final Integer limit,
                                                    @RequestParam(value = "tags", required = false) final Set<PostTag> tags,
-                                                   @RequestParam(value = "categoryId", required = false) final UUID categoryId,
+                                                   @RequestParam(value = "categoryName", required = false) final String categoryName,
                                                    @RequestParam(value = "userId", required = false) final UUID userId,
+                                                   @RequestParam(value = "userName", required = false) final String userName,
                                                    @RequestParam(defaultValue = "createdDate") final String sortField,
                                                    @RequestParam(defaultValue = "DESC") final String sortDirection) {
 
         var filter = PostFilterRequest.builder()
-                .categoryId(categoryId)
+                .categoryName(categoryName)
                 .userId(userId)
+                .userName(userName)
                 .tags(tags)
                 .sortField(sortField)
                 .sortDirection(sortDirection)

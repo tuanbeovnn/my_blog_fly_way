@@ -19,4 +19,5 @@ public class UserProfileRequest {
     private String twitter;
     private String linkedin;
     private String github;
+    private String name;
 }

@@ -67,6 +67,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse updateProfile(final UserProfileRequest updateProfileRequest) {
         var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
         var userEntity = getUserById(signedInUser.getId());
+        userEntity.setName(updateProfileRequest.getName());
 
         var profileEntity = userEntity.getProfile();
         if (profileEntity == null) {
@@ -91,6 +92,7 @@ public class UserServiceImpl implements UserService {
         profileEntity.setSocial(socialLinks);
 
         profileRepository.save(profileEntity);
+        usersRepository.save(userEntity);
 
         // Return the updated user profile information
         var userResponse = userMapper.toUserDTO(userEntity);

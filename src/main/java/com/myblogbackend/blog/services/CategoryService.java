@@ -15,4 +15,6 @@ public interface CategoryService {
     CategoryResponse updateCategory(UUID id, CategoryRequest categoryRequest);
 
     void updateCategoryStatus(UUID id, Boolean status);
+
+    CategoryResponse getCategoryByName(String categoryName);
 }
