@@ -60,7 +60,11 @@ spring:
 oauth2:
     authorizedRedirectUris:
         - http://localhost:3000/oauth2/
-
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,metrics,prometheus
 # Email Sender
 email:
     registration-confirmation:

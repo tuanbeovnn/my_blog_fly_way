@@ -73,6 +73,7 @@ public class WebSecurityConfig {
                     auth.requestMatchers("/api/v1/auth/**").permitAll();
                     auth.requestMatchers("/api/v1/public/**").permitAll();
                     auth.requestMatchers("/api/v2/public/**").permitAll();
+                    auth.requestMatchers("/actuator/**").permitAll();
                     auth.requestMatchers("/minio/**").permitAll();
                     auth.requestMatchers("/api/v1/notifications/**").permitAll();
                     auth.requestMatchers("/auth/**", "/oauth2/**").permitAll();

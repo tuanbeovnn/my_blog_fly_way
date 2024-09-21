@@ -51,7 +51,11 @@ spring:
             max-request-size: 25MB
     profiles:
         active: dev
-
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,metrics,prometheus
 # Email Sender
 email:
     registration-confirmation:
