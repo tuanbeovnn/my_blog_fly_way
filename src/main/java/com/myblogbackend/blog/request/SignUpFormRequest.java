@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -11,6 +12,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = false)
 public class SignUpFormRequest {
     @NotBlank(message = "The username is required.")
     @Size(min = 3, max = 20, message = "The username must be from 3 to 20 characters.")

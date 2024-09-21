@@ -9,6 +9,9 @@ spring:
         password: P@ssword*123
         url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
         user: dev
+    jackson:
+        deserialization:
+            fail-on-unknown-properties: true
     jpa:
         generate-ddl: true
         hibernate:
