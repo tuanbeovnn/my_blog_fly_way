@@ -1,7 +1,6 @@
 package com.myblogbackend.blog.request;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.myblogbackend.blog.enums.PostTag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -20,7 +19,6 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = false)
 public class PostRequest {
     @NotBlank(message = "Title info cannot be blank")
     private String title;
