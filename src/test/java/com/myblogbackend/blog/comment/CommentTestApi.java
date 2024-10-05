@@ -2,9 +2,7 @@ package com.myblogbackend.blog.comment;
 
 import com.myblogbackend.blog.models.CommentEntity;
 import com.myblogbackend.blog.request.CommentRequest;
-import com.myblogbackend.blog.request.PostRequest;
 
-import javax.xml.stream.events.Comment;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,8 +10,7 @@ import static com.myblogbackend.blog.login.LoginTestApi.userEntityBasicInfo;
 import static com.myblogbackend.blog.post.PostTestApi.makePostForSaving;
 
 public final class CommentTestApi {
-    public static CommentEntity makeCommentForSaving(final String content)
-    {
+    public static CommentEntity makeCommentForSaving(final String content) {
         return CommentEntity.builder()
                 .id(UUID.fromString("14ea3eb3-3d78-441d-b8f7-1be52e3861a4"))
                 .content(content)
@@ -34,11 +31,10 @@ public final class CommentTestApi {
         return List.of(
                 makeCommentForSaving("this post is great"),
                 makeCommentForSaving("what a detailed post")
-                );
+        );
     }
 
-    public static CommentEntity exsitingCommentEntity()
-    {
+    public static CommentEntity exsitingCommentEntity() {
         return CommentEntity.builder()
                 .id(UUID.fromString("14ea3eb3-3d78-441d-b8f7-1be52e3861a4"))
                 .content("existing comment entity")
