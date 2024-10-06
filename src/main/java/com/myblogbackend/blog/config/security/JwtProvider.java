@@ -90,14 +90,11 @@ public class JwtProvider {
 
     private Key getKey(final TokenType type) {
         logger.info("---------- getKey ----------");
-        switch (type) {
-            case ACCESS_TOKEN:
-                return Keys.hmacShaKeyFor(Decoders.BASE64.decode(accessKey));
-            case REFRESH_TOKEN:
-                return Keys.hmacShaKeyFor(Decoders.BASE64.decode(refreshKey));
-            default:
-                throw new InvalidDataException("Invalid token type");
-        }
+        return switch (type) {
+            case ACCESS_TOKEN -> Keys.hmacShaKeyFor(Decoders.BASE64.decode(accessKey));
+            case REFRESH_TOKEN -> Keys.hmacShaKeyFor(Decoders.BASE64.decode(refreshKey));
+            default -> throw new InvalidDataException("Invalid token type");
+        };
     }
 
     public String getUserNameFromJwtToken(final String token, final TokenType type) {

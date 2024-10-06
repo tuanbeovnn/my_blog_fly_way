@@ -32,7 +32,6 @@ import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.AuthService;
 import com.myblogbackend.blog.strategyPattern.MailFactory;
 import com.myblogbackend.blog.strategyPattern.MailStrategy;
-import freemarker.template.TemplateException;
 import lombok.experimental.NonFinal;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -122,7 +121,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public UserResponse registerUser(final SignUpFormRequest signUpRequest) throws TemplateException, IOException {
+    public UserResponse registerUser(final SignUpFormRequest signUpRequest) {
         var userEntityOpt = usersRepository.findByEmail(signUpRequest.getEmail());
         if (userEntityOpt.isPresent()) {
             logger.warn("Account already exists '{}'", userEntityOpt.get().getEmail());
