@@ -223,7 +223,6 @@ public class AuthServiceImpl implements AuthService {
         return JwtResponse.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshTokenEntity.getToken())
-                .expiryDuration(jwtProvider.getExpiryDuration())
                 .build();
     }
 
@@ -284,13 +283,12 @@ public class AuthServiceImpl implements AuthService {
         if (userEntity.getActive()) {
             throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
         }
-
         var authentication = authenticateUser(loginRequest);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        var jwtToken = jwtProvider.generateJwtToken(authentication);
+        var jwtToken = jwtProvider.generateJwtToken(userEntity);
         var refreshTokenEntity = createRefreshToken(loginRequest.getDeviceInfo(), userEntity);
-        return new JwtResponse(jwtToken, refreshTokenEntity.getToken(), jwtProvider.getExpiryDuration());
+        return new JwtResponse(jwtToken, refreshTokenEntity.getToken());
     }
 
 
@@ -308,7 +306,7 @@ public class AuthServiceImpl implements AuthService {
                 .map(UserDeviceEntity::getUser)
                 .map(jwtProvider::generateTokenFromUser)
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database.Please login again")));
-        return new JwtResponse(token.get(), tokenRefreshRequest.getRefreshToken(), jwtProvider.getExpiryDuration());
+        return new JwtResponse(token.get(), tokenRefreshRequest.getRefreshToken());
     }
 
     private Date calculateExpiryDate(final int expiryTimeInMinutes) {

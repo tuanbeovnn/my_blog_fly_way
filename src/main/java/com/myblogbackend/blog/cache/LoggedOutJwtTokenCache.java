@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.cache;
 
+import com.myblogbackend.blog.enums.TokenType;
 import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
 import com.myblogbackend.blog.config.security.JwtProvider;
 import net.jodah.expiringmap.ExpiringMap;
@@ -33,7 +34,7 @@ public class LoggedOutJwtTokenCache {
             logger.info(String.format("Log out token for user [%s] is already present in the cache", event.getUserEmail()));
 
         } else {
-            Date tokenExpiryDate = tokenProvider.getTokenExpiryFromJWT(token);
+            var tokenExpiryDate = tokenProvider.getTokenExpiryFromJWT(token, TokenType.ACCESS_TOKEN);
             long ttlForToken = getTTLForToken(tokenExpiryDate);
             logger.info(String.format("Logout token cache set for [%s] with a TTL of [%s] seconds. Token is due expiry at [%s]",
                     event.getUserEmail(), ttlForToken, tokenExpiryDate));

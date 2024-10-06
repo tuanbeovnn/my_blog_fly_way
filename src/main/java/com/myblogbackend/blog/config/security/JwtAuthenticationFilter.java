@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.config.security;
 
+import com.myblogbackend.blog.enums.TokenType;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,6 +18,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger logger = LogManager.getLogger(JwtAuthenticationFilter.class);
@@ -28,21 +30,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UserDetailsServiceImpl userDetailsService;
 
     @Override
-    protected void doFilterInternal(final @NotNull HttpServletRequest request,
-                                    final @NotNull HttpServletResponse response,
-                                    final @NotNull FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(@NotNull final HttpServletRequest request,
+                                    @NotNull final HttpServletResponse response,
+                                    @NotNull final FilterChain filterChain) throws ServletException, IOException {
         try {
-            String jwt = getJwt(request);
-            if (jwt != null && tokenProvider.validateJwtToken(jwt, request)) {
-                String username = tokenProvider.getUserNameFromJwtToken(jwt);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
+            getJwt(request).ifPresent(jwt -> {
+                if (tokenProvider.validateJwtToken(jwt, TokenType.ACCESS_TOKEN, request)) {
+                    String username = tokenProvider.getUserNameFromJwtToken(jwt, TokenType.ACCESS_TOKEN);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    setAuthentication(userDetails, request);
+                }
+            });
             filterChain.doFilter(request, response);
         } catch (ExpiredJwtException | BadCredentialsException ex) {
             request.setAttribute("exception", ex);
@@ -50,11 +48,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
-    private String getJwt(final HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.replace("Bearer ", "");
-        }
-        return null;
+    private Optional<String> getJwt(final HttpServletRequest request) {
+        return Optional.ofNullable(request.getHeader("Authorization"))
+                .filter(authHeader -> authHeader.startsWith("Bearer "))
+                .map(authHeader -> authHeader.replace("Bearer ", ""));
+    }
+
+    private void setAuthentication(final UserDetails userDetails, final HttpServletRequest request) {
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }

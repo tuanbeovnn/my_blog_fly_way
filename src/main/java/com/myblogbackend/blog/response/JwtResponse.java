@@ -10,12 +10,10 @@ import lombok.Setter;
 public class JwtResponse {
     private final String accessToken;
     private final String refreshToken;
-    private final Long expiryDuration;
     private static final String tokenType = "Bearer ";
 
-    public JwtResponse(final String accessToken, final String refreshToken, final Long expiryDuration) {
+    public JwtResponse(final String accessToken, final String refreshToken) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
-        this.expiryDuration = expiryDuration;
     }
 }
