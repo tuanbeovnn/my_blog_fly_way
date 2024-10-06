@@ -71,7 +71,6 @@ public final class LoginTestApi {
         return JwtResponse.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
-                .expiryDuration(expirationDuration)
                 .build();
     }
 
