@@ -26,7 +26,20 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ControllerExceptionHandler {
-    private final static Logger LOGGER = LogManager.getLogger(ControllerExceptionHandler.class);
+    private final static Logger logger = LogManager.getLogger(ControllerExceptionHandler.class);
+
+    // Method to handle JWT expired token exception
+    @ExceptionHandler(JwtTokenExpiredException.class)
+    @ResponseBody
+    public ResponseEntity<?> handleJwtTokenExpiredException(final JwtTokenExpiredException ex) {
+        logger.warn("JWT token expired: {}", ex.getMessage());
+        // Build and return the response in the desired format
+        return ResponseEntityBuilder.getBuilder()
+                .setCode(HttpStatus.UNAUTHORIZED)  // 401 status for expired token
+                .setMessage("Expired JWT token")
+                .set("error", List.of(Map.of("message", "Expired JWT token")))  // Add the message to the error list
+                .build();
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseBody
@@ -41,7 +54,7 @@ public class ControllerExceptionHandler {
             error.put("message", fieldError.getDefaultMessage());
             errorDetails.add(error);
             // Log the validation error
-            LOGGER.warn("Validation error for field '{}': {}", fieldError.getField(), fieldError.getDefaultMessage());
+            logger.warn("Validation error for field '{}': {}", fieldError.getField(), fieldError.getDefaultMessage());
         }
         return ResponseEntityBuilder.getBuilder()
                 .setCode(HttpStatus.BAD_REQUEST)
@@ -91,7 +104,7 @@ public class ControllerExceptionHandler {
     @ExceptionHandler(RetryableException.class)
     @ResponseBody
     public ResponseEntity<?> handleRetryableException(final RetryableException e) {
-        LOGGER.error("Feign client encountered a RetryableException: {}", e.getMessage());
+        logger.error("Feign client encountered a RetryableException: {}", e.getMessage());
         return ResponseEntityBuilder.getBuilder()
                 .setCode(HttpStatus.SERVICE_UNAVAILABLE)
                 .setMessage("Service temporarily unavailable" + e.getMessage())

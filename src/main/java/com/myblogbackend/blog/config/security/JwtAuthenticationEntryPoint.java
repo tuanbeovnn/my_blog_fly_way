@@ -10,34 +10,44 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Override
-    public void commence(final HttpServletRequest request, final HttpServletResponse response, final AuthenticationException authException)
-            throws IOException, ServletException {
+    public void commence(final HttpServletRequest request,
+                         final HttpServletResponse response,
+                         final AuthenticationException authException) throws IOException, ServletException {
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
         String message;
+        Exception exception = (Exception) request.getAttribute("exception");
 
-        // Check if the request as any exception that we have stored in Request
-        final Exception exception = (Exception) request.getAttribute("exception");
-
-        // If yes then use it to create the response message else use the authException
         if (exception != null) {
-
-            byte[] body = new ObjectMapper().writeValueAsBytes(Collections.singletonMap("error", exception.toString()));
-            response.getOutputStream().write(body);
+            message = exception.getMessage();
         } else {
             if (authException.getCause() != null) {
-                message = authException.getCause().toString() + " " + authException.getMessage();
+                message = authException.getCause().toString() + ": " + authException.getMessage();
             } else {
                 message = authException.getMessage();
             }
-            byte[] body = new ObjectMapper().writeValueAsBytes(Collections.singletonMap("error", message));
-            response.getOutputStream().write(body);
         }
+
+        // Construct the response body in the desired format
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("code", HttpServletResponse.SC_UNAUTHORIZED);
+        responseBody.put("success", false);
+        responseBody.put("message", message);
+        responseBody.put("error", List.of(Map.of("message", message)));
+        responseBody.put("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
+
+        // Write the response
+        ObjectMapper mapper = new ObjectMapper();
+        response.getOutputStream().write(mapper.writeValueAsBytes(responseBody));
     }
 }

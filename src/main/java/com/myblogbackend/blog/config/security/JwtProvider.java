@@ -5,6 +5,7 @@ import com.myblogbackend.blog.enums.TokenType;
 import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
 import com.myblogbackend.blog.exception.InvalidDataException;
 import com.myblogbackend.blog.exception.InvalidTokenRequestException;
+import com.myblogbackend.blog.exception.JwtTokenExpiredException;
 import com.myblogbackend.blog.models.RoleEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import io.jsonwebtoken.*;
@@ -129,7 +130,8 @@ public class JwtProvider {
         } catch (ExpiredJwtException ex) {
             logger.warn("Expired JWT token: {}", ex.getMessage());
             request.setAttribute("expired", ex.getMessage());
-            throw new ExpiredJwtException(ex.getHeader(), ex.getClaims(), "Expired JWT token");
+            // Throw custom exception for expired token
+            throw new JwtTokenExpiredException("Expired JWT token");
         }
     }
 

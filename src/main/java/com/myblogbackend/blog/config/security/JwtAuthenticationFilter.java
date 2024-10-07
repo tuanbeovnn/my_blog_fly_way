@@ -1,7 +1,8 @@
 package com.myblogbackend.blog.config.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myblogbackend.blog.enums.TokenType;
-import io.jsonwebtoken.ExpiredJwtException;
+import com.myblogbackend.blog.exception.JwtTokenExpiredException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +20,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -42,10 +48,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             });
             filterChain.doFilter(request, response);
-        } catch (ExpiredJwtException | BadCredentialsException ex) {
-            request.setAttribute("exception", ex);
-            throw ex;
+        } catch (JwtTokenExpiredException ex) {
+            logger.warn("JWT token expired: {}", ex.getMessage());
+            setErrorResponse(HttpStatus.UNAUTHORIZED, response, "Expired JWT token");
+        } catch (BadCredentialsException ex) {
+            logger.error("Invalid JWT token: {}", ex.getMessage());
+            setErrorResponse(HttpStatus.UNAUTHORIZED, response, "Invalid credentials");
         }
+    }
+
+    private void setErrorResponse(final HttpStatus status, final HttpServletResponse response, final String message) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType("application/json");
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("code", status.value());
+        responseBody.put("success", false);
+        responseBody.put("message", message);
+        responseBody.put("error", List.of(Map.of("message", message)));
+        responseBody.put("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
+        ObjectMapper mapper = new ObjectMapper();
+        response.getWriter().write(mapper.writeValueAsString(responseBody));
     }
 
     private Optional<String> getJwt(final HttpServletRequest request) {
