@@ -5,17 +5,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
 public class ResponseEntityBuilder {
     private final Map<String, Object> map = new HashMap<>();
+    private final List<Map<String, String>> errors = new ArrayList<>();
 
     private ResponseEntityBuilder() {
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        map.put("timestamp", timestamp);
-        this.setCode(200);
+        map.put("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
+        this.setCode(200); // Default code
     }
 
     public static ResponseEntityBuilder getBuilder() {
@@ -24,18 +26,24 @@ public class ResponseEntityBuilder {
 
     public ResponseEntityBuilder setCode(final int code) {
         map.put("code", code);
-        setSuccess(code < 400);
+        setSuccess(code < 400); // Success if the status code is less than 400
         return this;
     }
 
-
     public ResponseEntityBuilder setCode(final HttpStatus code) {
-        this.setCode(code.value());
-        return this;
+        return this.setCode(code.value());
     }
 
     public ResponseEntityBuilder setMessage(final String message) {
-        map.put("message", message);
+        map.put("message", message); // Set the message field
+
+        // Add the same message to the error array
+        Map<String, String> errorMessage = new HashMap<>();
+        errorMessage.put("message", message);
+        errors.clear();  // Clear previous errors
+        errors.add(errorMessage);
+        map.put("error", errors); // Set the error list
+
         return this;
     }
 
@@ -44,9 +52,8 @@ public class ResponseEntityBuilder {
         return this;
     }
 
-    public ResponseEntityBuilder setSuccess(final boolean isSuccess) {
+    public void setSuccess(final boolean isSuccess) {
         map.put("success", isSuccess);
-        return this;
     }
 
     public ResponseEntityBuilder setDetails(final Object details) {
@@ -55,10 +62,13 @@ public class ResponseEntityBuilder {
     }
 
     public ResponseEntity<?> build() {
-        if (map.get("message") == null && map.get("code") != null)
-            map.put("message", HttpStatus.valueOf((Integer) map.get("code")).getReasonPhrase());
+        if (map.get("message") == null && map.get("code") != null && (Integer) map.get("code") >= 400) {
+            // Set a default error message if not provided
+            this.setMessage(HttpStatus.valueOf((Integer) map.get("code")).getReasonPhrase());
+        }
+
         int code = (Integer) map.get("code");
         return ResponseEntity.status(HttpStatus.valueOf(code))
-                .body((map));
+                .body(map); // Return the final map as the response body
     }
 }

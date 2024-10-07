@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,17 +31,22 @@ public class ControllerExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseBody
     public ResponseEntity<?> handleException(final MethodArgumentNotValidException ex) {
-        Map<String, String> details = new HashMap<>();
+        // Create a list to hold validation error details
+        List<Map<String, String>> errorDetails = new ArrayList<>();
+        // Iterate through the validation errors
         List<FieldError> errors = ex.getBindingResult().getFieldErrors();
         for (FieldError fieldError : errors) {
-            details.putIfAbsent(fieldError.getField(), "");
-            details.put(fieldError.getField(), fieldError.getDefaultMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("field", fieldError.getField());
+            error.put("message", fieldError.getDefaultMessage());
+            errorDetails.add(error);
+            // Log the validation error
             LOGGER.warn("Validation error for field '{}': {}", fieldError.getField(), fieldError.getDefaultMessage());
         }
         return ResponseEntityBuilder.getBuilder()
                 .setCode(HttpStatus.BAD_REQUEST)
                 .setMessage("Validation errors")
-                .setDetails(details)
+                .set("error", errorDetails)
                 .build();
     }
 
