@@ -99,7 +99,7 @@ public class PostApiDelegateImplTests {
                         .content(objectMapper.writeValueAsString(postRequest))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.details.shortDescription").value("Short Description info cannot be blank"));
+                .andExpect(jsonPath("$.error[0].message").value("Short Description info cannot be blank"));
     }
 
     @Test

@@ -96,7 +96,7 @@ public class CommentDelegateImplTests {
                             .content(objectMapper.writeValueAsString(commentRequest))
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.details.content").value("Content cannot be blank"));
+                    .andExpect(jsonPath("$.error[0].message").value("Content cannot be blank"));
 
         }
     }
