@@ -303,7 +303,7 @@ public class AuthServiceImpl implements AuthService {
                 })
                 .map(RefreshTokenEntity::getUserDevice)
                 .map(UserDeviceEntity::getUser)
-                .map(jwtProvider::generateTokenFromUser)
+                .map(jwtProvider::generateJwtToken)
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database.Please login again")));
         return new JwtResponse(token.get(), tokenRefreshRequest.getRefreshToken());
     }
