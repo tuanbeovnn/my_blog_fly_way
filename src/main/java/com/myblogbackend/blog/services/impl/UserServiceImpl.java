@@ -118,7 +118,7 @@ public class UserServiceImpl implements UserService {
         var userEntity = usersRepository.findById(signedInUser.getId())
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
         if (!encoder.matches(changePasswordRequest.getOldPassword(), userEntity.getPassword())) {
-            throw new BlogRuntimeException(ErrorCode.PASSWORD_DOES_NOT_MATCH);
+            throw new BlogRuntimeException(ErrorCode.PASSWORD_WRONG);
         }
         if (!changePasswordRequest.getNewPassword().equals(changePasswordRequest.getConfirmPassword())) {
             throw new BlogRuntimeException(ErrorCode.PASSWORD_DOES_NOT_MATCH);

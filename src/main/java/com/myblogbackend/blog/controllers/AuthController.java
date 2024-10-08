@@ -8,6 +8,7 @@ import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.request.SignUpFormRequest;
 import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.ApiResponse;
+import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.AuthService;
 import freemarker.template.TemplateException;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.URI;
+import java.sql.Timestamp;
 import java.util.Objects;
 
 @RestController
@@ -53,8 +55,13 @@ public class AuthController {
         URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath().path("/user/me")
                 .buildAndExpand(newUser.getId()).toUri();
-        return ResponseEntity.created(location)
-                .body(new ApiResponse(true, "User registered successfully!"));
+
+        var responseBuilder = ResponseEntityBuilder.getBuilder()
+                .setCode(200)
+                .setMessage("Register successfully")
+                .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
+
+        return ResponseEntity.created(location).body(responseBuilder.build());
     }
 
     @GetMapping("/registrationConfirm")
@@ -70,8 +77,12 @@ public class AuthController {
 
     @PostMapping("/forgot")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody final ForgotPasswordRequest forgotPasswordDto) {
-        authService.forgotPassword(forgotPasswordDto);
-        return ResponseEntity.ok(new ApiResponse(true, "Sent email successfully!"));
+        var responseBuilder = ResponseEntityBuilder.getBuilder()
+                .setCode(200)
+                .setMessage("Sent email successfully!")
+                .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
+
+        return ResponseEntity.ok(responseBuilder.build());
     }
 
 }

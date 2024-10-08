@@ -37,12 +37,17 @@ public class ResponseEntityBuilder {
     public ResponseEntityBuilder setMessage(final String message) {
         map.put("message", message); // Set the message field
 
-        // Add the same message to the error array
-        Map<String, String> errorMessage = new HashMap<>();
-        errorMessage.put("message", message);
-        errors.clear();  // Clear previous errors
-        errors.add(errorMessage);
-        map.put("error", errors); // Set the error list
+        // Only add an error message if the code indicates failure
+        if (map.get("code") != null && (Integer) map.get("code") >= 400) {
+            Map<String, String> errorMessage = new HashMap<>();
+            errorMessage.put("message", message);
+            errors.clear();  // Clear previous errors
+            errors.add(errorMessage);
+            map.put("error", errors); // Set the error list
+        } else {
+            // If success, ensure the error field is not included
+            map.remove("error"); // Remove the error field if it's a success response
+        }
 
         return this;
     }
