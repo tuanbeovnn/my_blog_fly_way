@@ -222,14 +222,14 @@ public class PostServiceImpl implements PostService {
         var results = postRepository.findUsersWithManyPostsAndHighFavorites(postThreshold, favoritesThreshold);
 
         return results.stream().map(result -> {
-            UUID userId = (UUID) result[0];
-            String username = (String) result[1];
-            Long postCount = (Long) result[2];
-            Long totalFavorites = (Long) result[3];
+            var userId = (UUID) result[0];
+            var username = (String) result[1];
+            var postCount = (Long) result[2];
+            var totalFavorites = (Long) result[3];
 
-            FollowType followType = (signedInUserId == null) ? FollowType.UNFOLLOW : getUserFollowingType(signedInUserId, userId);
+            var followType = (signedInUserId == null) ? FollowType.UNFOLLOW : getUserFollowingType(signedInUserId, userId);
 
-            UserEntity userEntity = usersRepository.findById(userId)
+            var userEntity = usersRepository.findById(userId)
                     .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
 
             return UserPostFavoriteResponse.builder()
