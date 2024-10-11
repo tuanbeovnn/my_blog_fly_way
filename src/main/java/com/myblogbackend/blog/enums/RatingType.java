@@ -14,4 +14,14 @@ public enum RatingType {
     public String getType() {
         return type;
     }
+
+    public static RatingType fromString(final String type) {
+        for (RatingType ratingType : RatingType.values()) {
+            if (ratingType.getType().equalsIgnoreCase(type)) {
+                return ratingType;
+            }
+        }
+        return UNLIKE; // Default value if no match is found
+    }
+
 }

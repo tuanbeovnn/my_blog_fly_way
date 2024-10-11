@@ -13,6 +13,7 @@ import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.CategoryEntity;
 import com.myblogbackend.blog.models.FollowersEntity;
 import com.myblogbackend.blog.models.PostEntity;
+import com.myblogbackend.blog.models.ProfileEntity;
 import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
 import com.myblogbackend.blog.models.UserEntity;
@@ -54,6 +55,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -88,23 +90,18 @@ public class PostServiceImpl implements PostService {
         postEntity.setApproved(Boolean.TRUE);
         postEntity.setFavourite(0L);
         postEntity.setSlug(makeSlug(postRequest.getTitle()));
-        postEntity.setCreatedBy(getSignedInUser().getName());
-        postEntity.setUser(usersRepository.findById(userEntity.getId()).orElseThrow());
-        // Validate and normalize tags
-        var validFoodTags = validatePostTags(postRequest.getTags());
-        // Convert FoodTag enum values to TagEntity instances
-        var tagEntities = validFoodTags.stream()
+        postEntity.setCreatedBy(userEntity.getName());
+        postEntity.setUser(userEntity);
+
+        var tagEntities = validatePostTags(postRequest.getTags()).stream()
                 .map(tag -> TagEntity.builder().name(tag).build())
                 .collect(Collectors.toSet());
         postEntity.setTags(tagEntities);
-        var createdPost = postRepository.save(postEntity);
 
-//        sendAMessageFromKafkaToNotificationService(userEntity, createdPost);
+        var createdPost = postRepository.save(postEntity);
         logger.info("Post was created with id: {}", createdPost.getId());
-        var userResponse = getUserResponse(createdPost.getUser(), userEntity.getId());
-        var postResponse = postMapper.toPostResponse(createdPost);
-        postResponse.setCreatedBy(userResponse);
-        return postResponse;
+
+        return buildPostResponse(createdPost, userEntity.getId());
 
     }
 
@@ -188,99 +185,94 @@ public class PostServiceImpl implements PostService {
     @Override
     public PageList<PostResponse> getAllPostByFilter(final Pageable pageable, final PostFilterRequest filter) {
         var spec = PostSpec.filterBy(filter);
-        var pageableBuild = buildPageable(pageable.getPageNumber(), pageable.getPageSize(), filter);
+        var pageableBuild = buildPageable(pageable, filter);
         var postEntities = postRepository.findAll(spec, pageableBuild);
 
-        UUID userId = getUserId();
-        var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
-
-        logger.info("Get feed list by filter succeeded with offset: {} and limited {}", pageable.getPageNumber(), pageable.getPageSize());
-        return buildPaginatingResponse(postResponses, pageable.getPageSize(), pageable.getPageNumber(), postEntities.getTotalElements());
+        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
     }
 
     @Override
     public PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter) {
-
         var spec = PostSpec.findRelatedArticles(filter);
-        var pageableBuild = buildPageable(pageable.getPageNumber(), pageable.getPageSize(), filter);
+        var pageableBuild = buildPageable(pageable, filter);
         var postEntities = postRepository.findAll(spec, pageableBuild);
-        UUID userId = getUserId();
-        var postResponses = mapPostEntitiesToPostResponses(postEntities, userId);
-        logger.info("Get related post list by filter succeeded with offset: {} and limited {}", pageable.getPageNumber(), pageable.getPageSize());
-        return buildPaginatingResponse(postResponses, pageable.getPageSize(), pageable.getPageNumber(), postEntities.getTotalElements());
+
+        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
     }
 
     @Override
     @Transactional
     public void disablePost(final UUID postId) {
-        // Fetch the post by ID and owner user ID
-        var post = postRepository
-                .findByIdAndUserId(postId, getSignedInUser().getId())
+        var post = postRepository.findByIdAndUserId(postId, getSignedInUser().getId())
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
 
-        logger.info("Disabling post successfully by id {}", postId);
         post.setStatus(false);
         postRepository.save(post);
         disableAllComments(postId);
+        logger.info("Post disabled successfully by id {}", postId);
     }
 
     private void disableAllComments(final UUID postId) {
-        // Disable all comments following this post
         var comments = commentRepository.findByPostId(postId);
-        comments.stream()
-                .filter(comment -> comment.getPost().getId().equals(postId))
-                .forEach(comment -> {
-                    comment.setStatus(false);
-                    commentRepository.save(comment);
-                });
-        logger.info("Disabled post and associated comments successfully");
+        comments.forEach(comment -> {
+            comment.setStatus(false);
+            commentRepository.save(comment);
+        });
+        logger.info("Disabled all comments for post {}", postId);
     }
-
 
     @Override
     public PostResponse getPostById(final UUID id) {
-        var userId = getUserId();
-        var post = postRepository
-                .findById(id)
+        var post = postRepository.findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        logger.info("Get post successfully by id {} ", id);
-        return getPostResponse(post, userId);
+        return buildPostResponse(post, getUserId());
     }
 
     @Override
     public PostResponse getPostBySlug(final String slug) {
-        var userId = getUserId();
-        var post = postRepository
-                .findBySlug(slug)
+        var post = postRepository.findBySlug(slug)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        logger.info("Get post successfully by slug {} ", slug);
-        return getPostResponse(post, userId);
+        return buildPostResponse(post, getUserId());
     }
 
     @Override
     @Transactional
     public PostResponse updatePost(final UUID id, final PostRequest postRequest) {
-        var userId = getUserId();
         var post = postRepository.findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
         var category = validateCategory(postRequest.getCategoryId());
+
         post.setTitle(postRequest.getTitle());
         post.setContent(postRequest.getContent());
         post.setThumbnails(GsonUtils.arrayToString(postRequest.getThumbnails()));
         post.setCategory(category);
+
         var updatedPost = postRepository.save(post);
-        logger.info("Update post successfully with id {} ", id);
-        return getPostResponse(post, userId);
+        logger.info("Post updated successfully with id {}", id);
+        return buildPostResponse(updatedPost, getUserId());
+    }
+
+    // Utility Methods
+
+    private PostResponse buildPostResponse(final PostEntity post, final UUID userId) {
+        var postResponse = postMapper.toPostResponse(post);
+        postResponse.setUsersLikedPost(mapUserLikedPosts(post));
+        postResponse.setFavoriteType(getUserFavoriteType(post, userId));
+        postResponse.setTotalComments(countCommentByPostId(post));
+        postResponse.setCreatedBy(getUserResponse(post.getUser(), userId));
+        return postResponse;
+    }
+
+    private PageList<PostResponse> buildPaginatedPostResponse(final Page<PostEntity> postEntities, final int pageSize, final int currentPage) {
+        var postResponses = postEntities.getContent().stream()
+                .map(post -> buildPostResponse(post, getUserId()))
+                .toList();
+        return buildPaginatingResponse(postResponses, pageSize, currentPage, postEntities.getTotalElements());
     }
 
     private CategoryEntity validateCategory(final UUID categoryId) {
         return categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-    }
-
-    @NotNull
-    private static UserPrincipal getSignedInUser() {
-        return JWTSecurityUtil.getJWTUserInfo().orElseThrow();
     }
 
     private Set<PostTag> validatePostTags(final Set<PostTag> tags) {
@@ -290,117 +282,78 @@ public class PostServiceImpl implements PostService {
     }
 
     private UUID getUserId() {
-        try {
-            return getSignedInUser().getId();
-        } catch (Exception e) {
-            logger.info("No user logged in, proceeding without user context");
-            return null;
-        }
-    }
-
-
-    private List<PostResponse> mapPostEntitiesToPostResponses(final Page<PostEntity> postEntities, final UUID userId) {
-        return postEntities.getContent().stream()
-                .map(postEntity -> getPostResponse(postEntity, userId))
-                .toList();
+        return Optional.ofNullable(getSignedInUser()).map(UserPrincipal::getId).orElse(null);
     }
 
     @NotNull
-    private PostResponse getPostResponse(final PostEntity post, final UUID userId) {
-        var postResponse = postMapper.toPostResponse(post);
-        postResponse.setUsersLikedPost(mapUserLikedPosts(post));
-        postResponse.setFavoriteType(getUserFavoriteType(post, userId));
-        postResponse.setTotalComments(countCommentByPostId(post));
-        var userResponse = getUserResponse(post.getUser(), userId);
-        postResponse.setCreatedBy(userResponse);
-        return postResponse;
+    private static UserPrincipal getSignedInUser() {
+        return JWTSecurityUtil.getJWTUserInfo().orElseThrow();
     }
 
     private int countCommentByPostId(final PostEntity post) {
         return commentRepository.countByPostIdAndStatusTrueOrderByCreatedDateDesc(post.getId());
     }
 
-    private UserResponse getUserResponse(final UserEntity creator, final UUID userId) {
-        if (creator == null) {
-            return null;
-        }
-        var userResponse = userMapper.toUserDTO(creator);
-        userResponse.setFollowType(getUserFollowingType(userId, creator.getId()));
-        var userProfile = getUserResponse(creator, userResponse);
-        userResponse.setProfile(userProfile.getProfile());
-        return userResponse;
+    private UserResponse getUserResponse(final UserEntity user, final UUID userId) {
+        if (user == null) return null;
+        var userResponse = userMapper.toUserDTO(user);
+        userResponse.setFollowType(getUserFollowingType(userId, user.getId()));
+        return enrichUserProfile(user, userResponse);
     }
 
-    private static UserResponse getUserResponse(final UserEntity userEntity, final UserResponse userResponse) {
-        var profileEntity = userEntity.getProfile();
-        if (profileEntity != null) {
-            var profileResponse = ProfileResponseDTO.builder()
-                    .bio(profileEntity.getBio())
-                    .website(profileEntity.getWebsite())
-                    .location(profileEntity.getLocation())
-                    .avatarUrl(profileEntity.getAvatarUrl())
-                    .social(SocialLinksDTO.builder()
-                            .twitter(profileEntity.getSocial().getTwitter())
-                            .linkedin(profileEntity.getSocial().getLinkedin())
-                            .github(profileEntity.getSocial().getGithub())
-                            .build())
-                    .build();
-            userResponse.setProfile(profileResponse);
-        } else {
-            userResponse.setProfile(ProfileResponseDTO.builder()
-                    .bio("")
-                    .website("")
-                    .location("")
-                    .avatarUrl("")
-                    .social(SocialLinksDTO.builder()
-                            .twitter("")
-                            .linkedin("")
-                            .github("")
-                            .build())
-                    .build());
-        }
-        return userResponse;
+    private UserResponse enrichUserProfile(final UserEntity user, final UserResponse response) {
+        var profile = user.getProfile();
+        if (profile == null) return response;
+
+        var profileResponse = ProfileResponseDTO.builder()
+                .bio(profile.getBio())
+                .website(profile.getWebsite())
+                .location(profile.getLocation())
+                .avatarUrl(profile.getAvatarUrl())
+                .social(buildSocialLinks(profile))
+                .build();
+        response.setProfile(profileResponse);
+        return response;
     }
 
+    private SocialLinksDTO buildSocialLinks(final ProfileEntity profile) {
+        return SocialLinksDTO.builder()
+                .twitter(profile.getSocial().getTwitter())
+                .linkedin(profile.getSocial().getLinkedin())
+                .github(profile.getSocial().getGithub())
+                .build();
+    }
 
     private FollowType getUserFollowingType(final UUID followerId, final UUID followedUserId) {
-        if (followerId == null || followedUserId == null) {
-            return FollowType.UNFOLLOW;
-        }
+        if (followerId == null || followedUserId == null) return FollowType.UNFOLLOW;
         return followersRepository.findByFollowerIdAndFollowedUserId(followerId, followedUserId)
                 .map(FollowersEntity::getType)
                 .orElse(FollowType.UNFOLLOW);
     }
 
     private List<UserLikedPostResponse> mapUserLikedPosts(final PostEntity post) {
-        var favoriteEntities = favoriteRepository.findAllByPostId(post.getId());
-        return favoriteEntities.stream()
-                .map(favoriteEntity -> {
-                    var userResponse = userMapper.toUserResponse(favoriteEntity.getUser());
-                    var type = favoriteEntity.getType() == null ? RatingType.UNLIKE : RatingType.valueOf(favoriteEntity.getType().name());
-                    return UserLikedPostResponse.builder()
-                            .id(userResponse.getId())
-                            .name(userResponse.getName())
-                            .type(type)
-                            .build();
-                })
+        return favoriteRepository.findAllByPostId(post.getId()).stream()
+                .map(fav -> UserLikedPostResponse.builder()
+                        .id(fav.getUser().getId())
+                        .name(fav.getUser().getName())
+                        .type(Optional.ofNullable(fav.getType())
+                                .orElse(RatingType.UNLIKE))
+                        .build())
                 .toList();
     }
 
     private RatingType getUserFavoriteType(final PostEntity post, final UUID userId) {
-        if (userId == null) {
-            return RatingType.UNLIKE; // Default value for non-logged-in users
-        }
-
         return favoriteRepository.findByUserIdAndPostId(userId, post.getId())
-                .map(favoriteEntity -> RatingType.valueOf(favoriteEntity.getType().name()))
+                .map(fav -> RatingType.valueOf(fav.getType().name()))
                 .orElse(RatingType.UNLIKE);
     }
 
-    private PageList<PostResponse> buildPaginatingResponse(final List<PostResponse> responses,
-                                                           final int pageSize,
-                                                           final int currentPage,
-                                                           final long total) {
+    private Pageable buildPageable(final Pageable pageable, final PostFilterRequest filter) {
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.Direction.fromString(filter.getSortDirection().toUpperCase()), filter.getSortField());
+    }
+
+    private PageList<PostResponse> buildPaginatingResponse(final List<PostResponse> responses, final int pageSize, final int currentPage, final long total) {
         return PageList.<PostResponse>builder()
                 .records(responses)
                 .limit(pageSize)
@@ -408,15 +361,6 @@ public class PostServiceImpl implements PostService {
                 .totalRecords(total)
                 .totalPage((int) Math.ceil((double) total / pageSize))
                 .build();
-    }
-
-    private Pageable buildPageable(final Integer offset, final Integer limited, final PostFilterRequest filter) {
-        return PageRequest.of(
-                offset,
-                limited,
-                Sort.Direction.fromString(filter.getSortDirection().toUpperCase()),
-                filter.getSortField()
-        );
     }
 
 }
