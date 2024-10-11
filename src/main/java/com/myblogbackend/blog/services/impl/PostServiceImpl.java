@@ -31,6 +31,7 @@ import com.myblogbackend.blog.request.TopicNotificationRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.UserFollowingResponse;
 import com.myblogbackend.blog.response.UserLikedPostResponse;
+import com.myblogbackend.blog.response.UserPostFavoriteResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
 import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
@@ -82,7 +83,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public PostResponse createPost(final PostRequest postRequest) throws ExecutionException, InterruptedException {
-        var userEntity = usersRepository.findById(getSignedInUser().getId()).orElseThrow();
+        var userEntity = usersRepository.findById(getUserId()).orElseThrow();
         var category = validateCategory(postRequest.getCategoryId());
         var postEntity = postMapper.toPostEntity(postRequest);
         postEntity.setCategory(category);
@@ -203,13 +204,50 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public void disablePost(final UUID postId) {
-        var post = postRepository.findByIdAndUserId(postId, getSignedInUser().getId())
+        var post = postRepository.findByIdAndUserId(postId, getUserId())
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
 
         post.setStatus(false);
         postRepository.save(post);
         disableAllComments(postId);
         logger.info("Post disabled successfully by id {}", postId);
+    }
+
+    @Override
+    public List<UserPostFavoriteResponse> findUsersWithManyPostsAndHighFavorites(final long postThreshold,
+                                                                                 final long favoritesThreshold) {
+        logger.info("Finding users with more than {} posts and more than {} favorites", postThreshold, favoritesThreshold);
+
+        var signedInUserId = getUserId();
+
+        var results = postRepository.findUsersWithManyPostsAndHighFavorites(postThreshold, favoritesThreshold);
+
+        // Map results to UserPostFavoriteDTO
+        return results.stream().map(result -> {
+            UUID userId = (UUID) result[0];
+            String username = (String) result[1];
+            Long postCount = (Long) result[2];
+            Long totalFavorites = (Long) result[3];
+
+            FollowType followType;
+            if (signedInUserId == null) {
+                followType = FollowType.UNFOLLOW;
+            }
+            followType = getUserFollowingType(signedInUserId, userId);
+
+            UserEntity userEntity = usersRepository.findById(userId)
+                    .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+            String avatarUrl = userMapper.toAvatarUrl(userEntity);
+
+            return UserPostFavoriteResponse.builder()
+                    .userId(userId)
+                    .username(username)
+                    .postCount(postCount)
+                    .totalFavorites(totalFavorites)
+                    .followType(followType)
+                    .avatarUrl(avatarUrl)
+                    .build();
+        }).toList();
     }
 
     private void disableAllComments(final UUID postId) {
@@ -275,12 +313,11 @@ public class PostServiceImpl implements PostService {
     }
 
     private UUID getUserId() {
-        return Optional.ofNullable(getSignedInUser()).map(UserPrincipal::getId).orElse(null);
+        return getSignedInUser().map(UserPrincipal::getId).orElse(null);
     }
 
-    @NotNull
-    private static UserPrincipal getSignedInUser() {
-        return JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+    private static Optional<UserPrincipal> getSignedInUser() {
+        return JWTSecurityUtil.getJWTUserInfo();
     }
 
     private int countCommentByPostId(final PostEntity post) {

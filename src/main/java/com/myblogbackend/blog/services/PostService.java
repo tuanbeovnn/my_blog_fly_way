@@ -4,8 +4,10 @@ import com.myblogbackend.blog.pagination.PageList;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
+import com.myblogbackend.blog.response.UserPostFavoriteResponse;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
@@ -26,5 +28,6 @@ public interface PostService {
 
     void disablePost(UUID postId);
 
+    List<UserPostFavoriteResponse> findUsersWithManyPostsAndHighFavorites(long postThreshold, long favoritesThreshold);
 
 }

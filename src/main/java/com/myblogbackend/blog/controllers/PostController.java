@@ -135,4 +135,14 @@ public class PostController {
                 .build();
     }
 
+    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/users/top-posters")
+    public ResponseEntity<?> getTopUsers(@RequestParam(defaultValue = "5") final long postThreshold,
+                                         @RequestParam(defaultValue = "10") final long favoritesThreshold) {
+        var postsAndHighFavorites = postService.findUsersWithManyPostsAndHighFavorites(postThreshold, favoritesThreshold);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(postsAndHighFavorites)
+                .build();
+    }
+
 }

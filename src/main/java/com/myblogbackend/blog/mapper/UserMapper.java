@@ -10,4 +10,9 @@ public interface UserMapper {
     UserResponse toUserDTO(UserEntity userEntity);
 
     UserLikedPostResponse toUserResponse(UserEntity userEntity);
+
+    // New method to get avatar URL from UserEntity
+    default String toAvatarUrl(UserEntity userEntity) {
+        return userEntity.getProfile() != null ? userEntity.getProfile().getAvatarUrl() : null;
+    }
 }
