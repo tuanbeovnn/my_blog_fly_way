@@ -219,25 +219,18 @@ public class PostServiceImpl implements PostService {
         logger.info("Finding users with more than {} posts and more than {} favorites", postThreshold, favoritesThreshold);
 
         var signedInUserId = getUserId();
-
         var results = postRepository.findUsersWithManyPostsAndHighFavorites(postThreshold, favoritesThreshold);
 
-        // Map results to UserPostFavoriteDTO
         return results.stream().map(result -> {
             UUID userId = (UUID) result[0];
             String username = (String) result[1];
             Long postCount = (Long) result[2];
             Long totalFavorites = (Long) result[3];
 
-            FollowType followType;
-            if (signedInUserId == null) {
-                followType = FollowType.UNFOLLOW;
-            }
-            followType = getUserFollowingType(signedInUserId, userId);
+            FollowType followType = (signedInUserId == null) ? FollowType.UNFOLLOW : getUserFollowingType(signedInUserId, userId);
 
             UserEntity userEntity = usersRepository.findById(userId)
                     .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-            String avatarUrl = userMapper.toAvatarUrl(userEntity);
 
             return UserPostFavoriteResponse.builder()
                     .userId(userId)
@@ -245,7 +238,7 @@ public class PostServiceImpl implements PostService {
                     .postCount(postCount)
                     .totalFavorites(totalFavorites)
                     .followType(followType)
-                    .avatarUrl(avatarUrl)
+                    .avatarUrl(userMapper.toAvatarUrl(userEntity))
                     .build();
         }).toList();
     }
