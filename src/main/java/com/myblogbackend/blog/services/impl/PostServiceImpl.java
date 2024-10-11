@@ -222,13 +222,6 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostResponse getPostById(final UUID id) {
-        var post = postRepository.findById(id)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        return buildPostResponse(post, getUserId());
-    }
-
-    @Override
     public PostResponse getPostBySlug(final String slug) {
         var post = postRepository.findBySlug(slug)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));

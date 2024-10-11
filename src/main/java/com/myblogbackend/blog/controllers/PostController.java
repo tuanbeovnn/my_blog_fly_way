@@ -44,15 +44,6 @@ public class PostController {
                 .build();
     }
 
-    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/{id}")
-    public ResponseEntity<?> getPostById(@PathVariable(value = "id") final UUID id) {
-        var post = postService.getPostById(id);
-        return ResponseEntityBuilder
-                .getBuilder()
-                .setDetails(post)
-                .build();
-    }
-
     @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/post-tags")
     public ResponseEntity<?> getPostTags() {
         var listTags = Arrays.stream(PostTag.values())

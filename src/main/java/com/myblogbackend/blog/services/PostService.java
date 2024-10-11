@@ -13,8 +13,6 @@ public interface PostService {
 
 //    PaginationPage<PostResponse> getAllPostsByCategoryId(Integer offset, Integer limited, UUID categoryId);
 
-    PostResponse getPostById(UUID id);
-
     PostResponse getPostBySlug(String slug);
 
     PostResponse createPost(PostRequest postRequest) throws ExecutionException, InterruptedException;
