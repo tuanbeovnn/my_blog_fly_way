@@ -24,9 +24,7 @@ spring:
         show-sql: true
     kafka:
         bootstrap-servers:
-            - http://code4fun.xyz:9192
-            - http://code4fun.xyz:9292
-            - http://code4fun.xyz:9392
+            - http://code4fun.xyz:9092
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
