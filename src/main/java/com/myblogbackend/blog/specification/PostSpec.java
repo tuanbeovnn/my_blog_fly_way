@@ -28,7 +28,7 @@ public class PostSpec {
     public static Specification<PostEntity> filterBy(final PostFilterRequest postFilterRequest) {
         return Specification
                 .where(hasTags(postFilterRequest.getTags()))
-                .and(hasCategoryId(postFilterRequest.getCategoryId()))
+                .and(hasCategoryName(postFilterRequest.getCategoryName()))
                 .and(hasUserId(postFilterRequest.getUserId()))
                 .and(hasUserName(postFilterRequest.getUserName()))
                 .and(hasStatusTrue());
@@ -56,13 +56,13 @@ public class PostSpec {
         };
     }
 
-    private static Specification<PostEntity> hasCategoryName(final UUID categoryId) {
-        if (categoryId == null) {
+    private static Specification<PostEntity> hasCategoryName(final String categoryName) {
+        if (categoryName == null) {
             return null;
         }
         return (root, query, criteriaBuilder) -> {
             Join<PostEntity, CategoryEntity> categoryJoin = root.join(CATEGORY);
-            return criteriaBuilder.equal(categoryJoin.get(NAME), categoryId);
+            return criteriaBuilder.equal(categoryJoin.get(NAME), categoryName);
         };
     }
 

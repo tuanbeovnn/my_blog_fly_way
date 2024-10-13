@@ -2,6 +2,8 @@ package com.myblogbackend.blog.config.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.myblogbackend.blog.models.UserEntity;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,13 +16,18 @@ public class UserPrincipal implements UserDetails {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @Getter
     private final UUID id;
 
-    private String name;
+    @Getter
+    private final String name;
 
+    @Getter
     private final String email;
     @JsonIgnore
     private final String password;
+    @Setter
+    @Getter
     private Map<String, Object> attributes;
     private final Collection<? extends GrantedAuthority> authorities;
 
@@ -56,14 +63,6 @@ public class UserPrincipal implements UserDetails {
                 userEntity.getName(),
                 authorities
         );
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public String getEmail() {
-        return email;
     }
 
     @Override
@@ -110,15 +109,4 @@ public class UserPrincipal implements UserDetails {
         return Objects.equals(id, user.id);
     }
 
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(final Map<String, Object> attributes) {
-        this.attributes = attributes;
-    }
-
-    public String getName() {
-        return name;
-    }
 }
