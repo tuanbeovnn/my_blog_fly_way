@@ -1,7 +1,8 @@
 package com.myblogbackend.blog.services.impl;
 
+import com.myblogbackend.blog.config.kafka.KafkaTopicManager;
+import com.myblogbackend.blog.config.mail.EmailProperties;
 import com.myblogbackend.blog.config.security.JwtProvider;
-import com.myblogbackend.blog.enums.NotificationType;
 import com.myblogbackend.blog.enums.OAuth2Provider;
 import com.myblogbackend.blog.enums.RoleName;
 import com.myblogbackend.blog.exception.TokenRefreshException;
@@ -10,28 +11,14 @@ import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.feign.OutboundIdentityClient;
 import com.myblogbackend.blog.feign.OutboundUserClient;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.RefreshTokenEntity;
-import com.myblogbackend.blog.models.RoleEntity;
-import com.myblogbackend.blog.models.UserDeviceEntity;
-import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.models.UserVerificationTokenEntity;
-import com.myblogbackend.blog.repositories.RefreshTokenRepository;
-import com.myblogbackend.blog.repositories.RoleRepository;
-import com.myblogbackend.blog.repositories.UserDeviceRepository;
-import com.myblogbackend.blog.repositories.UserTokenRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
-import com.myblogbackend.blog.request.DeviceInfoRequest;
-import com.myblogbackend.blog.request.ExchangeTokenRequest;
-import com.myblogbackend.blog.request.ForgotPasswordRequest;
-import com.myblogbackend.blog.request.LoginFormOutboundRequest;
-import com.myblogbackend.blog.request.LoginFormRequest;
-import com.myblogbackend.blog.request.SignUpFormRequest;
-import com.myblogbackend.blog.request.TokenRefreshRequest;
+import com.myblogbackend.blog.models.*;
+import com.myblogbackend.blog.repositories.*;
+import com.myblogbackend.blog.request.*;
 import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.AuthService;
-import com.myblogbackend.blog.strategyPattern.MailFactory;
-import com.myblogbackend.blog.strategyPattern.MailStrategy;
+import freemarker.template.TemplateException;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -41,6 +28,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -54,17 +42,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-import static com.myblogbackend.blog.enums.NotificationType.EMAIL_FORGOT_PASSWORD;
-import static com.myblogbackend.blog.enums.NotificationType.EMAIL_REGISTRATION_CONFIRMATION;
 import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
     private static final Logger logger = LogManager.getLogger(AuthServiceImpl.class);
     public static final long ONE_DAY_IN_MILLIS = 86400000;
@@ -72,6 +55,7 @@ public class AuthServiceImpl implements AuthService {
     public static final String TEMPLATES_INVALIDTOKEN_HTML = "/templates/invalidtoken.html";
     public static final String TEMPLATES_ALREADYCONFIRMED_HTML = "/templates/alreadyconfirmed.html";
     public static final String TEMPLATES_EMAIL_ACTIVATED_HTML = "/templates/emailActivated.html";
+    private static final int EXPIRATION_TIME_MINUTES = 15;
 
     @NonFinal
     @Value("${outbound.identity.client-id}")
@@ -92,78 +76,81 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder encoder;
     private final UserMapper userMapper;
-    private final MailStrategy mailStrategy;
     private final UserTokenRepository userTokenRepository;
     private final RoleRepository roleRepository;
     private final OutboundIdentityClient outboundIdentityClient;
+    private final EmailProperties emailProperties;
     private final OutboundUserClient outboundUserClient;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTopicManager kafkaTopicManager;
 
 
-    public AuthServiceImpl(final UsersRepository usersRepository, final AuthenticationManager authenticationManager,
-                           final JwtProvider jwtProvider, final UserDeviceRepository userDeviceRepository,
-                           final RefreshTokenRepository refreshTokenRepository, final PasswordEncoder encoder,
-                           final UserMapper userMapper, final MailFactory mailFactory, final UserTokenRepository userTokenRepository,
-                           final RoleRepository roleRepository, final OutboundIdentityClient outboundIdentityClient,
-                           final OutboundUserClient outboundUserClient) {
-        this.usersRepository = usersRepository;
-        this.authenticationManager = authenticationManager;
-        this.jwtProvider = jwtProvider;
-        this.userDeviceRepository = userDeviceRepository;
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.encoder = encoder;
-        this.userMapper = userMapper;
-        this.mailStrategy = mailFactory.createStrategy();
-        this.userTokenRepository = userTokenRepository;
-        this.roleRepository = roleRepository;
-        this.outboundIdentityClient = outboundIdentityClient;
-        this.outboundUserClient = outboundUserClient;
+    @Override
+    public JwtResponse userLogin(final LoginFormRequest loginRequest) {
+        var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.USER_COULD_NOT_FOUND));
+
+        if (userEntity.getActive()) {
+            throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
+        }
+        var authentication = authenticateUser(loginRequest);
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        var jwtToken = jwtProvider.generateJwtToken(userEntity);
+        var refreshTokenEntity = createRefreshToken(loginRequest.getDeviceInfo(), userEntity);
+        return new JwtResponse(jwtToken, refreshTokenEntity.getToken());
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public UserResponse registerUser(final SignUpFormRequest signUpRequest) {
-        var userEntityOpt = usersRepository.findByEmail(signUpRequest.getEmail());
-        if (userEntityOpt.isPresent()) {
-            logger.warn("Account already exists '{}'", userEntityOpt.get().getEmail());
-            throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
-        }
-        var roles = new HashSet<RoleEntity>();
-        var userRole = roleRepository.findByName(RoleName.ROLE_USER)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        roles.add(userRole);
-        var newUser = new UserEntity();
-        newUser.setEmail(signUpRequest.getEmail());
-        newUser.setPassword(encoder.encode(signUpRequest.getPassword()));
-        newUser.setActive(true);
-        newUser.setIsPending(true);
-        newUser.setFollowers(0L);
-        newUser.setName(signUpRequest.getName());
-        newUser.setUserName(splitFromEmail(signUpRequest.getEmail()));
-        newUser.setProvider(OAuth2Provider.LOCAL);
-        newUser.setRoles(roles);
+    public UserResponse registerUserV2(final SignUpFormRequest signUpRequest) throws TemplateException, IOException {
+        usersRepository.findByEmail(signUpRequest.getEmail())
+                .ifPresent(user -> {
+                    logger.warn("Account already exists '{}'", user.getEmail());
+                    throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
+                });
+        var newUser = UserEntity.builder()
+                .email(signUpRequest.getEmail())
+                .password(encoder.encode(signUpRequest.getPassword()))
+                .active(true)
+                .isPending(true)
+                .followers(0L)
+                .name(signUpRequest.getName())
+                .userName(splitFromEmail(signUpRequest.getEmail()))
+                .provider(OAuth2Provider.LOCAL)
+                .roles(Set.of(getUserRole()))
+                .build();
 
         var result = usersRepository.save(newUser);
         logger.info("Created user successfully '{}'", result);
 
-        if (result.getActive()) {
-            logger.info("Sending activation email to '{}'", result);
-            var token = UUID.randomUUID().toString();
-            createVerificationToken(result, token, EMAIL_REGISTRATION_CONFIRMATION);
-            try {
-                mailStrategy.sendActivationEmail(result, token);
-            } catch (Exception e) {
-                // Roll back the transaction if email sending fails
-                logger.error("Failed to send activation email", e);
-                throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
-            }
-        }
+        // Generate verification token and confirmation link
+        var token = createVerificationToken(result);
+        var confirmationLink = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
 
+        var mailRequest = createMailRequest(result.getEmail(), confirmationLink);
+
+        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
         return userMapper.toUserDTO(result);
+    }
+
+    private RoleEntity getUserRole() {
+        return roleRepository.findByName(RoleName.ROLE_USER)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+    }
+
+    private MailRequest createMailRequest(final String email, final String confirmationLink) {
+        Map<String, Object> templateVariables = new HashMap<>();
+        templateVariables.put("confirmationLink", confirmationLink);
+        MailRequest mailRequest = new MailRequest();
+        mailRequest.setTo(email);
+        mailRequest.setTemplateVariables(templateVariables);
+        return mailRequest;
     }
 
     @Override
     public ResponseEntity<?> confirmationEmail(final String token) throws IOException {
-        UserVerificationTokenEntity verificationToken = userTokenRepository.findByVerificationToken(token);
+        UserVerificationTokenEntity verificationToken = userTokenRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.setContentType(MediaType.TEXT_HTML);
 
@@ -179,24 +166,6 @@ public class AuthServiceImpl implements AuthService {
         userEntity.setActive(false);
         usersRepository.save(userEntity);
         return loadHtmlTemplate(TEMPLATES_EMAIL_ACTIVATED_HTML, responseHeaders);
-    }
-
-
-    @Override
-    public void createVerificationToken(final UserEntity userEntity, final String token,
-                                        final NotificationType notificationType) {
-        var exp = 0;
-        if (notificationType.equals(EMAIL_REGISTRATION_CONFIRMATION)) {
-            exp = 15;
-        } else if (notificationType.equals(EMAIL_FORGOT_PASSWORD)) {
-            exp = 20;
-        }
-        UserVerificationTokenEntity myToken = UserVerificationTokenEntity.builder()
-                .verificationToken(token)
-                .user(userEntity)
-                .expDate(calculateExpiryDate(exp))
-                .build();
-        userTokenRepository.save(myToken);
     }
 
     @Override
@@ -234,9 +203,9 @@ public class AuthServiceImpl implements AuthService {
             var newPassword = UUID.randomUUID().toString().substring(0, 8);
             userEntity.setPassword(encoder.encode(newPassword));
             UserEntity result = usersRepository.save(userEntity);
-            createVerificationToken(result, newPassword, EMAIL_FORGOT_PASSWORD);
+//            createVerificationToken(result, newPassword, EMAIL_FORGOT_PASSWORD);
             try {
-                mailStrategy.sendForgotPasswordEmail(result, newPassword);
+//                mailStrategy.sendForgotPasswordEmail(result, newPassword);
             } catch (Exception e) {
                 // Roll back the transaction if email sending fails
                 logger.error("Failed to send activation email", e);
@@ -275,23 +244,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public JwtResponse userLogin(final LoginFormRequest loginRequest) {
-        var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.USER_COULD_NOT_FOUND));
-
-        if (userEntity.getActive()) {
-            throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
-        }
-        var authentication = authenticateUser(loginRequest);
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        var jwtToken = jwtProvider.generateJwtToken(userEntity);
-        var refreshTokenEntity = createRefreshToken(loginRequest.getDeviceInfo(), userEntity);
-        return new JwtResponse(jwtToken, refreshTokenEntity.getToken());
-    }
-
-
-    @Override
     public JwtResponse refreshJwtToken(final TokenRefreshRequest tokenRefreshRequest) {
         var requestRefreshToken = tokenRefreshRequest.getRefreshToken();
         var token = Optional.of(refreshTokenRepository.findByToken(requestRefreshToken)
@@ -306,12 +258,6 @@ public class AuthServiceImpl implements AuthService {
                 .map(jwtProvider::generateJwtToken)
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database.Please login again")));
         return new JwtResponse(token.get(), tokenRefreshRequest.getRefreshToken());
-    }
-
-    private Date calculateExpiryDate(final int expiryTimeInMinutes) {
-        var cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, expiryTimeInMinutes);
-        return new Date(cal.getTime().getTime());
     }
 
 
@@ -392,5 +338,27 @@ public class AuthServiceImpl implements AuthService {
             }
         }
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+
+    public String createVerificationToken(final UserEntity user) {
+        // Generate a new token
+        var token = UUID.randomUUID().toString();
+        var expirationDate = calculateExpirationDate();
+        var verificationToken = UserVerificationTokenEntity.builder()
+                .verificationToken(token)
+                .expDate(expirationDate)
+                .user(user)
+                .build();
+        userTokenRepository.save(verificationToken);
+
+        return token;
+    }
+
+    private Date calculateExpirationDate() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.add(Calendar.MINUTE, AuthServiceImpl.EXPIRATION_TIME_MINUTES);
+        return calendar.getTime();
     }
 }

@@ -17,13 +17,14 @@ import java.io.IOException;
 public interface AuthService {
     JwtResponse userLogin(LoginFormRequest loginFormRequest);
 
-    UserResponse registerUser(SignUpFormRequest signUpRequest) throws TemplateException, IOException;
+//    UserResponse registerUser(SignUpFormRequest signUpRequest) throws TemplateException, IOException;
+
+    UserResponse registerUserV2(SignUpFormRequest signUpRequest) throws TemplateException, IOException;
+
 
     JwtResponse refreshJwtToken(TokenRefreshRequest tokenRefreshRequest);
 
     ResponseEntity<?> confirmationEmail(String token) throws IOException;
-
-    void createVerificationToken(UserEntity userEntity, String token, NotificationType notificationType);
 
     JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest);
 
