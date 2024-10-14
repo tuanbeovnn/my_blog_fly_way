@@ -40,7 +40,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         // Construct the response body in the desired format
         Map<String, Object> responseBody = new HashMap<>();
-        responseBody.put("code", HttpServletResponse.SC_UNAUTHORIZED);
+        responseBody.put("code", HttpServletResponse.SC_FORBIDDEN);
         responseBody.put("success", false);
         responseBody.put("message", message);
         responseBody.put("error", List.of(Map.of("message", message)));
