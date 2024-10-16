@@ -1,8 +1,9 @@
 package com.myblogbackend.blog.services.impl;
 
+import com.myblogbackend.blog.config.security.JwtProvider;
 import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.FollowType;
-import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
+import com.myblogbackend.blog.enums.TokenType;
 import com.myblogbackend.blog.exception.UserLogoutException;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
@@ -37,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -50,22 +52,29 @@ public class UserServiceImpl implements UserService {
     private final FollowersRepository followersRepository;
     private final ProfileRepository profileRepository;
     private final PasswordEncoder encoder;
+    private final JwtProvider jwtProvider;
     private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     public void logoutUser(final LogOutRequest logOutRequest, final UserPrincipal currentUser) {
         var deviceId = logOutRequest.getDeviceInfo().getDeviceId();
+
         var userDevice = userDeviceRepository.findByUserId(currentUser.getId())
                 .filter(device -> device.getDeviceId().equals(deviceId))
                 .orElseThrow(() -> new UserLogoutException(logOutRequest.getDeviceInfo().getDeviceId(),
                         "Invalid device Id supplied. No matching device found for the given user "));
+        // Blacklist the token to invalidate it
+        String token = logOutRequest.getToken(); // Ensure the token is passed in the logout request
+        long expirationTime = jwtProvider.getTokenExpiryFromJWT(token, TokenType.ACCESS_TOKEN).getTime() - System.currentTimeMillis();
+
+        redisTemplate.opsForValue().set(token, "blacklisted", expirationTime, TimeUnit.MILLISECONDS);
 
         // Remove the device ID from Redis
-        redisTemplate.delete(currentUser.getEmail() + ":deviceId");
+        redisTemplate.delete(currentUser.getEmail() + ":deviceId"); // Ensure this matches the key structure
 
+        // Delete the refresh token associated with the userDevice
         refreshTokenRepository.deleteById(userDevice.getRefreshToken().getId());
-        var logoutSuccessEvent = new OnUserLogoutSuccessEvent(currentUser.getEmail(), logOutRequest.getToken(), logOutRequest);
-        applicationEventPublisher.publishEvent(logoutSuccessEvent);
+
         logger.info("User logout successfully");
     }
 

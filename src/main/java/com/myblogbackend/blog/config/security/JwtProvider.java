@@ -3,6 +3,7 @@ package com.myblogbackend.blog.config.security;
 import com.myblogbackend.blog.enums.TokenType;
 import com.myblogbackend.blog.exception.InvalidDataException;
 import com.myblogbackend.blog.exception.InvalidTokenRequestException;
+import com.myblogbackend.blog.exception.JwtTokenExpiredException;
 import com.myblogbackend.blog.models.RoleEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import io.jsonwebtoken.Claims;
@@ -118,6 +119,12 @@ public class JwtProvider {
 
     public boolean validateJwtToken(final String authToken, final TokenType type, final HttpServletRequest request) {
         try {
+            // Check if the token is blacklisted
+            if (Boolean.TRUE.equals(redisTemplate.hasKey(authToken))) {
+                throw new InvalidTokenRequestException("JWT", authToken, "Token has been blacklisted");
+            }
+
+            // Parse claims from the token
             Claims claims = parseClaims(authToken, type);
             String userEmail = claims.getSubject();
             String deviceId = claims.get("deviceId", String.class);
@@ -130,7 +137,14 @@ public class JwtProvider {
 
             // Validate token expiry
             Date expiration = claims.getExpiration();
-            return expiration.after(new Date());
+            if (expiration.before(new Date())) {
+                throw new JwtTokenExpiredException("Expired JWT token");
+            }
+
+            return true; // Token is valid
+        } catch (JwtTokenExpiredException ex) {
+            logger.warn("Expired JWT token: {}", ex.getMessage());
+            throw ex; // Re-throw the exception
         } catch (Exception ex) {
             logger.error("Token validation failed: {}", ex.getMessage());
             throw new BadCredentialsException("INVALID_CREDENTIALS", ex);

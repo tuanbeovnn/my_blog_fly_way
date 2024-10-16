@@ -49,15 +49,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             });
             filterChain.doFilter(request, response);
+        }catch (InvalidTokenRequestException ex) {
+            logger.warn("Blacklisted JWT token: {}", ex.getMessage());
+            setErrorResponse(HttpStatus.UNAUTHORIZED, response, "Unauthorized access: Invalid token.");
         } catch (JwtTokenExpiredException ex) {
             logger.warn("JWT token expired: {}", ex.getMessage());
             setErrorResponse(HttpStatus.UNAUTHORIZED, response, "Expired JWT token");
         } catch (BadCredentialsException ex) {
             logger.error("Invalid JWT token: {}", ex.getMessage());
             setErrorResponse(HttpStatus.UNAUTHORIZED, response, "Invalid credentials");
-        } catch (InvalidTokenRequestException ex) {
-            logger.warn("Invalid token request: {}", ex.getMessage());
-            setErrorResponse(HttpStatus.UNAUTHORIZED, response, ex.getMessage());
         }
     }
 
