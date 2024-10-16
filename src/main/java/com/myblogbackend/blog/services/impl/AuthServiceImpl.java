@@ -131,7 +131,7 @@ public class AuthServiceImpl implements AuthService {
         // Generate JWT and store the device ID in Redis
         var jwtToken = jwtProvider.generateJwtToken(userEntity, loginRequest.getDeviceInfo().getDeviceId());
         redisTemplate.opsForValue().set(userEntity.getEmail() + ":deviceId", loginRequest.getDeviceInfo().getDeviceId(),
-                Duration.ofMinutes(EXPIRATION_TIME_MINUTES));
+                Duration.ofMinutes(30));
         var refreshTokenEntity = createRefreshToken(loginRequest.getDeviceInfo(), userEntity);
         return new JwtResponse(jwtToken, refreshTokenEntity.getToken());
     }
