@@ -12,11 +12,7 @@ import com.myblogbackend.blog.models.FollowersEntity;
 import com.myblogbackend.blog.models.ProfileEntity;
 import com.myblogbackend.blog.models.SocialLinks;
 import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.repositories.FollowersRepository;
-import com.myblogbackend.blog.repositories.ProfileRepository;
-import com.myblogbackend.blog.repositories.RefreshTokenRepository;
-import com.myblogbackend.blog.repositories.UserDeviceRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.repositories.*;
 import com.myblogbackend.blog.request.ChangePasswordRequest;
 import com.myblogbackend.blog.request.LogOutRequest;
 import com.myblogbackend.blog.request.UserProfileRequest;
@@ -140,20 +136,6 @@ public class UserServiceImpl implements UserService {
         }
         userEntity.setPassword(encoder.encode(changePasswordRequest.getNewPassword()));
         usersRepository.save(userEntity);
-    }
-
-
-    @Override
-    public UserResponse findUserById(final UUID id) {
-        var userEntity = getUserById(id);
-        logger.info("Find user with id successfully: {}", id);
-        var followers = followersRepository.findByFollowedUserId(id);
-        var usersFollowing = getUserFollowingResponses(followers);
-        var userResponse = userMapper.toUserDTO(userEntity);
-        userResponse.setUsersFollowing(usersFollowing);
-
-        logger.info("Find user with id successfully: {}", id);
-        return getUserResponse(userEntity, userResponse);
     }
 
     @Override
