@@ -48,20 +48,22 @@ public class JwtProvider {
         this.redisTemplate = redisTemplate;
     }
 
-    public String generateJwtToken(final UserEntity userEntity) {
+    public String generateJwtToken(final UserEntity userEntity, final String deviceId) {
         logger.info("Generating JWT access token for user: {}", userEntity.getEmail());
-        return generateToken(userEntity, expiryMinutes, TokenType.ACCESS_TOKEN);
+        return generateToken(userEntity, expiryMinutes, TokenType.ACCESS_TOKEN, deviceId);
     }
 
-    public String generateTokenFromUser(final UserEntity userEntity) {
+    public String generateTokenFromUser(final UserEntity userEntity, final String deviceId) {
         logger.info("Generating JWT refresh token for user: {}", userEntity.getEmail());
-        return generateToken(userEntity, expiryDay, TokenType.REFRESH_TOKEN);
+        return generateToken(userEntity, expiryDay, TokenType.REFRESH_TOKEN, deviceId);
     }
 
-    private String generateToken(final UserEntity userEntity, final long expiryDuration, final TokenType tokenType) {
-        logger.debug("Generating {} token for user: {} with expiry duration: {} minutes",
-                tokenType, userEntity.getEmail(), expiryDuration);
-        var claims = getClaimsFromUser(userEntity);
+    private String generateToken(final UserEntity userEntity, final long expiryDuration, final TokenType tokenType, final String deviceId) {
+        logger.debug("Generating {} token for user: {} with expiry duration: {} minutes", tokenType, userEntity.getEmail(), expiryDuration);
+        var claims = new java.util.HashMap<>(getClaimsFromUser(userEntity));
+
+        // Add deviceId to claims
+        claims.put("deviceId", deviceId);
 
         return Jwts.builder()
                 .setClaims(claims)

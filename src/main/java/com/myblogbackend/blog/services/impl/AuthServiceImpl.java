@@ -64,7 +64,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -130,7 +129,7 @@ public class AuthServiceImpl implements AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // Generate JWT and store the device ID in Redis
-        var jwtToken = jwtProvider.generateJwtToken(userEntity);
+        var jwtToken = jwtProvider.generateJwtToken(userEntity, loginRequest.getDeviceInfo().getDeviceId());
         redisTemplate.opsForValue().set(userEntity.getEmail() + ":deviceId", loginRequest.getDeviceInfo().getDeviceId(),
                 Duration.ofMinutes(EXPIRATION_TIME_MINUTES));
         var refreshTokenEntity = createRefreshToken(loginRequest.getDeviceInfo(), userEntity);
@@ -221,7 +220,7 @@ public class AuthServiceImpl implements AuthService {
         var user = usersRepository.findByEmail(userInfo.getEmail())
                 .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
 
-        var jwtToken = jwtProvider.generateJwtToken(user);
+        var jwtToken = jwtProvider.generateJwtToken(user, loginFormOutboundRequest.getDeviceInfo().getDeviceId());
         var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
 
         return JwtResponse.builder()
@@ -281,19 +280,22 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtResponse refreshJwtToken(final TokenRefreshRequest tokenRefreshRequest) {
-        var requestRefreshToken = tokenRefreshRequest.getRefreshToken();
-        var token = Optional.of(refreshTokenRepository.findByToken(requestRefreshToken)
-                .map(refreshToken -> {
-                    verifyExpiration(refreshToken);
-                    verifyRefreshAvailability(refreshToken);
-                    increaseCount(refreshToken);
-                    return refreshToken;
-                })
-                .map(RefreshTokenEntity::getUserDevice)
-                .map(UserDeviceEntity::getUser)
-                .map(jwtProvider::generateJwtToken)
-                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database.Please login again")));
-        return new JwtResponse(token.get(), tokenRefreshRequest.getRefreshToken());
+        String requestRefreshToken = tokenRefreshRequest.getRefreshToken();
+
+        // Retrieve the refresh token from the database
+        RefreshTokenEntity refreshToken = refreshTokenRepository.findByToken(requestRefreshToken)
+                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database. Please login again"));
+
+        // Verify expiration and availability of the refresh token
+        verifyExpiration(refreshToken);
+        verifyRefreshAvailability(refreshToken);
+        increaseCount(refreshToken); // Assuming this increments usage count or something similar
+
+        // Generate new access token using user details from the refresh token
+        UserEntity userEntity = refreshToken.getUserDevice().getUser();
+        String newAccessToken = jwtProvider.generateJwtToken(userEntity, refreshToken.getUserDevice().getDeviceId());
+
+        return new JwtResponse(newAccessToken, requestRefreshToken);
     }
 
 
