@@ -1,21 +1,20 @@
 package com.myblogbackend.blog.config.security;
 
-import com.myblogbackend.blog.cache.LoggedOutJwtTokenCache;
 import com.myblogbackend.blog.enums.TokenType;
-import com.myblogbackend.blog.event.OnUserLogoutSuccessEvent;
 import com.myblogbackend.blog.exception.InvalidDataException;
 import com.myblogbackend.blog.exception.InvalidTokenRequestException;
-import com.myblogbackend.blog.exception.JwtTokenExpiredException;
 import com.myblogbackend.blog.models.RoleEntity;
 import com.myblogbackend.blog.models.UserEntity;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 
@@ -42,10 +41,10 @@ public class JwtProvider {
     @Value("${jwt.refreshKey}")
     private String refreshKey;
 
-    private final LoggedOutJwtTokenCache loggedOutJwtTokenCache;
+    private final RedisTemplate<String, String> redisTemplate;
 
-    public JwtProvider(@Lazy final LoggedOutJwtTokenCache loggedOutJwtTokenCache) {
-        this.loggedOutJwtTokenCache = loggedOutJwtTokenCache;
+    public JwtProvider(final RedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
     }
 
     public String generateJwtToken(final UserEntity userEntity) {
@@ -119,30 +118,22 @@ public class JwtProvider {
 
     public boolean validateJwtToken(final String authToken, final TokenType type, final HttpServletRequest request) {
         try {
-            logger.info("Validating JWT token of type: {}", type);
-            parseClaims(authToken, type);
-            validateTokenIsNotForALoggedOutDevice(authToken);
-            logger.info("JWT token validated successfully.");
-            return true;
-        } catch (MalformedJwtException | UnsupportedJwtException | IllegalArgumentException ex) {
-            logger.error("Invalid JWT token: {}", ex.getMessage());
-            throw new BadCredentialsException("INVALID_CREDENTIALS", ex);
-        } catch (ExpiredJwtException ex) {
-            logger.warn("Expired JWT token: {}", ex.getMessage());
-            request.setAttribute("expired", ex.getMessage());
-            // Throw custom exception for expired token
-            throw new JwtTokenExpiredException("Expired JWT token");
-        }
-    }
+            Claims claims = parseClaims(authToken, type);
+            String userEmail = claims.getSubject();
+            String deviceId = claims.get("deviceId", String.class);
 
-    private void validateTokenIsNotForALoggedOutDevice(final String authToken) {
-        logger.debug("Checking if token is associated with a logged-out user.");
-        OnUserLogoutSuccessEvent loggedOutEvent = loggedOutJwtTokenCache.getLogoutEventForToken(authToken);
-        if (loggedOutEvent != null) {
-            String errorMessage = String.format("Token corresponds to an already logged out user [%s] at [%s]. Please login again",
-                    loggedOutEvent.getUserEmail(), loggedOutEvent.getEventTime());
-            logger.warn(errorMessage);
-            throw new InvalidTokenRequestException("JWT", authToken, errorMessage);
+            // Check if the device ID stored in Redis matches the one in the token
+            String storedDeviceId = redisTemplate.opsForValue().get(userEmail + ":deviceId");
+            if (storedDeviceId == null || !storedDeviceId.equals(deviceId)) {
+                throw new InvalidTokenRequestException("JWT", authToken, "User logged in from another device");
+            }
+
+            // Validate token expiry
+            Date expiration = claims.getExpiration();
+            return expiration.after(new Date());
+        } catch (Exception ex) {
+            logger.error("Token validation failed: {}", ex.getMessage());
+            throw new BadCredentialsException("INVALID_CREDENTIALS", ex);
         }
     }
 }

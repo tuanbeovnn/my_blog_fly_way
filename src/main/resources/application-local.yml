@@ -51,6 +51,12 @@ spring:
                         enable: true
                     timeout: 5000
                     writetimeout: 5000
+    data:
+        redis:
+            host: code4fun.xyz
+            port: 6379
+            database: 0
+            password: default
 
     servlet:
         multipart:

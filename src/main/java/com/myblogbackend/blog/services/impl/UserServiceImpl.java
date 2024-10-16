@@ -30,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +50,7 @@ public class UserServiceImpl implements UserService {
     private final FollowersRepository followersRepository;
     private final ProfileRepository profileRepository;
     private final PasswordEncoder encoder;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     public void logoutUser(final LogOutRequest logOutRequest, final UserPrincipal currentUser) {
@@ -57,6 +59,10 @@ public class UserServiceImpl implements UserService {
                 .filter(device -> device.getDeviceId().equals(deviceId))
                 .orElseThrow(() -> new UserLogoutException(logOutRequest.getDeviceInfo().getDeviceId(),
                         "Invalid device Id supplied. No matching device found for the given user "));
+
+        // Remove the device ID from Redis
+        redisTemplate.delete(currentUser.getEmail() + ":deviceId");
+
         refreshTokenRepository.deleteById(userDevice.getRefreshToken().getId());
         var logoutSuccessEvent = new OnUserLogoutSuccessEvent(currentUser.getEmail(), logOutRequest.getToken(), logOutRequest);
         applicationEventPublisher.publishEvent(logoutSuccessEvent);

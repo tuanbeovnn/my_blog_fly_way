@@ -61,6 +61,12 @@ spring:
     threads:
         virtual:
             enabled: true
+    data:
+        redis:
+            host: code4fun.xyz
+            port: 6379
+            database: 0
+            password: default
 management:
     endpoints:
         web:

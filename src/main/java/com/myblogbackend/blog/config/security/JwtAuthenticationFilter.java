@@ -2,6 +2,7 @@ package com.myblogbackend.blog.config.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myblogbackend.blog.enums.TokenType;
+import com.myblogbackend.blog.exception.InvalidTokenRequestException;
 import com.myblogbackend.blog.exception.JwtTokenExpiredException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -54,6 +55,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (BadCredentialsException ex) {
             logger.error("Invalid JWT token: {}", ex.getMessage());
             setErrorResponse(HttpStatus.UNAUTHORIZED, response, "Invalid credentials");
+        } catch (InvalidTokenRequestException ex) {
+            logger.warn("Invalid token request: {}", ex.getMessage());
+            setErrorResponse(HttpStatus.UNAUTHORIZED, response, ex.getMessage());
         }
     }
 
