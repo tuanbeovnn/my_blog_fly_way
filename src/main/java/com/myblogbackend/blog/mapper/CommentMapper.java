@@ -11,7 +11,8 @@ public interface CommentMapper {
 
     CommentEntity toCommentEntity(CommentRequest commentRequest);
 
-    @Mapping(source = "commentEntity.user.name", target = "userName")
+    @Mapping(source = "commentEntity.user.userName", target = "userName")
+    @Mapping(source = "commentEntity.user.name", target = "name")
     @Mapping(source = "commentEntity.post.id", target = "postId")
     @Mapping(source = "commentEntity.user.id", target = "userId")
     @Mapping(source = "commentEntity.user.profile.avatarUrl", target = "avatar")

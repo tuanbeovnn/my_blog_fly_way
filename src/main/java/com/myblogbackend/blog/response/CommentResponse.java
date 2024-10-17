@@ -14,6 +14,7 @@ public class CommentResponse {
     private UUID id;
     private String content;
     private String userName;
+    private String name;
     private UUID postId;
     private String userId;
     private Date createdDate;
