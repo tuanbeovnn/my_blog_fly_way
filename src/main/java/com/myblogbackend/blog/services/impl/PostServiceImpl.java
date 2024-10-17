@@ -1,5 +1,7 @@
 package com.myblogbackend.blog.services.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.enums.PostTag;
@@ -47,11 +49,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -79,6 +83,9 @@ public class PostServiceImpl implements PostService {
     private final FirebaseUserRepository firebaseUserRepository;
     private final CommentRepository commentRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
+    private static final Duration DRAFT_EXPIRATION = Duration.ofHours(12);
 
     @Override
     @Transactional
@@ -102,8 +109,50 @@ public class PostServiceImpl implements PostService {
         var createdPost = postRepository.save(postEntity);
         logger.info("Post was created with id: {}", createdPost.getId());
 
+        // Remove the draft from Redis after successful publishing
+        redisTemplate.delete(getDraftRedisKey(userEntity.getEmail()));
+
         return buildPostResponse(createdPost, userEntity.getId());
 
+    }
+
+    public void saveDraft(final PostRequest postRequest) {
+        var userEntity = usersRepository.findById(getUserId()).orElseThrow();
+        String draftKey = getDraftRedisKey(userEntity.getEmail());
+
+        try {
+            // Convert PostRequest object to JSON String
+            String postRequestJson = objectMapper.writeValueAsString(postRequest);
+
+            // Save the draft as JSON with expiration time
+            redisTemplate.opsForValue().set(draftKey, postRequestJson, DRAFT_EXPIRATION);
+            logger.info("Draft saved for user: {}", userEntity.getEmail());
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to serialize PostRequest for draft saving", e);
+        }
+    }
+
+    // Retrieve the saved draft from Redis (deserialize JSON to PostRequest)
+    public PostRequest getSavedDraft() {
+        var userEntity = usersRepository.findById(getUserId()).orElseThrow();
+        String draftKey = getDraftRedisKey(userEntity.getEmail());
+
+        // Retrieve the draft JSON from Redis
+        String postRequestJson = redisTemplate.opsForValue().get(draftKey);
+        if (postRequestJson != null) {
+            try {
+                // Convert JSON String back to PostRequest object
+                return objectMapper.readValue(postRequestJson, PostRequest.class);
+            } catch (JsonProcessingException e) {
+                logger.error("Failed to deserialize draft from Redis", e);
+            }
+        }
+        return null; // Return null if no draft is found or deserialization fails
+    }
+
+    // Helper method to generate Redis key for draft
+    private String getDraftRedisKey(final String userEmail) {
+        return "draft:" + userEmail;
     }
 
     private void sendAMessageFromKafkaToNotificationService(final UserEntity userEntity, final PostEntity createdPost)

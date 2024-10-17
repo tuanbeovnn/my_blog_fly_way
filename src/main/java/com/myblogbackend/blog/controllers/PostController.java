@@ -44,6 +44,24 @@ public class PostController {
                 .build();
     }
 
+    // Endpoint to save post drafts
+    @PostMapping("/posts/draft")
+    public ResponseEntity<?> savePostDraft(@RequestBody @Valid final PostRequest postRequest) {
+        postService.saveDraft(postRequest);
+        return ResponseEntity.ok("Draft saved successfully");
+    }
+
+    // Endpoint to get the saved draft when user logs back in
+    @GetMapping("/posts/draft")
+    public ResponseEntity<?> getSavedDraft() {
+        PostRequest draft = postService.getSavedDraft();
+        if (draft != null) {
+            return ResponseEntity.ok(draft);
+        } else {
+            return ResponseEntity.noContent().build(); // No draft found
+        }
+    }
+
     @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/post-tags")
     public ResponseEntity<?> getPostTags() {
         var listTags = Arrays.stream(PostTag.values())
