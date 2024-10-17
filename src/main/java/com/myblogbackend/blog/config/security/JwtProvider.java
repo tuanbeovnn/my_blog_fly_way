@@ -20,6 +20,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
@@ -121,19 +122,22 @@ public class JwtProvider {
 
     public boolean validateJwtToken(final String authToken, final TokenType type, final HttpServletRequest request) {
         try {
-            // Check if the token is blacklisted
             if (Boolean.TRUE.equals(redisTemplate.hasKey(authToken))) {
                 throw new InvalidTokenRequestException("JWT", authToken, "Token has been blacklisted");
             }
 
-            // Parse claims from the token
             Claims claims = parseClaims(authToken, type);
             String userEmail = claims.getSubject();
             String deviceId = claims.get("deviceId", String.class);
 
-            // Check if the device ID stored in Redis matches the one in the token
+            // Fetch the stored device ID
             String storedDeviceId = redisTemplate.opsForValue().get(userEmail + ":deviceId");
-            if (storedDeviceId == null || !storedDeviceId.equals(deviceId)) {
+
+            // Check if the stored deviceId exists, if not, refresh it for valid tokens
+            if (storedDeviceId == null) {
+                // Option 1: Regenerate the deviceId if valid session, or extend TTL
+                redisTemplate.opsForValue().set(userEmail + ":deviceId", deviceId, Duration.ofMinutes(30));
+            } else if (!storedDeviceId.equals(deviceId)) {
                 throw new InvalidTokenRequestException("JWT", authToken, "User logged in from another device");
             }
 
@@ -143,7 +147,7 @@ public class JwtProvider {
                 throw new JwtTokenExpiredException("Expired JWT token");
             }
 
-            return true; // Token is valid
+            return true;
         } catch (JwtTokenExpiredException ex) {
             logger.warn("Expired JWT token: {}", ex.getMessage());
             throw ex; // Re-throw the exception
