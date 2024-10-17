@@ -46,7 +46,7 @@ public class PostController {
 
     // Endpoint to save post drafts
     @PostMapping("/posts/draft")
-    public ResponseEntity<?> savePostDraft(@RequestBody @Valid final PostRequest postRequest) {
+    public ResponseEntity<?> savePostDraft(@RequestBody final PostRequest postRequest) {
         postService.saveDraft(postRequest);
         return ResponseEntity.ok("Draft saved successfully");
     }
