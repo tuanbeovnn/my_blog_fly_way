@@ -13,16 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -44,22 +38,22 @@ public class PostController {
                 .build();
     }
 
-    // Endpoint to save post drafts
     @PostMapping("/posts/draft")
     public ResponseEntity<?> savePostDraft(@RequestBody final PostRequest postRequest) {
-        postService.saveDraft(postRequest);
-        return ResponseEntity.ok("Draft saved successfully");
+        PostResponse post = postService.saveDraft(postRequest);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(post)
+                .build();
     }
 
-    // Endpoint to get the saved draft when user logs back in
     @GetMapping("/posts/draft")
     public ResponseEntity<?> getSavedDraft() {
         PostRequest draft = postService.getSavedDraft();
-        if (draft != null) {
-            return ResponseEntity.ok(draft);
-        } else {
-            return ResponseEntity.noContent().build(); // No draft found
-        }
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(Objects.requireNonNullElseGet(draft, PostRequest::new))
+                .build();
     }
 
     @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/post-tags")

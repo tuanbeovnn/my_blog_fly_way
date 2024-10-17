@@ -12,29 +12,13 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.CategoryEntity;
-import com.myblogbackend.blog.models.FollowersEntity;
-import com.myblogbackend.blog.models.PostEntity;
-import com.myblogbackend.blog.models.ProfileEntity;
-import com.myblogbackend.blog.models.TagEntity;
-import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
-import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.models.*;
 import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.repositories.CategoryRepository;
-import com.myblogbackend.blog.repositories.CommentRepository;
-import com.myblogbackend.blog.repositories.FavoriteRepository;
-import com.myblogbackend.blog.repositories.FirebaseUserRepository;
-import com.myblogbackend.blog.repositories.FollowersRepository;
-import com.myblogbackend.blog.repositories.PostRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.repositories.*;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.request.TopicNotificationRequest;
-import com.myblogbackend.blog.response.PostResponse;
-import com.myblogbackend.blog.response.UserFollowingResponse;
-import com.myblogbackend.blog.response.UserLikedPostResponse;
-import com.myblogbackend.blog.response.UserPostFavoriteResponse;
-import com.myblogbackend.blog.response.UserResponse;
+import com.myblogbackend.blog.response.*;
 import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
 import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
 import com.myblogbackend.blog.services.PostService;
@@ -56,13 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -116,38 +94,37 @@ public class PostServiceImpl implements PostService {
 
     }
 
-    public void saveDraft(final PostRequest postRequest) {
+    public PostResponse saveDraft(final PostRequest postRequest) {
         var userEntity = usersRepository.findById(getUserId()).orElseThrow();
         String draftKey = getDraftRedisKey(userEntity.getEmail());
-
         try {
-            // Convert PostRequest object to JSON String
             String postRequestJson = objectMapper.writeValueAsString(postRequest);
 
-            // Save the draft as JSON with expiration time
+            PostResponse postResponse = objectMapper.readValue(postRequestJson, PostResponse.class);
+
             redisTemplate.opsForValue().set(draftKey, postRequestJson, DRAFT_EXPIRATION);
+
             logger.info("Draft saved for user: {}", userEntity.getEmail());
+            return postResponse;
         } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize PostRequest for draft saving", e);
+            logger.error("Failed to serialize or deserialize PostRequest", e);
+            throw new RuntimeException("Error while saving draft", e); // or handle it based on your needs
         }
     }
 
-    // Retrieve the saved draft from Redis (deserialize JSON to PostRequest)
     public PostRequest getSavedDraft() {
         var userEntity = usersRepository.findById(getUserId()).orElseThrow();
         String draftKey = getDraftRedisKey(userEntity.getEmail());
 
-        // Retrieve the draft JSON from Redis
         String postRequestJson = redisTemplate.opsForValue().get(draftKey);
         if (postRequestJson != null) {
             try {
-                // Convert JSON String back to PostRequest object
                 return objectMapper.readValue(postRequestJson, PostRequest.class);
             } catch (JsonProcessingException e) {
                 logger.error("Failed to deserialize draft from Redis", e);
             }
         }
-        return null; // Return null if no draft is found or deserialization fails
+        return new PostRequest();
     }
 
     // Helper method to generate Redis key for draft

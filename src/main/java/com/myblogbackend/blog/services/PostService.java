@@ -30,7 +30,7 @@ public interface PostService {
 
     List<UserPostFavoriteResponse> findUsersWithManyPostsAndHighFavorites(long postThreshold, long favoritesThreshold);
 
-    void saveDraft(PostRequest postRequest);
+    PostResponse saveDraft(PostRequest postRequest);
 
     PostRequest getSavedDraft();
 
