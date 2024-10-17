@@ -96,27 +96,19 @@ public class PostServiceImpl implements PostService {
 
     public PostResponse saveDraft(final PostRequest postRequest) {
         var userEntity = usersRepository.findById(getUserId()).orElseThrow();
-        String draftKey = getDraftRedisKey(userEntity.getEmail());
-        try {
-            String postRequestJson = objectMapper.writeValueAsString(postRequest);
-
-            PostResponse postResponse = objectMapper.readValue(postRequestJson, PostResponse.class);
-
-            redisTemplate.opsForValue().set(draftKey, postRequestJson, DRAFT_EXPIRATION);
-
-            logger.info("Draft saved for user: {}", userEntity.getEmail());
-            return postResponse;
-        } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize or deserialize PostRequest", e);
-            throw new RuntimeException("Error while saving draft", e); // or handle it based on your needs
-        }
+        var draftKey = getDraftRedisKey(userEntity.getEmail());
+        var postRequestJson = GsonUtils.objectToString(postRequest);
+        var postResponse = GsonUtils.stringToObject(postRequestJson, PostResponse.class);
+        redisTemplate.opsForValue().set(draftKey, postRequestJson, DRAFT_EXPIRATION);
+        logger.info("Draft saved for user: {}", userEntity.getEmail());
+        return postResponse;
     }
 
     public PostRequest getSavedDraft() {
         var userEntity = usersRepository.findById(getUserId()).orElseThrow();
-        String draftKey = getDraftRedisKey(userEntity.getEmail());
+        var draftKey = getDraftRedisKey(userEntity.getEmail());
 
-        String postRequestJson = redisTemplate.opsForValue().get(draftKey);
+        var postRequestJson = redisTemplate.opsForValue().get(draftKey);
         if (postRequestJson != null) {
             try {
                 return objectMapper.readValue(postRequestJson, PostRequest.class);
