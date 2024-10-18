@@ -131,7 +131,7 @@ public class CommentServiceImpl implements CommentService {
                 .map(item -> {
                     var commentResponse = commentMapper.toCommentResponse(item);
                     // Calculate total child comments
-                    int totalChildComments = commentRepository.countByParentCommentId(item.getId());
+                    int totalChildComments = commentRepository.countByParentCommentIdAndStatusTrue(item.getId());
                     commentResponse.setTotalChildComment(totalChildComments);
                     // Determine if there are child comments
                     commentResponse.setIsHasChildComment(totalChildComments > 0);
