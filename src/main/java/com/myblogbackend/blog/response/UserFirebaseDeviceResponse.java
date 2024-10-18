@@ -1,4 +1,4 @@
-package com.myblogbackend.blog.request;
+package com.myblogbackend.blog.response;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Setter
 @Getter
-public class UserFirebaseDeviceRequest {
+public class UserFirebaseDeviceResponse {
     @NotBlank
     private String deviceToken;
     @NotBlank
