@@ -220,6 +220,10 @@ public class AuthServiceImpl implements AuthService {
         var user = usersRepository.findByEmail(userInfo.getEmail())
                 .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
 
+        if (user.getProvider() == OAuth2Provider.LOCAL) {
+            throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
+        }
+
         var jwtToken = jwtProvider.generateJwtToken(user, loginFormOutboundRequest.getDeviceInfo().getDeviceId());
         var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
 
