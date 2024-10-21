@@ -214,17 +214,30 @@ public class AuthServiceImpl implements AuthService {
                 .grantType(GRANT_TYPE)
                 .build());
 
-        logger.info("Token from google {} ", response.getAccessToken());
+        logger.info("Token from google: {}", response.getAccessToken());
         var userInfo = outboundUserClient.getUserInfo(JSON, response.getAccessToken());
 
+        // Find the user by email or create a new user
         var user = usersRepository.findByEmail(userInfo.getEmail())
                 .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
 
         if (user.getProvider() == OAuth2Provider.LOCAL) {
-            throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
+            throw new BlogRuntimeException(ErrorCode.ACCOUNT_CREATED_LOCAL);
         }
 
+        // Check if the user is already logged in from another device
+        String existingDeviceId = redisTemplate.opsForValue().get(user.getEmail() + ":deviceId");
+        if (existingDeviceId != null && !existingDeviceId.equals(loginFormOutboundRequest.getDeviceInfo().getDeviceId())) {
+            throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN); // Define appropriate error code
+        }
+
+        // Generate JWT token
         var jwtToken = jwtProvider.generateJwtToken(user, loginFormOutboundRequest.getDeviceInfo().getDeviceId());
+
+        // Store the device ID in Redis with an expiration time (e.g., 30 minutes)
+        redisTemplate.opsForValue().set(user.getEmail() + ":deviceId",
+                loginFormOutboundRequest.getDeviceInfo().getDeviceId(), Duration.ofMinutes(30));
+
         var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
 
         return JwtResponse.builder()
