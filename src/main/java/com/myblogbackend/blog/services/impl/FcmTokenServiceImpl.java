@@ -18,20 +18,23 @@ public class FcmTokenServiceImpl implements FcmTokenService {
 
     @Override
     public UserFirebaseDeviceResponse saveFcmUserTokenDevice(final UserFirebaseDeviceRequest userFirebaseDeviceRequest) {
-        var userDeviceFireBaseTokenEntity = userFirebaseDeviceTokenMapper
-                .toUserFirebaseDeviceTokenEntity(userFirebaseDeviceRequest);
-
-        var existingToken = firebaseUserRepository.findByUserIdAndDeviceToken(
-                userFirebaseDeviceRequest.getUserId(),
-                userFirebaseDeviceRequest.getDeviceToken()
-        );
+        // Check if the user already has an FCM token stored
+        var existingToken = firebaseUserRepository.findByUserId(userFirebaseDeviceRequest.getUserId());
 
         if (existingToken.isPresent()) {
+            // Update the existing token with the new device token
             var existingEntity = existingToken.get();
+            existingEntity.setDeviceToken(userFirebaseDeviceRequest.getDeviceToken());
+
             firebaseUserRepository.save(existingEntity);
+
             return userFirebaseDeviceTokenMapper.toUserFirebaseDeviceTokenResponse(existingEntity);
         } else {
+            // If no existing token is found for the user, save a new token
+            var userDeviceFireBaseTokenEntity = userFirebaseDeviceTokenMapper
+                    .toUserFirebaseDeviceTokenEntity(userFirebaseDeviceRequest);
             var result = firebaseUserRepository.save(userDeviceFireBaseTokenEntity);
+
             return userFirebaseDeviceTokenMapper.toUserFirebaseDeviceTokenResponse(result);
         }
     }

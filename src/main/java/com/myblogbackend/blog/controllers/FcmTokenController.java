@@ -8,7 +8,7 @@ import com.myblogbackend.blog.services.impl.FcmTokenServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FcmTokenController {
     private final FcmTokenServiceImpl fcmTokenService;
 
-    @PostMapping("/token")
+    @PutMapping("/token")
     public ResponseEntity<?> saveFcmUserTokenDevice(@RequestBody @Valid final UserFirebaseDeviceRequest userFirebaseDeviceRequest) {
         var userFirebaseDeviceResponse = fcmTokenService.saveFcmUserTokenDevice(userFirebaseDeviceRequest);
         return ResponseEntityBuilder
