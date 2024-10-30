@@ -190,13 +190,14 @@ public class PostServiceImpl implements PostService {
         notificationEvent.setDeviceTokenId(token);
         notificationEvent.setNotificationType(String.valueOf(NEW_POST));
 
-        Map<String, Object> data = new HashMap<>();
+        Map<String, String> data = new HashMap<>();
         data.put("postId", String.valueOf(createdPost.getId()));
-        data.put("userIds", new ArrayList<>(userIds));
+        data.put("userIds", String.valueOf(new ArrayList<>(userIds)));
         data.put("postSlug", createdPost.getSlug());
         data.put("postTitle", createdPost.getTitle());
         data.put("userName", userEntity.getUserName());
         data.put("userEmail", userEntity.getEmail());
+        data.put("name", userEntity.getName());
         notificationEvent.setData(data);
 
         return notificationEvent;

@@ -15,5 +15,5 @@ import java.util.Map;
 public class NotificationEvent {
     private String notificationType;
     private String deviceTokenId;
-    private Map<String, Object> data = new HashMap<>();
+    private Map<String, String> data = new HashMap<>();
 }
