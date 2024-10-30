@@ -12,13 +12,29 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.*;
+import com.myblogbackend.blog.models.CategoryEntity;
+import com.myblogbackend.blog.models.FollowersEntity;
+import com.myblogbackend.blog.models.PostEntity;
+import com.myblogbackend.blog.models.ProfileEntity;
+import com.myblogbackend.blog.models.TagEntity;
+import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
+import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.repositories.*;
+import com.myblogbackend.blog.repositories.CategoryRepository;
+import com.myblogbackend.blog.repositories.CommentRepository;
+import com.myblogbackend.blog.repositories.FavoriteRepository;
+import com.myblogbackend.blog.repositories.FirebaseUserRepository;
+import com.myblogbackend.blog.repositories.FollowersRepository;
+import com.myblogbackend.blog.repositories.PostRepository;
+import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.request.TopicNotificationRequest;
-import com.myblogbackend.blog.response.*;
+import com.myblogbackend.blog.response.PostResponse;
+import com.myblogbackend.blog.response.UserFollowingResponse;
+import com.myblogbackend.blog.response.UserLikedPostResponse;
+import com.myblogbackend.blog.response.UserPostFavoriteResponse;
+import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
 import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
 import com.myblogbackend.blog.services.PostService;
@@ -40,11 +56,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static com.myblogbackend.blog.enums.NotificationType.NEW_POST;
 import static com.myblogbackend.blog.utils.SlugUtil.makeSlug;
 
 @Service
@@ -89,7 +113,7 @@ public class PostServiceImpl implements PostService {
 
         // Remove the draft from Redis after successful publishing
         redisTemplate.delete(getDraftRedisKey(userEntity.getEmail()));
-
+        sendAMessageFromKafkaToNotificationService(userEntity, createdPost);
         return buildPostResponse(createdPost, userEntity.getId());
 
     }
@@ -136,27 +160,33 @@ public class PostServiceImpl implements PostService {
             return;
         }
 
-        // Step 2: Aggregate notifications by device token
-        Map<String, List<UUID>> tokenToUserMap = new HashMap<>();
+        Map<String, Set<UUID>> tokenToUserMap = new HashMap<>();
 
         for (UserFollowingResponse follower : usersFollowing) {
             List<UserDeviceFireBaseTokenEntity> userDeviceTokens = firebaseUserRepository.findAllByUserId(follower.getId());
 
             for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceTokens) {
                 String token = deviceTokenEntity.getDeviceToken();
-                tokenToUserMap.computeIfAbsent(token, k -> new LinkedList<>()).add(follower.getId());
+                // Use a Set to prevent duplicate user IDs
+                tokenToUserMap.computeIfAbsent(token, k -> new HashSet<>()).add(follower.getId());
             }
         }
 
-        // Step 3: Send aggregated notifications asynchronously
-        for (Map.Entry<String, List<UUID>> entry : tokenToUserMap.entrySet()) {
+        for (Map.Entry<String, Set<UUID>> entry : tokenToUserMap.entrySet()) {
             String token = entry.getKey();
-            List<UUID> userIds = entry.getValue();
+            Set<UUID> userIds = entry.getValue();
 
             NotificationEvent notificationEvent = new NotificationEvent();
-            notificationEvent.setPostId(createdPost.getId());
-            notificationEvent.setUserIds(userIds);
             notificationEvent.setDeviceTokenId(token);
+            notificationEvent.setNotificationType(String.valueOf(NEW_POST));
+            Map<String, Object> data = new HashMap<>();
+            data.put("postId", String.valueOf(createdPost.getId()));
+            data.put("userIds", new ArrayList<>(userIds));
+            data.put("postSlug", createdPost.getSlug());
+            data.put("postTitle", createdPost.getTitle());
+            data.put("userName", userEntity.getUserName());
+            data.put("userEmail", userEntity.getEmail());
+            notificationEvent.setData(data);
 
             try {
                 CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("notification-topic", notificationEvent);
