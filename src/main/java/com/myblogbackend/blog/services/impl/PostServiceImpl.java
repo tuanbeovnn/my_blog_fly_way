@@ -6,7 +6,6 @@ import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.enums.RatingType;
-import com.myblogbackend.blog.enums.TopicType;
 import com.myblogbackend.blog.event.dto.NotificationEvent;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
@@ -29,7 +28,6 @@ import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
-import com.myblogbackend.blog.request.TopicNotificationRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.UserFollowingResponse;
 import com.myblogbackend.blog.response.UserLikedPostResponse;
@@ -150,7 +148,7 @@ public class PostServiceImpl implements PostService {
 
     private void sendAMessageFromKafkaToNotificationService(final UserEntity userEntity, final PostEntity createdPost)
             throws ExecutionException, InterruptedException {
-        // Step 1: Get list of users who are following the user creating the post
+
         var followers = followersRepository.findByFollowedUserId(userEntity.getId());
         var usersFollowing = getUserFollowingResponses(followers);
         logger.info("User {} has {} followers.", userEntity.getId(), usersFollowing.size());
@@ -160,62 +158,64 @@ public class PostServiceImpl implements PostService {
             return;
         }
 
+        Map<String, Set<UUID>> tokenToUserMap = buildTokenToUserMap(usersFollowing);
+        sendNotifications(tokenToUserMap, createdPost, userEntity);
+    }
+
+    private Map<String, Set<UUID>> buildTokenToUserMap(final List<UserFollowingResponse> usersFollowing) {
         Map<String, Set<UUID>> tokenToUserMap = new HashMap<>();
 
         for (UserFollowingResponse follower : usersFollowing) {
             List<UserDeviceFireBaseTokenEntity> userDeviceTokens = firebaseUserRepository.findAllByUserId(follower.getId());
-
             for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceTokens) {
                 String token = deviceTokenEntity.getDeviceToken();
-                // Use a Set to prevent duplicate user IDs
                 tokenToUserMap.computeIfAbsent(token, k -> new HashSet<>()).add(follower.getId());
             }
         }
 
+        return tokenToUserMap;
+    }
+
+    private void sendNotifications(final Map<String, Set<UUID>> tokenToUserMap, final PostEntity createdPost, final UserEntity userEntity) {
         for (Map.Entry<String, Set<UUID>> entry : tokenToUserMap.entrySet()) {
             String token = entry.getKey();
             Set<UUID> userIds = entry.getValue();
-
-            NotificationEvent notificationEvent = new NotificationEvent();
-            notificationEvent.setDeviceTokenId(token);
-            notificationEvent.setNotificationType(String.valueOf(NEW_POST));
-            Map<String, Object> data = new HashMap<>();
-            data.put("postId", String.valueOf(createdPost.getId()));
-            data.put("userIds", new ArrayList<>(userIds));
-            data.put("postSlug", createdPost.getSlug());
-            data.put("postTitle", createdPost.getTitle());
-            data.put("userName", userEntity.getUserName());
-            data.put("userEmail", userEntity.getEmail());
-            notificationEvent.setData(data);
-
-            try {
-                CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("notification-topic", notificationEvent);
-                future.whenComplete((result, ex) -> {
-                    if (ex != null) {
-                        logger.error("Error sending notification event to token {}: ", token, ex);
-                        // Save to db an event if it failed.
-                    } else {
-                        logger.info("Notification event sent to token {} successfully.", token);
-                    }
-                });
-            } catch (Exception e) {
-                logger.error("Exception occurred while sending notification event to token {}: ", token, e);
-            }
+            NotificationEvent notificationEvent = createNotificationEvent(token, userIds, createdPost, userEntity);
+            sendNotificationEvent(notificationEvent, token);
         }
     }
 
-    private TopicNotificationRequest getTopicNotificationRequest(final UserEntity userEntity,
-                                                                 final PostEntity createdPost,
-                                                                 final UserDeviceFireBaseTokenEntity deviceTokenEntity) {
-        TopicNotificationRequest topicNotificationRequest = new TopicNotificationRequest();
-        topicNotificationRequest.setTopicName(TopicType.NEWPOST);
-        topicNotificationRequest.setDeviceToken(deviceTokenEntity.getDeviceToken());
-        topicNotificationRequest.setTitle("New Post Notification");
-        topicNotificationRequest.setBody(String.format("%s posted new post: %s", userEntity.getName().toUpperCase(), createdPost.getTitle()));
-        Map<String, String> data = new HashMap<>();
+    private NotificationEvent createNotificationEvent(final String token, final Set<UUID> userIds, final PostEntity createdPost, final UserEntity userEntity) {
+        NotificationEvent notificationEvent = new NotificationEvent();
+        notificationEvent.setDeviceTokenId(token);
+        notificationEvent.setNotificationType(String.valueOf(NEW_POST));
+
+        Map<String, Object> data = new HashMap<>();
         data.put("postId", String.valueOf(createdPost.getId()));
-        topicNotificationRequest.setData(data);
-        return topicNotificationRequest;
+        data.put("userIds", new ArrayList<>(userIds));
+        data.put("postSlug", createdPost.getSlug());
+        data.put("postTitle", createdPost.getTitle());
+        data.put("userName", userEntity.getUserName());
+        data.put("userEmail", userEntity.getEmail());
+        notificationEvent.setData(data);
+
+        return notificationEvent;
+    }
+
+    private void sendNotificationEvent(final NotificationEvent notificationEvent, final String token) {
+        try {
+            CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("notification-topic", notificationEvent);
+            future.whenComplete((result, ex) -> {
+                if (ex != null) {
+                    logger.error("Error sending notification event to token {}: ", token, ex);
+                    // Optionally: add error handling like saving the failure to the database.
+                } else {
+                    logger.info("Notification event sent to token {} successfully.", token);
+                }
+            });
+        } catch (Exception e) {
+            logger.error("Exception occurred while sending notification event to token {}: ", token, e);
+        }
     }
 
     private @NotNull List<UserFollowingResponse> getUserFollowingResponses(final List<FollowersEntity> followers) {
