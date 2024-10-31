@@ -13,6 +13,10 @@ import java.util.UUID;
 public interface FirebaseUserRepository extends JpaRepository<UserDeviceFireBaseTokenEntity, UUID> {
 
     List<UserDeviceFireBaseTokenEntity> findAllByUserId(UUID userId);
+
     Optional<UserDeviceFireBaseTokenEntity> findByUserIdAndDeviceToken(UUID userId, String deviceTokenId);
+
+    Optional<UserDeviceFireBaseTokenEntity> findByUserId(UUID userId);
+
 
 }

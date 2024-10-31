@@ -16,6 +16,7 @@ public enum ErrorCode implements CommonErrorCode {
     PASSWORD_DOES_NOT_MATCH(HttpStatus.UNAUTHORIZED, "Password does not match"),
     PASSWORD_WRONG(HttpStatus.UNAUTHORIZED, "Password was wrong"),
     USER_ALREADY_LOGGED_IN(HttpStatus.FORBIDDEN, "User already logged in another device"),
+    ACCOUNT_CREATED_LOCAL(HttpStatus.FORBIDDEN, "This account was created locally. Please use local login."),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "error.could not send email");
     private final HttpStatus status;
     private final String message;

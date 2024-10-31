@@ -11,6 +11,5 @@ import java.util.UUID;
 public class UserFirebaseDeviceRequest {
     @NotBlank
     private String deviceToken;
-    @NotBlank
     private UUID userId;
 }
