@@ -6,7 +6,7 @@ node("master") {
     cleanWs()
 
     stage('Clone Repo') {
-      git url: 'https://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@github.com/tuanbeovnn/my_blog_fly_way.git',
+      git url: 'https://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@github.com/tuanbeovnn/my_blog_fly_way.git',
         credentialsId: 'blogs',
         branch: 'dev'
     }
