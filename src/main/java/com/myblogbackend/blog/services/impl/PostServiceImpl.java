@@ -198,6 +198,11 @@ public class PostServiceImpl implements PostService {
         data.put("userName", userEntity.getUserName());
         data.put("userEmail", userEntity.getEmail());
         data.put("name", userEntity.getName());
+        data.put("createdDate", String.valueOf(createdPost.getCreatedDate()));
+        String avatarUrl = (userEntity.getProfile() != null && userEntity.getProfile().getAvatarUrl() != null)
+                ? userEntity.getProfile().getAvatarUrl()
+                : "";
+        data.put("userAvatar", avatarUrl);
         notificationEvent.setData(data);
 
         return notificationEvent;
