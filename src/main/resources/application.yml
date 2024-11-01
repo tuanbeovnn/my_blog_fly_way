@@ -56,7 +56,7 @@ spring:
             host: code4fun.xyz
             port: 6379
             database: 0
-            password: foobared
+            password: P@ssword*123
             username: default
 management:
     endpoints:
