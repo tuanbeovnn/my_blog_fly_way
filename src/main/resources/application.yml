@@ -93,6 +93,10 @@ api:
 file:
     upload:
         url: http://localhost:8081
+
+notifications:
+    event:
+        url: http://code4fun.xyz:8090
 jwt:
     expiryMinutes: 60
     expiryDay: 14

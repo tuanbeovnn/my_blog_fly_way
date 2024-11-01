@@ -3,11 +3,11 @@ server:
 spring:
     datasource:
         password: P@ssword*123
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
         username: dev
     flyway:
         password: P@ssword*123
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
         user: dev
     jackson:
         deserialization:
@@ -25,7 +25,7 @@ spring:
         show-sql: false
     kafka:
         bootstrap-servers:
-            - http://code4fun.xyz:9092
+            - http://localhost:9094
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -106,6 +106,10 @@ api:
 file:
     upload:
         url: http://code4fun.xyz:8081
+
+notifications:
+    event:
+        url: http://code4fun.xyz:8090
 jwt:
     expiryMinutes: 60
     expiryDay: 14
