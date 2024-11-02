@@ -8,6 +8,7 @@ import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.PostService;
+import com.myblogbackend.blog.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +29,7 @@ import static com.myblogbackend.blog.controllers.route.PostRoutes.PUBLIC_URL;
 @RequiredArgsConstructor
 public class PostController {
     private final PostService postService;
+    private final UserService userService;
 
     @PostMapping("/posts")
     public ResponseEntity<?> createPost(@RequestBody @Valid final PostRequest postRequest) throws ExecutionException, InterruptedException {
@@ -144,16 +146,6 @@ public class PostController {
         postService.disablePost(postId);
         return ResponseEntityBuilder
                 .getBuilder()
-                .build();
-    }
-
-    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/users/top-posters")
-    public ResponseEntity<?> getTopUsers(@RequestParam(defaultValue = "5") final long postThreshold,
-                                         @RequestParam(defaultValue = "10") final long favoritesThreshold) {
-        var postsAndHighFavorites = postService.findUsersWithManyPostsAndHighFavorites(postThreshold, favoritesThreshold);
-        return ResponseEntityBuilder
-                .getBuilder()
-                .setDetails(postsAndHighFavorites)
                 .build();
     }
 

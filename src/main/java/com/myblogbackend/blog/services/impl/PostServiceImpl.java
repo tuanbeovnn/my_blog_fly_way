@@ -31,7 +31,6 @@ import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.UserFollowingResponse;
 import com.myblogbackend.blog.response.UserLikedPostResponse;
-import com.myblogbackend.blog.response.UserPostFavoriteResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
 import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
@@ -265,37 +264,6 @@ public class PostServiceImpl implements PostService {
         postRepository.save(post);
         disableAllComments(postId);
         logger.info("Post disabled successfully by id {}", postId);
-    }
-
-    @Override
-    public List<UserPostFavoriteResponse> findUsersWithManyPostsAndHighFavorites(final long postThreshold,
-                                                                                 final long favoritesThreshold) {
-        logger.info("Finding users with more than {} posts and more than {} favorites", postThreshold, favoritesThreshold);
-
-        var signedInUserId = getUserId();
-        var results = postRepository.findUsersWithManyPostsAndHighFavorites(postThreshold, favoritesThreshold);
-
-        return results.stream().map(result -> {
-            var userId = (UUID) result[0];
-            var username = (String) result[1];
-            var name = (String) result[2];
-            var postCount = (Long) result[3];
-            var totalFavorites = (Long) result[4];
-
-            var followType = (signedInUserId == null) ? FollowType.UNFOLLOW : getUserFollowingType(signedInUserId, userId);
-
-            var userEntity = usersRepository.findById(userId)
-                    .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-
-            return UserPostFavoriteResponse.builder()
-                    .userId(userId)
-                    .username(username)
-                    .postCount(postCount)
-                    .totalFavorites(totalFavorites)
-                    .followType(followType)
-                    .avatarUrl(userMapper.toAvatarUrl(userEntity))
-                    .build();
-        }).toList();
     }
 
     private void disableAllComments(final UUID postId) {

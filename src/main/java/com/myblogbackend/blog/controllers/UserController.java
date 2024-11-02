@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -51,6 +52,16 @@ public class UserController {
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(userProfile)
+                .build();
+    }
+
+    @GetMapping(PUBLIC_URL + UserRoutes.BASE_URL + "/top-posters")
+    public ResponseEntity<?> getTopUsers(@RequestParam(defaultValue = "5") final long postThreshold,
+                                         @RequestParam(defaultValue = "10") final long favoritesThreshold) {
+        var postsAndHighFavorites = userService.findUsersWithManyPostsAndHighFavorites(postThreshold, favoritesThreshold);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setDetails(postsAndHighFavorites)
                 .build();
     }
 
