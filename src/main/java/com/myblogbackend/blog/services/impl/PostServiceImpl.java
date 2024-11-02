@@ -278,8 +278,9 @@ public class PostServiceImpl implements PostService {
         return results.stream().map(result -> {
             var userId = (UUID) result[0];
             var username = (String) result[1];
-            var postCount = (Long) result[2];
-            var totalFavorites = (Long) result[3];
+            var name = (String) result[2];
+            var postCount = (Long) result[3];
+            var totalFavorites = (Long) result[4];
 
             var followType = (signedInUserId == null) ? FollowType.UNFOLLOW : getUserFollowingType(signedInUserId, userId);
 

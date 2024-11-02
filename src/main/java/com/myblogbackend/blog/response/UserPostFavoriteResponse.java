@@ -21,4 +21,5 @@ public class UserPostFavoriteResponse {
     private Long totalFavorites;
     private FollowType followType;
     private String avatarUrl;
+    private UserResponse userResponse;
 }
