@@ -174,7 +174,7 @@ public class UserServiceImpl implements UserService {
                     .username(username)
                     .postCount(postCount)
                     .totalFavorites(totalFavorites)
-                    .userResponse(getFullProfile)
+                    .userDetails(getFullProfile)
                     .build();
         }).toList();
     }

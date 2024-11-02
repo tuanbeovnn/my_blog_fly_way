@@ -18,5 +18,5 @@ public class UserPostFavoriteResponse {
     private String username;
     private Long postCount;
     private Long totalFavorites;
-    private UserResponse userResponse;
+    private UserResponse userDetails;
 }
