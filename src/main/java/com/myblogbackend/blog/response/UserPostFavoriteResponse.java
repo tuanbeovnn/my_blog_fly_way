@@ -1,6 +1,5 @@
 package com.myblogbackend.blog.response;
 
-import com.myblogbackend.blog.enums.FollowType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,7 +18,5 @@ public class UserPostFavoriteResponse {
     private String username;
     private Long postCount;
     private Long totalFavorites;
-    private FollowType followType;
-    private String avatarUrl;
     private UserResponse userResponse;
 }

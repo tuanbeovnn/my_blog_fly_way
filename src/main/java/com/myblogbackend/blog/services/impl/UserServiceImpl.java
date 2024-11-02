@@ -12,7 +12,12 @@ import com.myblogbackend.blog.models.FollowersEntity;
 import com.myblogbackend.blog.models.ProfileEntity;
 import com.myblogbackend.blog.models.SocialLinks;
 import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.repositories.*;
+import com.myblogbackend.blog.repositories.FollowersRepository;
+import com.myblogbackend.blog.repositories.PostRepository;
+import com.myblogbackend.blog.repositories.ProfileRepository;
+import com.myblogbackend.blog.repositories.RefreshTokenRepository;
+import com.myblogbackend.blog.repositories.UserDeviceRepository;
+import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.ChangePasswordRequest;
 import com.myblogbackend.blog.request.LogOutRequest;
 import com.myblogbackend.blog.request.UserProfileRequest;
@@ -153,13 +158,15 @@ public class UserServiceImpl implements UserService {
             var postCount = (Long) result[2];
             var totalFavorites = (Long) result[3];
 
-            var followType = (signedInUserId == null) ? FollowType.UNFOLLOW : getUserFollowingType(signedInUserId, userId);
-
             var userEntity = usersRepository.findById(userId)
                     .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+            var followers = followersRepository.findByFollowedUserId(userEntity.getId());
+            var usersFollowing = getUserFollowingResponses(followers);
+            var followType = getUserFollowingType(signedInUserId, userEntity.getId());
 
-            UserResponse userResponse = userMapper.toUserDTO(userEntity);
-
+            var userResponse = userMapper.toUserDTO(userEntity);
+            userResponse.setUsersFollowing(usersFollowing);
+            userResponse.setFollowType(followType);
             UserResponse getFullProfile = getUserResponse(userEntity, userResponse);
 
             return UserPostFavoriteResponse.builder()
@@ -167,8 +174,6 @@ public class UserServiceImpl implements UserService {
                     .username(username)
                     .postCount(postCount)
                     .totalFavorites(totalFavorites)
-                    .followType(followType)
-                    .avatarUrl(userMapper.toAvatarUrl(userEntity))
                     .userResponse(getFullProfile)
                     .build();
         }).toList();
