@@ -18,7 +18,7 @@ public interface PostRepository extends JpaRepository<PostEntity, UUID>, JpaSpec
     Optional<PostEntity> findByIdAndUserId(UUID postId, UUID userId);
 
     // Custom method to find users with many posts and high favorites, returning List<Object[]>
-    @Query("SELECT u.id, u.userName, COUNT(p.id) AS postCount, SUM(p.favourite) AS totalFavourites " +
+    @Query("SELECT u.id, u.userName, u.name, COUNT(p.id) AS postCount, SUM(p.favourite) AS totalFavourites " +
             "FROM PostEntity p " +
             "JOIN p.user u " +
             "WHERE p.approved = TRUE " +
