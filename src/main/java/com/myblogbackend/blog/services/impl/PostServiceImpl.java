@@ -255,6 +255,15 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public PostResponse approvePost(final UUID id) {
+        var post = postRepository.findById(id)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        post.setApproved(Boolean.TRUE);
+        var approvedPost = postRepository.save(post);
+        return buildPostResponse(approvedPost, getUserId());
+    }
+
+    @Override
     public PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter) {
         var spec = PostSpec.findRelatedArticles(filter);
         var pageableBuild = buildPageable(pageable, filter);

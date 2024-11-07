@@ -32,5 +32,8 @@ public interface PostService {
 
     PageList<PostResponse> getAllPostByStatus(final Pageable pageable, PostFilterRequest filter);
 
+    PostResponse approvePost(UUID id);
+
+
 
 }
