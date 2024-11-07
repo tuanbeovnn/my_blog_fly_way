@@ -30,5 +30,7 @@ public interface PostService {
 
     PostRequest getSavedDraft();
 
+    PageList<PostResponse> getAllPostByStatus(final Pageable pageable, PostFilterRequest filter);
+
 
 }

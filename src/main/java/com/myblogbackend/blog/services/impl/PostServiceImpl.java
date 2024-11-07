@@ -94,7 +94,7 @@ public class PostServiceImpl implements PostService {
         var postEntity = postMapper.toPostEntity(postRequest);
         postEntity.setCategory(category);
         postEntity.setStatus(Boolean.TRUE);
-        postEntity.setApproved(Boolean.TRUE);
+        postEntity.setApproved(Boolean.FALSE);
         postEntity.setFavourite(0L);
         postEntity.setSlug(makeSlug(postRequest.getTitle()));
         postEntity.setCreatedBy(userEntity.getName());
@@ -239,6 +239,15 @@ public class PostServiceImpl implements PostService {
     @Override
     public PageList<PostResponse> getAllPostByFilter(final Pageable pageable, final PostFilterRequest filter) {
         var spec = PostSpec.filterBy(filter);
+        var pageableBuild = buildPageable(pageable, filter);
+        var postEntities = postRepository.findAll(spec, pageableBuild);
+
+        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
+    }
+
+    @Override
+    public PageList<PostResponse> getAllPostByStatus(final Pageable pageable, final PostFilterRequest filter) {
+        var spec = PostSpec.findAllArticles(filter);
         var pageableBuild = buildPageable(pageable, filter);
         var postEntities = postRepository.findAll(spec, pageableBuild);
 

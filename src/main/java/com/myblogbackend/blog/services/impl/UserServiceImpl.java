@@ -12,6 +12,7 @@ import com.myblogbackend.blog.models.FollowersEntity;
 import com.myblogbackend.blog.models.ProfileEntity;
 import com.myblogbackend.blog.models.SocialLinks;
 import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.pagination.PageList;
 import com.myblogbackend.blog.repositories.FollowersRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.ProfileRepository;
@@ -33,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -180,6 +183,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public PageList<UserResponse> getListUsers(final Pageable pageable) {
+        Page<UserEntity> userEntities = usersRepository.findAll(pageable);
+        List<UserResponse> userResponses = userEntities.stream()
+                .map(userMapper::toUserDTO).toList();
+        return buildPaginatingResponse(userResponses, pageable.getPageSize(), pageable.getPageNumber(), userEntities.getTotalElements());
+
+    }
+
+    @Override
     public UserResponse findUserByUserName(final String userName) {
         var userEntity = usersRepository.findByUserName(userName)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
@@ -274,6 +286,16 @@ public class UserServiceImpl implements UserService {
     private UserEntity getUserById(final UUID id) {
         return usersRepository.findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+    }
+
+    private PageList<UserResponse> buildPaginatingResponse(final List<UserResponse> responses, final int pageSize, final int currentPage, final long total) {
+        return PageList.<UserResponse>builder()
+                .records(responses)
+                .limit(pageSize)
+                .offset(currentPage)
+                .totalRecords(total)
+                .totalPage((int) Math.ceil((double) total / pageSize))
+                .build();
     }
 
 }

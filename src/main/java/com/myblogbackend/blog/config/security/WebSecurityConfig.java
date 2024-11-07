@@ -72,6 +72,7 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v1/auth/**").permitAll();
                     auth.requestMatchers("/api/v1/public/**").permitAll();
+                    auth.requestMatchers("/api/v1/admin/**").hasRole("ADMIN");
                     auth.requestMatchers("/api/v2/public/**").permitAll();
                     auth.requestMatchers("/actuator/**").permitAll();
                     auth.requestMatchers("/minio/**").permitAll();
