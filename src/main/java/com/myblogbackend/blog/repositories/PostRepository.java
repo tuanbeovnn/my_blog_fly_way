@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface PostRepository extends JpaRepository<PostEntity, UUID>, JpaSpecificationExecutor<PostEntity> {
-    List<PostEntity> findAllByCategoryIdAndStatusTrue(UUID categoryId);
+    List<PostEntity> findAllByCategoryIdAndStatusTrueAndApprovedTrue(UUID categoryId);
 
     Optional<PostEntity> findBySlug(String slug);
 

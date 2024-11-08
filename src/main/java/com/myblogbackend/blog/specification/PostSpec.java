@@ -33,6 +33,7 @@ public class PostSpec {
                 .and(hasCategoryName(postFilterRequest.getCategoryName()))
                 .and(hasUserId(postFilterRequest.getUserId()))
                 .and(hasUserName(postFilterRequest.getUserName()))
+                .and(hasApprovedTrue())
                 .and(hasStatusTrue());
     }
 
@@ -41,20 +42,25 @@ public class PostSpec {
                 .where(hasTitleContaining(filterRequest.getTitle()))
                 .or(hasShortDescContaining(filterRequest.getShortDescription()))
                 .or(hasContentContaining(filterRequest.getContent()))
+                .and(hasApprovedTrue())
                 .and(hasStatusTrue());
     }
 
     public static Specification<PostEntity> findAllArticles(final PostFilterRequest filterRequest) {
         return Specification
-                .where(hasStatusFalse());
+                .where(hasApprovedFalse());
     }
 
     private static Specification<PostEntity> hasStatusTrue() {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isTrue(root.get(STATUS));
     }
 
-    private static Specification<PostEntity> hasStatusFalse() {
+    private static Specification<PostEntity> hasApprovedFalse() {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isFalse(root.get(APPROVE));
+    }
+
+    private static Specification<PostEntity> hasApprovedTrue() {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.isTrue(root.get(APPROVE));
     }
 
     private static Specification<PostEntity> hasCategoryName(final String categoryName) {

@@ -74,7 +74,7 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.save(category);
 
         // Fetch all posts related to the category
-        var posts = postRepository.findAllByCategoryIdAndStatusTrue(id);
+        var posts = postRepository.findAllByCategoryIdAndStatusTrueAndApprovedTrue(id);
 
         var updatedPosts = posts.stream()
                 .peek(post -> post.setStatus(status))
