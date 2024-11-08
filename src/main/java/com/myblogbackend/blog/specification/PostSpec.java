@@ -34,7 +34,6 @@ public class PostSpec {
                 .and(hasCategoryName(postFilterRequest.getCategoryName()))
                 .and(hasUserId(postFilterRequest.getUserId()))
                 .and(hasUserName(postFilterRequest.getUserName()))
-                .and(hasApprovedTrue())
                 .and(hasApproved())
                 .and(hasStatusTrue());
     }
@@ -44,7 +43,6 @@ public class PostSpec {
                 .where(hasTitleContaining(filterRequest.getTitle()))
                 .or(hasShortDescContaining(filterRequest.getShortDescription()))
                 .or(hasContentContaining(filterRequest.getContent()))
-                .and(hasApprovedTrue())
                 .and(hasApproved())
                 .and(hasStatusTrue());
     }
@@ -60,10 +58,6 @@ public class PostSpec {
 
     private static Specification<PostEntity> isPending() {
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("postType"), PostType.PENDING);
-    }
-
-    private static Specification<PostEntity> hasApprovedTrue() {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.isTrue(root.get(APPROVE));
     }
 
     private static Specification<PostEntity> hasApproved() {
