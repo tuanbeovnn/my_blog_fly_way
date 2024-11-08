@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.services;
 
+import com.myblogbackend.blog.enums.PostType;
 import com.myblogbackend.blog.pagination.PageList;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
@@ -32,7 +33,7 @@ public interface PostService {
 
     PageList<PostResponse> getAllPostByStatus(final Pageable pageable, PostFilterRequest filter);
 
-    PostResponse approvePost(UUID id);
+    PostResponse approvePost(UUID id, PostType postType);
 
 
 

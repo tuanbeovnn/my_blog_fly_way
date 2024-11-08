@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.services.impl;
 
+import com.myblogbackend.blog.enums.PostType;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.CategoryMapper;
@@ -74,7 +75,7 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.save(category);
 
         // Fetch all posts related to the category
-        var posts = postRepository.findAllByCategoryIdAndStatusTrueAndApprovedTrue(id);
+        var posts = postRepository.findAllByCategoryIdAndStatusTrueAndPostType(id, PostType.APPROVED);
 
         var updatedPosts = posts.stream()
                 .peek(post -> post.setStatus(status))

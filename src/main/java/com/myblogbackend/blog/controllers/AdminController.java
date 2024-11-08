@@ -1,6 +1,7 @@
 package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
+import com.myblogbackend.blog.enums.PostType;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.PostService;
@@ -10,7 +11,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -59,14 +59,18 @@ public class AdminController {
                 .build();
     }
 
-    @PutMapping("/admin" + "/approved-post/{id}")
-    public ResponseEntity<?> updatePost(@PathVariable(value = "id") final UUID id
+    @PutMapping("/admin/approved-post")
+    public ResponseEntity<?> updatePost(
+            @RequestParam(value = "id") final UUID id,
+            @RequestParam(value = "postType") final PostType postType
     ) {
-        var post = postService.approvePost(id);
+        var post = postService.approvePost(id, postType);
+
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(post)
                 .build();
     }
+
 
 }

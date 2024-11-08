@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.enums.PostTag;
+import com.myblogbackend.blog.enums.PostType;
 import com.myblogbackend.blog.enums.RatingType;
 import com.myblogbackend.blog.event.dto.NotificationEvent;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
@@ -94,7 +95,7 @@ public class PostServiceImpl implements PostService {
         var postEntity = postMapper.toPostEntity(postRequest);
         postEntity.setCategory(category);
         postEntity.setStatus(Boolean.TRUE);
-        postEntity.setApproved(Boolean.FALSE);
+        postEntity.setPostType(PostType.PENDING);
         postEntity.setFavourite(0L);
         postEntity.setSlug(makeSlug(postRequest.getTitle()));
         postEntity.setCreatedBy(userEntity.getName());
@@ -255,12 +256,15 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostResponse approvePost(final UUID id) {
+    public PostResponse approvePost(final UUID id, final PostType postType) {
         var post = postRepository.findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        post.setApproved(Boolean.TRUE);
-        var approvedPost = postRepository.save(post);
-        return buildPostResponse(approvedPost, getUserId());
+        post.setPostType(postType);
+        var updatedPost = postRepository.save(post);
+
+        // Send a notification based on postType (APPROVED or REJECTED)
+
+        return buildPostResponse(updatedPost, getUserId());
     }
 
     @Override

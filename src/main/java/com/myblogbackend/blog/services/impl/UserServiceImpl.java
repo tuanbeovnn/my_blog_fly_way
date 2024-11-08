@@ -3,6 +3,7 @@ package com.myblogbackend.blog.services.impl;
 import com.myblogbackend.blog.config.security.JwtProvider;
 import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.FollowType;
+import com.myblogbackend.blog.enums.PostType;
 import com.myblogbackend.blog.enums.TokenType;
 import com.myblogbackend.blog.exception.UserLogoutException;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
@@ -153,7 +154,7 @@ public class UserServiceImpl implements UserService {
         logger.info("Finding users with more than {} posts and more than {} favorites", postThreshold, favoritesThreshold);
 
         var signedInUserId = getUserId();
-        var results = postRepository.findUsersWithManyPostsAndHighFavorites(postThreshold, favoritesThreshold);
+        var results = postRepository.findUsersWithManyPostsAndHighFavorites(PostType.APPROVED, postThreshold, favoritesThreshold);
 
         return results.stream().map(result -> {
             var userId = (UUID) result[0];
