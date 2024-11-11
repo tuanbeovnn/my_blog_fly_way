@@ -14,10 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -80,19 +78,19 @@ public class FavoriteServiceImpl implements FavoriteService {
     }
 
     // Flush the cache every 5 minutes
-    @Scheduled(fixedRate = 5 * 60 * 1000)
-    public void flushFavoritesToDatabase() {
-        Optional.ofNullable(redisTemplate.keys(FAVOURITE_COUNT_KEY + "*"))
-                .ifPresent(keys -> keys.forEach(key -> {
-                    UUID postId = UUID.fromString(key.replace(FAVOURITE_COUNT_KEY, ""));
-                    Long cachedCount = (Long) redisTemplate.opsForValue().get(key);
-
-                    if (cachedCount != null) {
-                        postRepository.updateFavouriteCount(postId, cachedCount);
-                        redisTemplate.delete(key);  // Clear the cache entry after flushing
-                    }
-                }));
-
-    }
+//    @Scheduled(fixedRate = 5 * 60 * 1000)
+//    public void flushFavoritesToDatabase() {
+//        Optional.ofNullable(redisTemplate.keys(FAVOURITE_COUNT_KEY + "*"))
+//                .ifPresent(keys -> keys.forEach(key -> {
+//                    UUID postId = UUID.fromString(key.replace(FAVOURITE_COUNT_KEY, ""));
+//                    Long cachedCount = (Long) redisTemplate.opsForValue().get(key);
+//
+//                    if (cachedCount != null) {
+//                        postRepository.updateFavouriteCount(postId, cachedCount);
+//                        redisTemplate.delete(key);  // Clear the cache entry after flushing
+//                    }
+//                }));
+//
+//    }
 
 }

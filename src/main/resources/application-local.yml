@@ -51,6 +51,10 @@ spring:
                         enable: true
                     timeout: 5000
                     writetimeout: 5000
+    servlet:
+        multipart:
+            max-file-size: 25MB
+            max-request-size: 25MB
     data:
         redis:
             host: code4fun.xyz
@@ -58,11 +62,21 @@ spring:
             database: 0
             password: P@ssword*123
             username: default
-
-    servlet:
-        multipart:
-            max-file-size: 25MB
-            max-request-size: 25MB
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health
+    otlp:
+        metrics:
+            export:
+                enabled: false
+        tracing:
+            endpoint: ""
+    tracing:
+        sampling:
+            probability: 1.0
+        enabled: false
 oauth2:
     authorizedRedirectUris:
         - http://localhost:3000/oauth2/
