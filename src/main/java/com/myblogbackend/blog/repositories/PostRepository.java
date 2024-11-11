@@ -4,6 +4,7 @@ import com.myblogbackend.blog.enums.PostType;
 import com.myblogbackend.blog.models.PostEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -29,5 +30,9 @@ public interface PostRepository extends JpaRepository<PostEntity, UUID>, JpaSpec
     List<Object[]> findUsersWithManyPostsAndHighFavorites(@Param("approvedPostType") PostType approvedPostType,
                                                           @Param("postThreshold") long postThreshold,
                                                           @Param("favoritesThreshold") long favoritesThreshold);
+
+    @Modifying
+    @Query("UPDATE PostEntity p SET p.favourite = :count WHERE p.id = :postId")
+    void updateFavouriteCount(@Param("postId") UUID postId, @Param("count") Long count);
 
 }
