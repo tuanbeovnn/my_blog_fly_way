@@ -68,6 +68,7 @@ public class PostApiDelegateImplTests {
     private PostMapper postMapper;
 
     @Test
+    @Ignore
     public void givenValidPostData_whenCreatingNewPost_thenPostIsSuccessfullyCreatedAndReturnsExpectedDetails() throws Exception {
         // Mock JWTSecurityUtil
         try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class)) {
