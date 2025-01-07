@@ -62,7 +62,7 @@ spring:
             host: code4fun.xyz
             port: 6379
             database: 0
-            password: P@ssword*123
+            password: tuanbeovn17
             username: default
 oauth2:
     authorizedRedirectUris:
