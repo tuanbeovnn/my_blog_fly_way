@@ -126,11 +126,11 @@ api:
 
 file:
     upload:
-        url: http://code4fun.xyz:8081
+        url: https://minio-be.code4fun.xyz
 
 notifications:
     event:
-        url: http://code4fun.xyz:8090
+        url: https://notifications-be.code4fun.xyz
 jwt:
     expiryMinutes: 60
     expiryDay: 14
