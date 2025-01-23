@@ -71,7 +71,7 @@ node("master") {
     stage('Cleanup Old Images') {
       echo "Cleaning up old Docker images..."
       sh """
-        docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | grep "my_blogs:" | sort -r | awk 'NR>1 {print \$2}' | xargs -r docker rmi
+        docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | grep "my_blogs:" | sort -r | awk 'NR>1 {print \$2}' | xargs -r docker rmi -f || true
       """
     }
   } catch (e) {
