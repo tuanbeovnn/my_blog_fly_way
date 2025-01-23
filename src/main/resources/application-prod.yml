@@ -1,16 +1,18 @@
+server:
+    port: 8080
 spring:
     application:
         name: posts-service
     config:
         import: optional:classpath:.env[.properties]
     datasource:
-        password: P@ssword*123
+        password: ${DB_PASSWORD}
         url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
-        username: dev
+        username: ${DB_USERNAME}
     flyway:
-        password: P@ssword*123
+        password: ${DB_PASSWORD}
         url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
-        user: dev
+        user: ${DB_USERNAME}
     jackson:
         deserialization:
             fail-on-unknown-properties: true
