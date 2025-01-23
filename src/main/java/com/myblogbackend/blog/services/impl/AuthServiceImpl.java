@@ -32,6 +32,7 @@ import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.AuthService;
+import feign.FeignException;
 import freemarker.template.TemplateException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
@@ -205,46 +206,79 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest) {
+        try {
+            // Log the incoming authorization code and client information
+            logger.info("Starting OAuth authentication for user. Code: {}, Client ID: {}, Redirect URI: {}",
+                    loginFormOutboundRequest.getCode(), CLIENT_ID, REDIRECT_URI);
 
-        var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
-                .code(loginFormOutboundRequest.getCode())
-                .clientId(CLIENT_ID)
-                .clientSecret(CLIENT_SECRET)
-                .redirectUri(REDIRECT_URI)
-                .grantType(GRANT_TYPE)
-                .build());
+            // Exchange the authorization code for an access token
+            var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
+                    .code(loginFormOutboundRequest.getCode())
+                    .clientId(CLIENT_ID)
+                    .clientSecret(CLIENT_SECRET)
+                    .redirectUri(REDIRECT_URI)
+                    .grantType(GRANT_TYPE)
+                    .build());
 
-        logger.info("Token from google: {}", response.getAccessToken());
-        var userInfo = outboundUserClient.getUserInfo(JSON, response.getAccessToken());
+            // Validate token response
+            if (response == null || response.getAccessToken() == null) {
+                logger.error("Failed to retrieve access token from Google.");
+                throw new BlogRuntimeException(ErrorCode.GOOGLE_AUTH_FAILED);
+            }
 
-        // Find the user by email or create a new user
-        var user = usersRepository.findByEmail(userInfo.getEmail())
-                .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
+            logger.info("Access token successfully received from Google: {}", response.getAccessToken());
 
-        if (user.getProvider() == OAuth2Provider.LOCAL) {
-            throw new BlogRuntimeException(ErrorCode.ACCOUNT_CREATED_LOCAL);
+            // Retrieve user info from Google using the access token
+            var userInfo = outboundUserClient.getUserInfo(JSON, response.getAccessToken());
+            logger.info("User info retrieved from Google: Email: {}, Name: {}", userInfo.getEmail(), userInfo.getName());
+
+            // Find or create the user in the system
+            var user = usersRepository.findByEmail(userInfo.getEmail())
+                    .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
+
+            // Check if the user's account is local (not OAuth)
+            if (user.getProvider() == OAuth2Provider.LOCAL) {
+                logger.error("User account is registered locally, cannot authenticate with Google.");
+                throw new BlogRuntimeException(ErrorCode.ACCOUNT_CREATED_LOCAL);
+            }
+
+            // Check if the user is already logged in from another device
+            String existingDeviceId = redisTemplate.opsForValue().get(user.getEmail() + ":deviceId");
+            if (existingDeviceId != null && !existingDeviceId.equals(loginFormOutboundRequest.getDeviceInfo().getDeviceId())) {
+                logger.error("User is already logged in from another device. Existing Device ID: {}", existingDeviceId);
+                throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN);
+            }
+
+            // Generate JWT token for the user
+            var jwtToken = jwtProvider.generateJwtToken(user, loginFormOutboundRequest.getDeviceInfo().getDeviceId());
+
+            // Store the device ID in Redis with a timeout (e.g., 30 minutes)
+            redisTemplate.opsForValue().set(
+                    user.getEmail() + ":deviceId",
+                    loginFormOutboundRequest.getDeviceInfo().getDeviceId(),
+                    Duration.ofMinutes(30)
+            );
+            logger.info("Device ID stored in Redis for user: {}", user.getEmail());
+
+            // Create and save the refresh token
+            var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
+
+            // Return the JWT response
+            return JwtResponse.builder()
+                    .accessToken(jwtToken)
+                    .refreshToken(refreshTokenEntity.getToken())
+                    .build();
+        } catch (FeignException.BadRequest e) {
+            // Handle specific OAuth token exchange errors
+            logger.error("Invalid grant error during token exchange: {}", e.responseBody());
+            throw new BlogRuntimeException(ErrorCode.INVALID_AUTHORIZATION_CODE, e);
+        } catch (Exception e) {
+            // Catch-all for other unexpected errors
+            logger.error("Error occurred during authentication process: {}", e.getMessage(), e);
+            throw new BlogRuntimeException(ErrorCode.GENERAL_AUTH_ERROR, e);
         }
-
-        // Check if the user is already logged in from another device
-        String existingDeviceId = redisTemplate.opsForValue().get(user.getEmail() + ":deviceId");
-        if (existingDeviceId != null && !existingDeviceId.equals(loginFormOutboundRequest.getDeviceInfo().getDeviceId())) {
-            throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN); // Define appropriate error code
-        }
-
-        // Generate JWT token
-        var jwtToken = jwtProvider.generateJwtToken(user, loginFormOutboundRequest.getDeviceInfo().getDeviceId());
-
-        // Store the device ID in Redis with an expiration time (e.g., 30 minutes)
-        redisTemplate.opsForValue().set(user.getEmail() + ":deviceId",
-                loginFormOutboundRequest.getDeviceInfo().getDeviceId(), Duration.ofMinutes(30));
-
-        var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
-
-        return JwtResponse.builder()
-                .accessToken(jwtToken)
-                .refreshToken(refreshTokenEntity.getToken())
-                .build();
     }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
