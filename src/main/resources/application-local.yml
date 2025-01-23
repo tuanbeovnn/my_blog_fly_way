@@ -3,11 +3,11 @@ server:
 spring:
     datasource:
         password: P@ssword*123
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
         username: dev
     flyway:
         password: P@ssword*123
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
         user: dev
     jackson:
         deserialization:
