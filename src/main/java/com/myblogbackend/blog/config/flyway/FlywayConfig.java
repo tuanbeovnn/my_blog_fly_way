@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 @RequiredArgsConstructor
 @Slf4j
 public class FlywayConfig {
+    
 
     @Value("${flywaypf.active}")
     private String DEFAULT_SCHEMA;

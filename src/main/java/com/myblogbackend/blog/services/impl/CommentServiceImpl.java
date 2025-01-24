@@ -126,7 +126,7 @@ public class CommentServiceImpl implements CommentService {
                 .build();
     }
 
-    private PageList<CommentResponse> getCommentResponsePageList(final Pageable pageable, final Page<CommentEntity> parentCommentsPage) {
+    public PageList<CommentResponse> getCommentResponsePageList(final Pageable pageable, final Page<CommentEntity> parentCommentsPage) {
         var response = parentCommentsPage.getContent().stream()
                 .map(item -> {
                     var commentResponse = commentMapper.toCommentResponse(item);
