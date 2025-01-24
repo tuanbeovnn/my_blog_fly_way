@@ -4,13 +4,13 @@ spring:
     application:
         name: posts-service
     datasource:
-        password: P@ssword*123
+        password: ${DB_PASSWORD}
         url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
-        username: dev
+        username: ${DB_USERNAME}
     flyway:
-        password: P@ssword*123
+        password: ${DB_PASSWORD}
         url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
-        user: dev
+        user: ${DB_USERNAME}
     jackson:
         deserialization:
             fail-on-unknown-properties: true
@@ -66,7 +66,8 @@ spring:
             host: code4fun.xyz
             port: 6379
             database: 0
-            password: default
+            password: tuanbeovn17
+            username: default
 management:
     endpoints:
         web:
@@ -75,13 +76,13 @@ management:
     otlp:
         metrics:
             export:
-                url: http://localhost:4318/v1/metrics
-                step: 10s
+                enabled: false
         tracing:
-            endpoint: http://localhost:4318/v1/traces
+            endpoint: ""
     tracing:
         sampling:
             probability: 1.0
+        enabled: false
 oauth2:
     authorizedRedirectUris:
         - http://localhost:3000/oauth2/
@@ -92,7 +93,7 @@ email:
         template: registration-confirmation-en.html
         subject: Registration Confirmation
         from: noreply@pezzie.com
-        base-url: http://localhost:8080/api/v1/auth/registrationConfirm?token=%s
+        base-url: https://blogs-be-dev.code4fun.xyz/api/v1/auth/registrationConfirm?token=%s
     forgot-password-email:
         template: password-forgot.html
         subject: New Password
@@ -117,7 +118,7 @@ outbound:
     identity:
         client-id: 720549923520-qbmtr8g24bptcp90659vh6ffc39j9se6.apps.googleusercontent.com
         client-secret: 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
-        redirect-uri: http://localhost:3000/authenticate
+        redirect-uri: https://blogs-fe-dev.code4fun.xyz/authenticate
 
 api:
     username: admin
@@ -125,7 +126,11 @@ api:
 
 file:
     upload:
-        url: http://code4fun.xyz:8081
+        url: https://minio-be.code4fun.xyz
+
+notifications:
+    event:
+        url: https://notifications-be.code4fun.xyz
 jwt:
     expiryMinutes: 60
     expiryDay: 14

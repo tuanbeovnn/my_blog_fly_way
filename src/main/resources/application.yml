@@ -56,22 +56,23 @@ spring:
             host: code4fun.xyz
             port: 6379
             database: 0
-            password: default
+            password: tuanbeovn17
+            username: default
 management:
     endpoints:
         web:
             exposure:
                 include: health
-#    otlp:
-#        metrics:
-#            export:
-#                url: http://localhost:4318/v1/metrics
-#                step: 10s
-#        tracing:
-#            endpoint: http://localhost:4318/v1/traces
-#    tracing:
-#        sampling:
-#            probability: 1.0
+    otlp:
+        metrics:
+            export:
+                enabled: false
+        tracing:
+            endpoint: ""
+    tracing:
+        sampling:
+            probability: 1.0
+        enabled: false
 # Email Sender
 email:
     registration-confirmation:
@@ -93,6 +94,10 @@ api:
 file:
     upload:
         url: http://localhost:8081
+
+notifications:
+    event:
+        url: http://code4fun.xyz:8090
 jwt:
     expiryMinutes: 60
     expiryDay: 14

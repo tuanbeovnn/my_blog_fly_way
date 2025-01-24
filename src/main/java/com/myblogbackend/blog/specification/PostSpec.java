@@ -1,6 +1,7 @@
 package com.myblogbackend.blog.specification;
 
 import com.myblogbackend.blog.enums.PostTag;
+import com.myblogbackend.blog.enums.PostType;
 import com.myblogbackend.blog.models.CategoryEntity;
 import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.models.TagEntity;
@@ -15,6 +16,8 @@ import java.util.UUID;
 public class PostSpec {
 
     public static final String STATUS = "status";
+
+    public static final String APPROVE = "approved";
     public static final String CATEGORY = "category";
     public static final String USER = "user";
     public static final String TAGS = "tags";
@@ -31,6 +34,7 @@ public class PostSpec {
                 .and(hasCategoryName(postFilterRequest.getCategoryName()))
                 .and(hasUserId(postFilterRequest.getUserId()))
                 .and(hasUserName(postFilterRequest.getUserName()))
+                .and(hasApproved())
                 .and(hasStatusTrue());
     }
 
@@ -39,21 +43,25 @@ public class PostSpec {
                 .where(hasTitleContaining(filterRequest.getTitle()))
                 .or(hasShortDescContaining(filterRequest.getShortDescription()))
                 .or(hasContentContaining(filterRequest.getContent()))
+                .and(hasApproved())
                 .and(hasStatusTrue());
+    }
+
+    public static Specification<PostEntity> findAllArticles(final PostFilterRequest filterRequest) {
+        return Specification
+                .where(isPending());
     }
 
     private static Specification<PostEntity> hasStatusTrue() {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isTrue(root.get(STATUS));
     }
 
-    private static Specification<PostEntity> hasCategoryId(final UUID categoryId) {
-        if (categoryId == null) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> {
-            Join<PostEntity, CategoryEntity> categoryJoin = root.join(CATEGORY);
-            return criteriaBuilder.equal(categoryJoin.get(ID), categoryId);
-        };
+    private static Specification<PostEntity> isPending() {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("postType"), PostType.PENDING);
+    }
+
+    private static Specification<PostEntity> hasApproved() {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("postType"), PostType.APPROVED);
     }
 
     private static Specification<PostEntity> hasCategoryName(final String categoryName) {

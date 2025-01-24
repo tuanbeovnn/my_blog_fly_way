@@ -17,6 +17,9 @@ public enum ErrorCode implements CommonErrorCode {
     PASSWORD_WRONG(HttpStatus.UNAUTHORIZED, "Password was wrong"),
     USER_ALREADY_LOGGED_IN(HttpStatus.FORBIDDEN, "User already logged in another device"),
     ACCOUNT_CREATED_LOCAL(HttpStatus.FORBIDDEN, "This account was created locally. Please use local login."),
+    INVALID_AUTHORIZATION_CODE(HttpStatus.BAD_REQUEST, "The provided authorization code is invalid or expired."),
+    GENERAL_AUTH_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred during authentication."),
+    GOOGLE_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "Failed to authenticate with Google. Please try again later."),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "error.could not send email");
     
     private final HttpStatus status;

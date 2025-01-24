@@ -5,17 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class NotificationEvent {
-    private UUID postId;          // ID of the post that triggered the notification
-    private List<UUID> userIds;   // List of user IDs to whom notifications are sent
-    private String message;         // Optional message to include in the notification
-    private String notificationType; // Type of notification (e.g., "NEW_POST", "COMMENT", etc.)
+    private String notificationType;
     private String deviceTokenId;
+    private Map<String, String> data = new HashMap<>();
 }

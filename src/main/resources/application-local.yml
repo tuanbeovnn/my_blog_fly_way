@@ -25,7 +25,7 @@ spring:
         show-sql: false
     kafka:
         bootstrap-servers:
-            - http://code4fun.xyz:9092
+            - http://localhost:9094
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -51,17 +51,32 @@ spring:
                         enable: true
                     timeout: 5000
                     writetimeout: 5000
+    servlet:
+        multipart:
+            max-file-size: 25MB
+            max-request-size: 25MB
     data:
         redis:
             host: code4fun.xyz
             port: 6379
             database: 0
-            password: default
-
-    servlet:
-        multipart:
-            max-file-size: 25MB
-            max-request-size: 25MB
+            password: tuanbeovn17
+            username: default
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health
+    otlp:
+        metrics:
+            export:
+                enabled: false
+        tracing:
+            endpoint: ""
+    tracing:
+        sampling:
+            probability: 1.0
+        enabled: false
 oauth2:
     authorizedRedirectUris:
         - http://localhost:3000/oauth2/
@@ -97,7 +112,7 @@ outbound:
     identity:
         client-id: 720549923520-qbmtr8g24bptcp90659vh6ffc39j9se6.apps.googleusercontent.com
         client-secret: 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
-        redirect-uri: http://localhost:3000/authenticate
+        redirect-uri: https://blogs-fe-dev.code4fun.xyz/authenticate
 
 api:
     username: admin
@@ -105,7 +120,11 @@ api:
 
 file:
     upload:
-        url: http://code4fun.xyz:8081
+        url: https://minio-be.code4fun.xyz
+
+notifications:
+    event:
+        url: https://notifications-be.code4fun.xyz
 jwt:
     expiryMinutes: 60
     expiryDay: 14

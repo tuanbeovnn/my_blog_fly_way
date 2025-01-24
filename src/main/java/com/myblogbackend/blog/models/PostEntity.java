@@ -1,9 +1,12 @@
 package com.myblogbackend.blog.models;
 
+import com.myblogbackend.blog.enums.PostType;
 import com.myblogbackend.blog.models.base.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -51,13 +54,15 @@ public class PostEntity extends BaseEntity {
     private String images;
     @Column(name = "slug", columnDefinition = "TEXT", unique = true)
     private String slug;
-    @Column
-    private Boolean approved;
     @Column(name = "status")
     private Boolean status;
     @NotNull
     @Column(name = "favourite")
     private Long favourite = 0L;
+
+    @Column(name = "post_type")
+    @Enumerated(EnumType.STRING)
+    private PostType postType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
@@ -67,7 +72,6 @@ public class PostEntity extends BaseEntity {
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    // One-to-Many relationship with Comments table
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     private List<CommentEntity> comments;
 
