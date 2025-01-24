@@ -4,6 +4,7 @@ import com.myblogbackend.blog.config.security.JwtProvider;
 import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.enums.PostType;
+import com.myblogbackend.blog.enums.RoleName;
 import com.myblogbackend.blog.enums.TokenType;
 import com.myblogbackend.blog.exception.UserLogoutException;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
@@ -11,6 +12,7 @@ import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.UserMapper;
 import com.myblogbackend.blog.models.FollowersEntity;
 import com.myblogbackend.blog.models.ProfileEntity;
+import com.myblogbackend.blog.models.RoleEntity;
 import com.myblogbackend.blog.models.SocialLinks;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.PageList;
@@ -18,6 +20,7 @@ import com.myblogbackend.blog.repositories.FollowersRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.ProfileRepository;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
+import com.myblogbackend.blog.repositories.RoleRepository;
 import com.myblogbackend.blog.repositories.UserDeviceRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.ChangePasswordRequest;
@@ -49,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private static final Logger logger = LogManager.getLogger(PostServiceImpl.class);
+    private static final Logger logger = LogManager.getLogger(UserServiceImpl.class);
     private final UserDeviceRepository userDeviceRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -61,6 +64,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder encoder;
     private final JwtProvider jwtProvider;
     private final RedisTemplate<String, String> redisTemplate;
+    private final RoleRepository roleRepository;
 
     @Override
     public void logoutUser(final LogOutRequest logOutRequest, final UserPrincipal currentUser) {
@@ -190,6 +194,17 @@ public class UserServiceImpl implements UserService {
                 .map(userMapper::toUserDTO).toList();
         return buildPaginatingResponse(userResponses, pageable.getPageSize(), pageable.getPageNumber(), userEntities.getTotalElements());
 
+    }
+    @Override
+    @Transactional
+    public void assignRoleToUser(final UUID userId, final RoleName roleName) {
+        UserEntity user = usersRepository.findById(userId)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND, userId.toString()));
+
+        RoleEntity role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND, roleName.toString()));
+        user.getRoles().add(role);
+        usersRepository.save(user);
     }
 
     @Override

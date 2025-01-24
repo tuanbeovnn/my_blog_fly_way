@@ -2,6 +2,7 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.enums.PostType;
+import com.myblogbackend.blog.enums.RoleName;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.PostService;
@@ -11,6 +12,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -69,6 +72,15 @@ public class AdminController {
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(post)
+                .build();
+    }
+
+    @PostMapping("/admin/{userId}/roles/{roleName}")
+    public ResponseEntity<?> assignRoleToUser(@PathVariable final UUID userId, @PathVariable final RoleName roleName) {
+        userService.assignRoleToUser(userId, roleName);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .setMessage("Role assigned successfully.")
                 .build();
     }
 
