@@ -119,12 +119,6 @@ public class AuthServiceImpl implements AuthService {
         if (userEntity.getActive()) {
             throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
         }
-        // Check if the user is already logged in from another device
-        String existingDeviceId = redisTemplate.opsForValue().get(userEntity.getEmail() + ":deviceId");
-        if (existingDeviceId != null && !existingDeviceId.equals(loginRequest.getDeviceInfo().getDeviceId())) {
-            throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN); // Define appropriate error code
-        }
-
         // Authenticate user
         var authentication = authenticateUser(loginRequest);
 
@@ -132,10 +126,21 @@ public class AuthServiceImpl implements AuthService {
 
         // Generate JWT and store the device ID in Redis
         var jwtToken = jwtProvider.generateJwtToken(userEntity, loginRequest.getDeviceInfo().getDeviceId());
-        redisTemplate.opsForValue().set(userEntity.getEmail() + ":deviceId", loginRequest.getDeviceInfo().getDeviceId(),
-                Duration.ofMinutes(30));
         var refreshTokenEntity = createRefreshToken(loginRequest.getDeviceInfo(), userEntity);
         return new JwtResponse(jwtToken, refreshTokenEntity.getToken());
+    }
+
+    private void saveDeviceToRedis(final LoginFormRequest loginRequest, final UserEntity userEntity) {
+        redisTemplate.opsForValue().set(userEntity.getEmail() + ":deviceId", loginRequest.getDeviceInfo().getDeviceId(),
+                Duration.ofMinutes(30));
+    }
+
+    private void checkLoginAnotherDevices(final LoginFormRequest loginRequest, final UserEntity userEntity) {
+        // Check if the user is already logged in from another device
+        String existingDeviceId = redisTemplate.opsForValue().get(userEntity.getEmail() + ":deviceId");
+        if (existingDeviceId != null && !existingDeviceId.equals(loginRequest.getDeviceInfo().getDeviceId())) {
+            throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN); // Define appropriate error code
+        }
     }
 
     @Override
