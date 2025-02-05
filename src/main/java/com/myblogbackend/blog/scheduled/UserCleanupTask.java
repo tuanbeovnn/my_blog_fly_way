@@ -20,7 +20,6 @@ public class UserCleanupTask {
     private final UsersRepository userRepository;
     private final UserTokenRepository verificationTokenRepository;
 
-    //    @Scheduled(cron = "0 0 */3 * * *")
     @Scheduled(cron = "0 */5 * * * *")
     @Transactional
     public void cleanupInactiveUsers() {
@@ -41,7 +40,6 @@ public class UserCleanupTask {
                 userRepository.delete(user);
                 // Alternatively, perform other actions like sending a reminder email
                 logger.info("User cleanup completed for: {}", user.getEmail());
-
             }
         }
         logger.info("User cleanup task completed.");

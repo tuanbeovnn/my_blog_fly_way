@@ -50,7 +50,7 @@ spring:
             max-file-size: 25MB
             max-request-size: 25MB
     profiles:
-        active: dev
+        active: local
     data:
         redis:
             host: code4fun.xyz

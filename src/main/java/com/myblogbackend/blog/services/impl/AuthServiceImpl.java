@@ -79,6 +79,7 @@ public class AuthServiceImpl implements AuthService {
     public static final String TEMPLATES_INVALIDTOKEN_HTML = "/templates/invalidtoken.html";
     public static final String TEMPLATES_ALREADYCONFIRMED_HTML = "/templates/alreadyconfirmed.html";
     public static final String TEMPLATES_EMAIL_ACTIVATED_HTML = "/templates/emailActivated.html";
+    public static final String TEMPLATES_FORGOT_PASSWORD_HTML = "/templates/password-forgot.html";
     private static final int EXPIRATION_TIME_MINUTES = 15;
 
     @NonFinal
@@ -167,6 +168,38 @@ public class AuthServiceImpl implements AuthService {
 
         kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
         return userMapper.toUserDTO(result);
+    }
+
+    public void sendEmailForgotPassword(String email) {
+        UserEntity userEntity = checkValidUserLogin(email);
+        var token = createVerificationToken(userEntity);
+        var forgotPasswordLink = String.format(emailProperties.getForgotPasswordEmail().getBaseUrl(), token);
+        var mailRequest = createMailRequest(userEntity.getEmail(), forgotPasswordLink);
+        try {
+            kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest);
+        } catch (Exception e) {
+            throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
+        }
+    }
+
+    public ResponseEntity<?> handleForgotPassword(ForgotPasswordRequest forgotPasswordRequest, String token) throws IOException {
+        UserEntity userEntity = checkValidUserLogin(forgotPasswordRequest.getEmail());
+        if (userEntity.getActive()) {
+            logger.info("Sending forgot password email to '{}'", userEntity.getEmail());
+            var userVerificationTokenFound = userTokenRepository.findByVerificationToken(token)
+                    .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.setContentType(MediaType.TEXT_HTML);
+
+            if(userVerificationTokenFound == null || isTokenExpired(userVerificationTokenFound)) {
+                return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
+            }
+            UserEntity user = userVerificationTokenFound.getUser();
+            user.setPassword(encoder.encode(forgotPasswordRequest.getNewPassword()));
+            usersRepository.save(user);
+            return loadHtmlTemplate(TEMPLATES_FORGOT_PASSWORD_HTML, responseHeaders);
+        }
+        throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
     }
 
     private RoleEntity getUserRole() {
@@ -286,6 +319,7 @@ public class AuthServiceImpl implements AuthService {
             }
         }
     }
+
 
     private UserEntity checkValidUserLogin(final String forgotPasswordDto) {
         UserEntity userEntity = usersRepository
