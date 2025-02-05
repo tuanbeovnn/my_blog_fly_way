@@ -274,20 +274,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new BlogRuntimeException(ErrorCode.ACCOUNT_CREATED_LOCAL);
             }
 
-            String existingDeviceId = redisTemplate.opsForValue().get(user.getEmail() + ":deviceId");
-            if (existingDeviceId != null && !existingDeviceId.equals(loginFormOutboundRequest.getDeviceInfo().getDeviceId())) {
-                logger.error("User is already logged in from another device. Existing Device ID: {}", existingDeviceId);
-                throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN);
-            }
-
             var jwtToken = jwtProvider.generateJwtToken(user, loginFormOutboundRequest.getDeviceInfo().getDeviceId());
-
-            redisTemplate.opsForValue().set(
-                    user.getEmail() + ":deviceId",
-                    loginFormOutboundRequest.getDeviceInfo().getDeviceId(),
-                    Duration.ofMinutes(30)
-            );
-            logger.info("Device ID stored in Redis for user: {}", user.getEmail());
 
             var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
 
