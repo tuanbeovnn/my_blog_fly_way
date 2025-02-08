@@ -179,7 +179,7 @@ public class AuthServiceImpl implements AuthService {
     public void sendEmailForgotPassword(String email) {
         var userEntity = usersRepository.findByEmail(email).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
         var token = createVerificationToken(userEntity);
-        // here, later on, using front-end url link to load create new password form (react router)
+        // here, later on, using front-end url link to load a creating new password form (react router)
         var confirmationLink = String.format(emailProperties.getForgotPasswordConfirmation().getBaseUrl(), token);
         var mailRequest = createMailRequest(userEntity.getEmail(), confirmationLink);
 

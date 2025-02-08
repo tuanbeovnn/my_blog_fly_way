@@ -22,7 +22,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.myblogbackend.blog.forgotPassword.ForgotPasswordTestApi.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -46,9 +45,6 @@ public class ForgotPasswordDelegateImplTests {
     private UserTokenRepository userTokenRepository;
 
     @MockBean
-    private KafkaTemplate<String, MailRequest> kafkaTemplate;
-
-    @MockBean
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -58,7 +54,6 @@ public class ForgotPasswordDelegateImplTests {
     public void givenValidRequest_whenForgotPassword_thenReturnSuccess() throws Exception {
         UserEntity user = createActiveUser();
         UserVerificationTokenEntity userVerificationTokenEntity = createValidToken(user);
-        var userValidToken = userVerificationTokenEntity.getVerificationToken();
         var newPassword = "newpassword";
         var hashedNewPassword = passwordEncoder.encode(newPassword);
         user.setPassword(hashedNewPassword);
