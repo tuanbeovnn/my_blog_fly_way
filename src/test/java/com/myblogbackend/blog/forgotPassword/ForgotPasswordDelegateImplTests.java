@@ -57,13 +57,13 @@ public class ForgotPasswordDelegateImplTests {
     @Test
     public void givenValidRequest_whenForgotPassword_thenReturnSuccess() throws Exception {
         UserEntity user = createActiveUser();
-        UserVerificationTokenEntity userVerificationTokenEntity =  createValidToken(user);
+        UserVerificationTokenEntity userVerificationTokenEntity = createValidToken(user);
+        var userValidToken = userVerificationTokenEntity.getVerificationToken();
         var newPassword = "newpassword";
         var hashedNewPassword = passwordEncoder.encode(newPassword);
         user.setPassword(hashedNewPassword);
 
-
-        when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(user));
+        when(usersRepository.findByEmail(any(String.class))).thenReturn(Optional.of(user));
         when(userTokenRepository.findByVerificationToken(anyString())).thenReturn(Optional.of(userVerificationTokenEntity));
         when(passwordEncoder.encode(newPassword)).thenReturn(hashedNewPassword);
         when(usersRepository.save(any(UserEntity.class))).thenReturn(user);
@@ -76,9 +76,7 @@ public class ForgotPasswordDelegateImplTests {
                 .param("token", userVerificationTokenEntity.getVerificationToken())
                 .content(objectMapper.writeValueAsString(forgotPasswordRequest))
                 .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.TEXT_HTML))
-                .andExpect(content().string(contains("Your currently password")));
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -88,8 +86,7 @@ public class ForgotPasswordDelegateImplTests {
         var hashedNewPassword = passwordEncoder.encode(newPassword);
         user.setPassword(hashedNewPassword);
 
-
-        when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(user));
+        when(usersRepository.findByEmail(any(String.class))).thenReturn(Optional.of(user));
         when(userTokenRepository.findByVerificationToken(anyString())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(newPassword)).thenReturn(hashedNewPassword);
         when(usersRepository.save(any(UserEntity.class))).thenReturn(user);
@@ -99,12 +96,11 @@ public class ForgotPasswordDelegateImplTests {
         forgotPasswordRequest.setNewPassword(newPassword);
 
         mockMvc.perform(MockMvcRequestBuilders.post(API_URL_FORGOT_PASSWORD)
-                        .param("token", "invalid-token")
+                        .param("token", "not-found-token")
                         .content(objectMapper.writeValueAsString(forgotPasswordRequest))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.TEXT_HTML))
-                .andExpect(content().string(contains("The link is invalid or expired.")));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error[0].message").value("Could not found"));
     }
 
     @Test
@@ -115,7 +111,7 @@ public class ForgotPasswordDelegateImplTests {
         var hashedNewPassword = passwordEncoder.encode(newPassword);
         inActiveUser.setPassword(hashedNewPassword);
 
-        when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(inActiveUser));
+        when(usersRepository.findByEmail(any(String.class))).thenReturn(Optional.of(inActiveUser));
         when(userTokenRepository.findByVerificationToken(anyString())).thenReturn(Optional.of(userVerificationTokenEntity));
         when(passwordEncoder.encode(newPassword)).thenReturn(hashedNewPassword);
         when(usersRepository.save(any(UserEntity.class))).thenReturn(inActiveUser);
@@ -128,7 +124,7 @@ public class ForgotPasswordDelegateImplTests {
                         .param("token", userVerificationTokenEntity.getVerificationToken())
                         .content(objectMapper.writeValueAsString(forgotPasswordRequest))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error[0].message").value("Account has not active yet"));
     }
 }

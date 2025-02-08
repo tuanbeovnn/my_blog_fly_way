@@ -1,5 +1,6 @@
 package com.myblogbackend.blog.forgotPassword;
 
+import com.myblogbackend.blog.enums.OAuth2Provider;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.models.UserVerificationTokenEntity;
 
@@ -14,6 +15,8 @@ public final class ForgotPasswordTestApi {
                 .id(UUID.fromString("14ea3eb3-3d78-441d-b8f7-1be52e3861a4"))
                 .email("active@example.com")
                 .active(true)
+                .isPending(false)
+                .provider(OAuth2Provider.LOCAL)
                 .password("hashed-password")
                 .build();
     }
@@ -22,6 +25,7 @@ public final class ForgotPasswordTestApi {
                 .id(UUID.fromString("14ea3eb3-3d78-441d-b8f7-1be52e3861a4"))
                 .email("inactive@example.com")
                 .active(false)
+                .provider(OAuth2Provider.LOCAL)
                 .password("hashed-password")
                 .build();
     }
@@ -32,7 +36,7 @@ public final class ForgotPasswordTestApi {
         var expiration = calendar.getTime();
 
         return UserVerificationTokenEntity.builder()
-                .verificationToken("valid-token")
+                .verificationToken("d6bbed4f-c00c-4d4b-a7dd-8ce614e40344")
                 .user(user)
                 .expDate(expiration)
                 .build();

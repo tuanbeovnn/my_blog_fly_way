@@ -25,7 +25,7 @@ spring:
         show-sql: false
     kafka:
         bootstrap-servers:
-            - http://localhost:9092
+            - http://localhost:9094
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -88,11 +88,11 @@ email:
         subject: Registration Confirmation
         from: noreply@pezzie.com
         base-url: http://localhost:8080/api/v1/auth/registrationConfirm?token=%s
-    forgot-password-email:
-        template: password-forgot.html
-        subject: New Password
+    forgot-password-confirmation:
+        template: forgot-password-template.html
+        subject: Registration Confirmation
         from: noreply@pezzie.com
-        base-url:
+        base-url: http://localhost:8081/api/v1/auth/forgotPasswordConfirmation?token=%s
 app:
     generate-categories: true
 

@@ -76,8 +76,8 @@ public class AuthController {
         return ResponseEntity.ok(responseBuilder.build());
     }
 
-    @PostMapping("/send-email-forgot-password")
-    public ResponseEntity<?> sendEmailForgotPassword(@Valid @RequestBody final String email) {
+    @GetMapping("/send-email-forgot-password")
+    public ResponseEntity<?> sendEmailForgotPassword(@RequestParam("email") String email) {
         authService.sendEmailForgotPassword(email);
         var responseBuilder = ResponseEntityBuilder.getBuilder()
                 .setCode(200)
@@ -88,8 +88,8 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPasswordV2(@Valid @RequestBody final ForgotPasswordRequest forgotPasswordDto) {
-        authService.forgotPassword(forgotPasswordDto);
+    public ResponseEntity<?> forgotPasswordV2(@Valid @RequestBody final ForgotPasswordRequest forgotPasswordDto, @RequestParam("token") String token) throws IOException {
+        authService.handleForgotPassword(forgotPasswordDto, token);
         var responseBuilder = ResponseEntityBuilder.getBuilder()
                 .setCode(200)
                 .setMessage("Forgot password works successfully!")
