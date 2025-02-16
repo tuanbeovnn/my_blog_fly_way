@@ -76,18 +76,15 @@ management:
     otlp:
         metrics:
             export:
-                url: http://localhost:4318/v1/metrics
-                step: 10s
-                enabled: false
+                url: https://otel-collectors.code4fun.xyz/v1/metrics
+                step: 3s
+                enabled: true
         tracing:
-            endpoint: http://localhost:4318/v1/traces
+            endpoint: https://otel-collectors.code4fun.xyz/v1/traces
     tracing:
         sampling:
             probability: 1.0
-        enabled: false
-oauth2:
-    authorizedRedirectUris:
-        - http://localhost:3000/oauth2/
+        enabled: true
 
 # Email Sender
 email:
