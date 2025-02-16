@@ -17,7 +17,7 @@ services:
             - "55679:55679" # zpages extension
         depends_on:
             - jaeger-all-in-one
-            - zipkin-all-in-one
+#            - zipkin-all-in-one
 
     prometheus:
         container_name: prometheus
