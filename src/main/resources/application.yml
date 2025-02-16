@@ -66,13 +66,13 @@ management:
     otlp:
         metrics:
             export:
-                enabled: false
+                url: http://localhost:4318/v1/metrics
+                step: 10s
         tracing:
-            endpoint: ""
+            endpoint: http://localhost:4318/v1/traces
     tracing:
         sampling:
             probability: 1.0
-        enabled: false
 # Email Sender
 email:
     registration-confirmation:

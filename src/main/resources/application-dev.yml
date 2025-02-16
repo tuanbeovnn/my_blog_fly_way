@@ -2,7 +2,7 @@ server:
     port: 8080
 spring:
     application:
-        name: posts-service
+        name: blogs-technology
     datasource:
         password: ${DB_PASSWORD}
         url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
@@ -76,9 +76,11 @@ management:
     otlp:
         metrics:
             export:
+                url: http://localhost:4318/v1/metrics
+                step: 10s
                 enabled: false
         tracing:
-            endpoint: ""
+            endpoint: http://localhost:4318/v1/traces
     tracing:
         sampling:
             probability: 1.0

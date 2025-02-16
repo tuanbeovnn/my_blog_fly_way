@@ -13,9 +13,9 @@ exporters:
     const_labels:
       label1: value1
 
-  zipkin:
-    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
-    format: proto
+#  zipkin:
+#    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
+#    format: proto
 
   jaeger:
     endpoint: jaeger-all-in-one:14250
@@ -41,4 +41,5 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [zipkin,jaeger]
+#      exporters: [zipkin,jaeger]
+      exporters: [jaeger]
