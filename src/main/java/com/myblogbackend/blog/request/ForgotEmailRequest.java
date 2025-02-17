@@ -1,13 +1,14 @@
 package com.myblogbackend.blog.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
 @Builder
 public class ForgotEmailRequest {
     @Email(message = "Email is required!")
-   private String email;
+    private String email;
 }

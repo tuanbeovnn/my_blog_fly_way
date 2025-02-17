@@ -6,7 +6,6 @@ import com.myblogbackend.blog.models.UserVerificationTokenEntity;
 import com.myblogbackend.blog.repositories.UserTokenRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.ForgotPasswordRequest;
-import com.myblogbackend.blog.request.MailRequest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +13,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -23,10 +21,14 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.Optional;
 
-import static com.myblogbackend.blog.forgotPassword.ForgotPasswordTestApi.*;
-import static org.mockito.ArgumentMatchers.*;
+import static com.myblogbackend.blog.forgotPassword.ForgotPasswordTestApi.createActiveUser;
+import static com.myblogbackend.blog.forgotPassword.ForgotPasswordTestApi.createInActiveUser;
+import static com.myblogbackend.blog.forgotPassword.ForgotPasswordTestApi.createValidToken;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -68,9 +70,9 @@ public class ForgotPasswordDelegateImplTests {
         forgotPasswordRequest.setNewPassword(newPassword);
 
         mockMvc.perform(MockMvcRequestBuilders.post(API_URL_FORGOT_PASSWORD)
-                .param("token", userVerificationTokenEntity.getVerificationToken())
-                .content(objectMapper.writeValueAsString(forgotPasswordRequest))
-                .contentType(MediaType.APPLICATION_JSON))
+                        .param("token", userVerificationTokenEntity.getVerificationToken())
+                        .content(objectMapper.writeValueAsString(forgotPasswordRequest))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 
@@ -101,7 +103,7 @@ public class ForgotPasswordDelegateImplTests {
     @Test
     public void givenInActiveUser_whenForgotPassword_thenReturnBadRequest() throws Exception {
         UserEntity inActiveUser = createInActiveUser();
-        UserVerificationTokenEntity userVerificationTokenEntity =  createValidToken(inActiveUser);
+        UserVerificationTokenEntity userVerificationTokenEntity = createValidToken(inActiveUser);
         var newPassword = "newpassword";
         var hashedNewPassword = passwordEncoder.encode(newPassword);
         inActiveUser.setPassword(hashedNewPassword);

@@ -11,9 +11,24 @@ import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.feign.OutboundIdentityClient;
 import com.myblogbackend.blog.feign.OutboundUserClient;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.*;
-import com.myblogbackend.blog.repositories.*;
-import com.myblogbackend.blog.request.*;
+import com.myblogbackend.blog.models.RefreshTokenEntity;
+import com.myblogbackend.blog.models.RoleEntity;
+import com.myblogbackend.blog.models.UserDeviceEntity;
+import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.models.UserVerificationTokenEntity;
+import com.myblogbackend.blog.repositories.RefreshTokenRepository;
+import com.myblogbackend.blog.repositories.RoleRepository;
+import com.myblogbackend.blog.repositories.UserDeviceRepository;
+import com.myblogbackend.blog.repositories.UserTokenRepository;
+import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.request.DeviceInfoRequest;
+import com.myblogbackend.blog.request.ExchangeTokenRequest;
+import com.myblogbackend.blog.request.ForgotPasswordRequest;
+import com.myblogbackend.blog.request.LoginFormOutboundRequest;
+import com.myblogbackend.blog.request.LoginFormRequest;
+import com.myblogbackend.blog.request.MailRequest;
+import com.myblogbackend.blog.request.SignUpFormRequest;
+import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.AuthService;
@@ -21,7 +36,6 @@ import feign.FeignException;
 import freemarker.template.TemplateException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
-import net.sf.saxon.trans.Err;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +60,13 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 
@@ -155,7 +175,7 @@ public class AuthServiceImpl implements AuthService {
         return userMapper.toUserDTO(result);
     }
 
-    public void sendEmailForgotPassword(String email) {
+    public void sendEmailForgotPassword(final String email) {
         var userEntity = usersRepository.findByEmail(email).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
         var token = createVerificationToken(userEntity);
         // here, later on, using front-end url link to load a creating new password form (react router)
@@ -172,7 +192,8 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    public void handleForgotPassword(ForgotPasswordRequest forgotPasswordRequest, String token) throws IOException {
+    public void handleForgotPassword(final ForgotPasswordRequest forgotPasswordRequest,
+                                     final String token) throws IOException {
         UserEntity userEntity = checkValidUserLogin(forgotPasswordRequest.getEmail());
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.setContentType(MediaType.TEXT_HTML);

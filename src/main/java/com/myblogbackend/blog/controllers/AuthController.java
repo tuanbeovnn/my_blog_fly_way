@@ -2,7 +2,11 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.AuthRoutes;
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
-import com.myblogbackend.blog.request.*;
+import com.myblogbackend.blog.request.ForgotPasswordRequest;
+import com.myblogbackend.blog.request.LoginFormOutboundRequest;
+import com.myblogbackend.blog.request.LoginFormRequest;
+import com.myblogbackend.blog.request.SignUpFormRequest;
+import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.ApiResponse;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.AuthService;
@@ -10,7 +14,12 @@ import freemarker.template.TemplateException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
@@ -77,7 +86,7 @@ public class AuthController {
     }
 
     @GetMapping("/send-email-forgot-password")
-    public ResponseEntity<?> sendEmailForgotPassword(@RequestParam("email") String email) {
+    public ResponseEntity<?> sendEmailForgotPassword(@RequestParam("email") final String email) {
         authService.sendEmailForgotPassword(email);
         var responseBuilder = ResponseEntityBuilder.getBuilder()
                 .setCode(200)
@@ -88,7 +97,9 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPasswordV2(@Valid @RequestBody final ForgotPasswordRequest forgotPasswordDto, @RequestParam("token") String token) throws IOException {
+    public ResponseEntity<?> forgotPasswordV2(@Valid @RequestBody final
+                                              ForgotPasswordRequest forgotPasswordDto,
+                                              @RequestParam("token") final String token) throws IOException {
         authService.handleForgotPassword(forgotPasswordDto, token);
         var responseBuilder = ResponseEntityBuilder.getBuilder()
                 .setCode(200)

@@ -29,7 +29,7 @@ public final class ForgotPasswordTestApi {
                 .password("hashed-password")
                 .build();
     }
-    public static UserVerificationTokenEntity createValidToken(UserEntity user) {
+    public static UserVerificationTokenEntity createValidToken(final UserEntity user) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());
         calendar.add(Calendar.MINUTE, 30);
