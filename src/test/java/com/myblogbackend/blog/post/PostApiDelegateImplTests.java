@@ -105,7 +105,7 @@ public class PostApiDelegateImplTests {
     @Test
     public void givenUserRequestForListPost_whenRequestListPost_thenReturnsListPost() throws Exception {
         // Prepare a list of post entities and specify total records
-        var postEntityList = preparePostsEntitySaving(); // This should return a list with the posts you want to test
+        var postEntityList = preparePostsEntitySaving(); //This should return a list with the posts you want to test
         int totalRecords = postEntityList.size(); // Assuming you want to test with all the posts in the list
         Pageable pageable = PageRequest.of(0, 9); // Define pageable for the test
 

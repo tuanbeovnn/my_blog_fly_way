@@ -93,11 +93,11 @@ email:
         subject: Registration Confirmation
         from: noreply@pezzie.com
         base-url: https://blogs-be-dev.code4fun.xyz/api/v1/auth/registrationConfirm?token=%s
-    forgot-password-email:
-        template: password-forgot.html
-        subject: New Password
+    forgot-password-confirmation:
+        template: forgot-password-template.html
+        subject: ForgotPassword Confirmation
         from: noreply@pezzie.com
-        base-url:
+        base-url: https://blogs-be-dev.code4fun.xyz/api/v1/auth/forgotPasswordConfirmation?token=%s
 app:
     generate-categories: true
 

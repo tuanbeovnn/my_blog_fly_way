@@ -13,6 +13,7 @@ public enum ErrorCode implements CommonErrorCode {
     COULD_NOT_FOUND(HttpStatus.NOT_FOUND, "Could not found"),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "Could not found comment"),
     INVALID_OPERATION(HttpStatus.BAD_REQUEST, "You cannot follow yourself"),
+    INVALID_TOKEN(HttpStatus.BAD_REQUEST, "Invalid token"),
     PASSWORD_DOES_NOT_MATCH(HttpStatus.UNAUTHORIZED, "Password does not match"),
     PASSWORD_WRONG(HttpStatus.UNAUTHORIZED, "Password was wrong"),
     USER_ALREADY_LOGGED_IN(HttpStatus.FORBIDDEN, "User already logged in another device"),
@@ -21,6 +22,7 @@ public enum ErrorCode implements CommonErrorCode {
     GENERAL_AUTH_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred during authentication."),
     GOOGLE_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "Failed to authenticate with Google. Please try again later."),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "error.could not send email");
+    
     private final HttpStatus status;
     private final String message;
 

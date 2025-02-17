@@ -21,6 +21,7 @@ import feign.FeignException;
 import freemarker.template.TemplateException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
+import net.sf.saxon.trans.Err;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,6 +59,8 @@ public class AuthServiceImpl implements AuthService {
     public static final String TEMPLATES_INVALIDTOKEN_HTML = "/templates/invalidtoken.html";
     public static final String TEMPLATES_ALREADYCONFIRMED_HTML = "/templates/alreadyconfirmed.html";
     public static final String TEMPLATES_EMAIL_ACTIVATED_HTML = "/templates/emailActivated.html";
+    public static final String TEMPLATES_FORGOT_PASSWORD_HTML = "/templates/password-forgot.html";
+    public static final String TEMPLATES_CREATE_NEW_PASSWORD_HTML = "/templates/create-new-password.html";
     private static final int EXPIRATION_TIME_MINUTES = 15;
 
     @NonFinal
@@ -94,7 +97,7 @@ public class AuthServiceImpl implements AuthService {
         var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.USER_COULD_NOT_FOUND));
 
-        if (userEntity.getActive()) {
+        if (!userEntity.getActive()) {
             throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
         }
         // Authenticate user
@@ -146,12 +149,48 @@ public class AuthServiceImpl implements AuthService {
         // Generate verification token and confirmation link
         var token = createVerificationToken(result);
         var confirmationLink = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
-
         var mailRequest = createMailRequest(result.getEmail(), confirmationLink);
 
         kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
         return userMapper.toUserDTO(result);
     }
+
+    public void sendEmailForgotPassword(String email) {
+        var userEntity = usersRepository.findByEmail(email).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        var token = createVerificationToken(userEntity);
+        // here, later on, using front-end url link to load a creating new password form (react router)
+        var confirmationLink = String.format(emailProperties.getForgotPasswordConfirmation().getBaseUrl(), token);
+        var mailRequest = createMailRequest(userEntity.getEmail(), confirmationLink);
+
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.TEXT_HTML);
+
+        try {
+            kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest);
+        } catch (Exception e) {
+            throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
+        }
+    }
+
+    public void handleForgotPassword(ForgotPasswordRequest forgotPasswordRequest, String token) throws IOException {
+        UserEntity userEntity = checkValidUserLogin(forgotPasswordRequest.getEmail());
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.TEXT_HTML);
+        if (!userEntity.getActive()) {
+            throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
+        }
+        logger.info("Sending forgot password email to '{}'", userEntity.getEmail());
+        var userVerificationTokenFound = userTokenRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
+
+        if (userVerificationTokenFound == null || isTokenExpired(userVerificationTokenFound)) {
+            throw new BlogRuntimeException(ErrorCode.INVALID_TOKEN);
+        }
+        UserEntity user = userVerificationTokenFound.getUser();
+        user.setPassword(encoder.encode(forgotPasswordRequest.getNewPassword()));
+        usersRepository.save(user);
+    }
+
 
     private RoleEntity getUserRole() {
         return roleRepository.findByName(RoleName.ROLE_USER)
@@ -183,7 +222,7 @@ public class AuthServiceImpl implements AuthService {
             return loadHtmlTemplate(TEMPLATES_ALREADYCONFIRMED_HTML, responseHeaders);
         }
         userEntity.setIsPending(false);
-        userEntity.setActive(false);
+        userEntity.setActive(true);
         usersRepository.save(userEntity);
         return loadHtmlTemplate(TEMPLATES_EMAIL_ACTIVATED_HTML, responseHeaders);
     }
@@ -258,9 +297,10 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private UserEntity checkValidUserLogin(final String forgotPasswordDto) {
+
+    private UserEntity checkValidUserLogin(final String email) {
         UserEntity userEntity = usersRepository
-                .findByEmail(forgotPasswordDto)
+                .findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User not found."));
         if (!userEntity.getProvider().equals(OAuth2Provider.LOCAL)) {
             throw new RuntimeException("Email already existed with sign in by oauth2 method!");

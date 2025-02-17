@@ -21,5 +21,4 @@ public class BlogRuntimeException extends RuntimeException {
         }
         this.status = code.status();
     }
-
 }
