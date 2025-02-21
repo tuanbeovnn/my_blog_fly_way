@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class ResilienceConfig {
     private static final Logger log = LoggerFactory.getLogger(ResilienceConfig.class);
 
-    public ResilienceConfig(RetryRegistry retryRegistry, CircuitBreakerRegistry circuitBreakerRegistry) {
+    public ResilienceConfig(final RetryRegistry retryRegistry, final CircuitBreakerRegistry circuitBreakerRegistry) {
         // Retry Events
         Retry retry = retryRegistry.retry("albumService");
         retry.getEventPublisher().onRetry(event -> log.warn("🔁 Retry #{} for '{}': {}",
@@ -22,7 +22,9 @@ public class ResilienceConfig {
 
         // CircuitBreaker Events
 //        CircuitBreaker cb = circuitBreakerRegistry.circuitBreaker("albumService");
-//        cb.getEventPublisher().onStateTransition(event -> log.info("⚡ CircuitBreaker '{}' state changed to '{}'", event.getCircuitBreakerName(), event.getStateTransition()));
-//        cb.getEventPublisher().onError(event -> log.error("💥 CircuitBreaker '{}' recorded error: {}", event.getCircuitBreakerName(), event.getThrowable().getMessage()));
+//        cb.getEventPublisher().onStateTransition(event -> log.info("⚡ CircuitBreaker '{}' state changed to '{}'",
+//        event.getCircuitBreakerName(), event.getStateTransition()));
+//        cb.getEventPublisher().onError(event -> log.error("💥 CircuitBreaker '{}' recorded error: {}",
+//        event.getCircuitBreakerName(), event.getThrowable().getMessage()));
     }
 }

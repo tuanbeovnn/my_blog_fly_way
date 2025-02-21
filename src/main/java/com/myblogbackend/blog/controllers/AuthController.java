@@ -2,7 +2,6 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.AuthRoutes;
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
-import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.request.ForgotPasswordRequest;
 import com.myblogbackend.blog.request.LoginFormOutboundRequest;
 import com.myblogbackend.blog.request.LoginFormRequest;
@@ -16,7 +15,7 @@ import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.KafkaException;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -102,7 +101,7 @@ public class AuthController {
         System.out.println("retry method called " + attemptIncreased + " times at " + new Date());
         return ResponseEntity.ok(responseBuilder.build());
     }
-    public ResponseEntity<?> sendEmailFallback(String email, Exception ex) {
+    public ResponseEntity<?> sendEmailFallback(final String email, final Exception ex) {
         System.err.println("Fallback triggered due to: " + ex.getMessage());
         var responseBuilder = ResponseEntityBuilder.getBuilder()
                 .setCode(500)
