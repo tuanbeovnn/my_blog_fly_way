@@ -2,6 +2,7 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.AuthRoutes;
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
+import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.request.ForgotPasswordRequest;
 import com.myblogbackend.blog.request.LoginFormOutboundRequest;
 import com.myblogbackend.blog.request.LoginFormRequest;
@@ -11,9 +12,11 @@ import com.myblogbackend.blog.response.ApiResponse;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.AuthService;
 import freemarker.template.TemplateException;
+import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.KafkaException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +28,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.Objects;
 
 @RestController
@@ -32,6 +36,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private int attempt = 1;
     private final AuthService authService;
 
     @PostMapping("/identity/outbound/authentication")
@@ -86,14 +91,24 @@ public class AuthController {
     }
 
     @GetMapping("/send-email-forgot-password")
+    @Retry(name = "sendEmailRetryService", fallbackMethod = "sendEmailFallback")
     public ResponseEntity<?> sendEmailForgotPassword(@RequestParam("email") final String email) {
         authService.sendEmailForgotPassword(email);
         var responseBuilder = ResponseEntityBuilder.getBuilder()
                 .setCode(200)
                 .setMessage("Sent email successfully!")
                 .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
-
+        var attemptIncreased = attempt++;
+        System.out.println("retry method called " + attemptIncreased + " times at " + new Date());
         return ResponseEntity.ok(responseBuilder.build());
+    }
+    public ResponseEntity<?> sendEmailFallback(String email, Exception ex) {
+        System.err.println("Fallback triggered due to: " + ex.getMessage());
+        var responseBuilder = ResponseEntityBuilder.getBuilder()
+                .setCode(500)
+                .setMessage("Failed to send email. Please try again later.")
+                .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
+        return ResponseEntity.status(500).body(responseBuilder.build());
     }
 
     @PostMapping("/forgot-password")

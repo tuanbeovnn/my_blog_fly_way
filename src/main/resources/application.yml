@@ -82,7 +82,7 @@ email:
         base-url: http://localhost:8080/user/api/v1/auth/regitrationConfirm?token=%s
     forgot-password-confirmation:
         template: forgot-password-template.html
-        subject: Registration Confirmation
+        subject: Forgot Password Confirmation
         from: noreply@pezzie.com
         base-url: http://localhost:8081/api/v1/auth/forgotPasswordConfirmation?token=%s
 

@@ -95,7 +95,7 @@ email:
         base-url: https://blogs-be-dev.code4fun.xyz/api/v1/auth/registrationConfirm?token=%s
     forgot-password-confirmation:
         template: forgot-password-template.html
-        subject: ForgotPassword Confirmation
+        subject: Forgot Password Confirmation
         from: noreply@pezzie.com
         base-url: https://blogs-be-dev.code4fun.xyz/api/v1/auth/forgotPasswordConfirmation?token=%s
 app:
@@ -135,3 +135,27 @@ jwt:
     expiryDay: 14
     accessKey: c2VjcmV0QGtleS5hcGlfaGFzX2JlZW5fZGVzaWduZWRfYnlfVGF5TFE=
     refreshKey: 9k1jJAWAKQCnCEz1pwcPNegbHoLugf9hgEnn6sz5pFc=
+
+resilience4j:
+    circuitbreaker:
+        instances:
+            sendEmailCircuitBreakerService:
+                failureRateThreshold: 75
+                slidingWindowType: COUNT_BASED
+                slidingWindowSize: 5
+                minimumNumberOfCalls: 3
+                permittedNumberOfCallsInHalfOpenState: 2
+                waitDurationInOpenState: 5s
+                registerHealthIndicator: true
+                automaticTransitionFromOpenToHalfOpenEnabled: true
+    retry:
+        instances:
+            sendEmailRetryService:
+                maxAttempts: 5
+                waitDuration: 2s
+                retryExceptions:
+                    - org.springframework.web.client.HttpServerErrorException
+                    - org.springframework.web.client.HttpClientErrorException
+                    - java.lang.RuntimeException
+                    - java.net.ConnectException
+                eventConsumerBufferSize: 10
