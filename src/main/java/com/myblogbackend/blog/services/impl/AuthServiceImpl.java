@@ -37,6 +37,7 @@ import freemarker.template.TemplateException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import org.apache.commons.io.IOUtils;
+import org.apache.kafka.common.KafkaException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -186,9 +187,9 @@ public class AuthServiceImpl implements AuthService {
         responseHeaders.setContentType(MediaType.TEXT_HTML);
 
         try {
-            kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest);
+            kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest).get();
         } catch (Exception e) {
-            throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
+            throw new KafkaException("Failed to send message to Kafka: " + e.getMessage(), e);
         }
     }
 
