@@ -2,6 +2,7 @@ package com.myblogbackend.blog.exception;
 
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
+import feign.FeignException;
 import feign.RetryableException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -17,34 +18,29 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @RestControllerAdvice
 public class ControllerExceptionHandler {
     private final static Logger logger = LogManager.getLogger(ControllerExceptionHandler.class);
 
-    // Method to handle JWT expired token exception
     @ExceptionHandler(JwtTokenExpiredException.class)
     @ResponseBody
     public ResponseEntity<?> handleJwtTokenExpiredException(final JwtTokenExpiredException ex) {
         logger.warn("JWT token expired: {}", ex.getMessage());
-        // Build and return the response in the desired format
         return ResponseEntityBuilder.getBuilder()
-                .setCode(HttpStatus.UNAUTHORIZED)  // 401 status for expired token
+                .setCode(HttpStatus.UNAUTHORIZED)
                 .setMessage("Expired JWT token")
-                .set("error", List.of(Map.of("message", "Expired JWT token")))  // Add the message to the error list
+                .set("error", List.of(Map.of("message", "Expired JWT token")))
                 .build();
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseBody
     public ResponseEntity<?> handleException(final MethodArgumentNotValidException ex) {
-        // Create a list to hold validation error details
         List<Map<String, String>> errorDetails = new ArrayList<>();
         // Iterate through the validation errors
         List<FieldError> errors = ex.getBindingResult().getFieldErrors();
@@ -100,7 +96,6 @@ public class ControllerExceptionHandler {
                 .build();
     }
 
-    // Handle RetryableException
     @ExceptionHandler(RetryableException.class)
     @ResponseBody
     public ResponseEntity<?> handleRetryableException(final RetryableException e) {

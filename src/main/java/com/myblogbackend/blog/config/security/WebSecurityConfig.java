@@ -72,6 +72,8 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v1/auth/**").permitAll();
                     auth.requestMatchers("/api/v1/public/**").permitAll();
+                    auth.requestMatchers("/minio/upload/**").permitAll();
+                    auth.requestMatchers("/api/v1/files/**").permitAll();
                     auth.requestMatchers("/api/v1/admin/**").hasRole("ADMIN");
                     auth.requestMatchers("/api/v2/public/**").permitAll();
                     auth.requestMatchers("/actuator/**").permitAll();
