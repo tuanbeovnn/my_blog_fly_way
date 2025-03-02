@@ -64,6 +64,7 @@ spring:
             database: 0
             password:
             username: default
+# Email Sender
 email:
     registration-confirmation:
         template: registration-confirmation-en.html
@@ -114,6 +115,20 @@ feign:
                 connectTimeout: 5000
                 readTimeout: 5000
 management:
+    endpoints:
+        web:
+            exposure:
+                include: health
+    otlp:
+        metrics:
+            export:
+                enabled: false
+        tracing:
+            endpoint: ""
+    tracing:
+        sampling:
+            probability: 1.0
+        enabled: false
     endpoint:
         health:
             show-details: always
@@ -126,7 +141,6 @@ resilience4j:
             default:
                 automaticTransitionFromOpenToHalfOpenEnabled: true
                 failureRateThreshold: 50
-                ignoreExceptions: com.myblogbackend.blog.exception.ExternalServiceException
                 minimumNumberOfCalls: 4
                 permittedNumberOfCallsInHalfOpenState: 3
                 registerHealthIndicator: true
@@ -141,7 +155,6 @@ resilience4j:
             default:
                 enableExponentialBackoff: true
                 exponentialBackoffMultiplier: 2
-                ignoreExceptions: com.myblogbackend.blog.exception.ExternalServiceException
                 maxAttempts: 3
                 waitDuration: 1000
         instances:

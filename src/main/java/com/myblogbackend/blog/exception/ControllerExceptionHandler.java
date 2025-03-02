@@ -2,7 +2,6 @@ package com.myblogbackend.blog.exception;
 
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
-import feign.FeignException;
 import feign.RetryableException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -18,9 +17,12 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 @RestControllerAdvice
@@ -42,14 +44,12 @@ public class ControllerExceptionHandler {
     @ResponseBody
     public ResponseEntity<?> handleException(final MethodArgumentNotValidException ex) {
         List<Map<String, String>> errorDetails = new ArrayList<>();
-        // Iterate through the validation errors
         List<FieldError> errors = ex.getBindingResult().getFieldErrors();
         for (FieldError fieldError : errors) {
             Map<String, String> error = new HashMap<>();
             error.put("field", fieldError.getField());
             error.put("message", fieldError.getDefaultMessage());
             errorDetails.add(error);
-            // Log the validation error
             logger.warn("Validation error for field '{}': {}", fieldError.getField(), fieldError.getDefaultMessage());
         }
         return ResponseEntityBuilder.getBuilder()
@@ -115,5 +115,10 @@ public class ControllerExceptionHandler {
                 .setCode(HttpStatus.BAD_REQUEST)
                 .setMessage(errorMessage)
                 .build();
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Object> handleResponseStatusException(final ResponseStatusException ex) {
+        return new ResponseEntity<>(ex.getReason(), ex.getStatusCode());
     }
 }
