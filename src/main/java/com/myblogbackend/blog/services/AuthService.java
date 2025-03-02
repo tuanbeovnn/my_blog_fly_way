@@ -1,8 +1,11 @@
 package com.myblogbackend.blog.services;
 
-import com.myblogbackend.blog.request.*;
+import com.myblogbackend.blog.request.ForgotPasswordRequest;
+import com.myblogbackend.blog.request.LoginFormOutboundRequest;
+import com.myblogbackend.blog.request.LoginFormRequest;
+import com.myblogbackend.blog.request.SignUpFormRequest;
+import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.JwtResponse;
-import com.myblogbackend.blog.response.UserResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
@@ -10,8 +13,7 @@ import java.io.IOException;
 public interface AuthService {
     JwtResponse userLogin(LoginFormRequest loginFormRequest);
 
-    UserResponse registerUserV2(SignUpFormRequest signUpRequest);
-
+    void registerUserV2(SignUpFormRequest signUpRequest);
 
     JwtResponse refreshJwtToken(TokenRefreshRequest tokenRefreshRequest);
 

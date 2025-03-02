@@ -2,18 +2,25 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.AuthRoutes;
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
-import com.myblogbackend.blog.request.*;
+import com.myblogbackend.blog.request.ForgotPasswordRequest;
+import com.myblogbackend.blog.request.LoginFormOutboundRequest;
+import com.myblogbackend.blog.request.LoginFormRequest;
+import com.myblogbackend.blog.request.SignUpFormRequest;
+import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.ApiResponse;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.net.URI;
 import java.sql.Timestamp;
 import java.util.Objects;
 
@@ -41,22 +48,23 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) {
-        var newUser = authService.registerUserV2(signUpRequest);
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentContextPath().path("/user/me")
-                .buildAndExpand(newUser.getId()).toUri();
+        authService.registerUserV2(signUpRequest);
 
         var responseBuilder = ResponseEntityBuilder.getBuilder()
                 .setCode(200)
-                .setMessage("Register successfully")
+                .setMessage("Registration successful. Please check your email to verify your account.")
                 .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
 
-        return ResponseEntity.created(location).body(responseBuilder.build());
+        return ResponseEntity.ok().body(responseBuilder.build());
     }
 
     @GetMapping("/registrationConfirm")
-    public ResponseEntity<?> confirmRegistration(final @RequestParam("token") String token) throws IOException {
-        return authService.confirmationEmail(token);
+    public ResponseEntity<?> confirmEmail(@RequestParam("token") final String token) {
+        try {
+            return authService.confirmationEmail(token);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid or expired token");
+        }
     }
 
     @PostMapping("/refresh")

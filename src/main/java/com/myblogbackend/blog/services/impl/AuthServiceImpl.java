@@ -11,12 +11,27 @@ import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.feign.OutboundIdentityClient;
 import com.myblogbackend.blog.feign.OutboundUserClient;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.*;
-import com.myblogbackend.blog.repositories.*;
-import com.myblogbackend.blog.request.*;
+import com.myblogbackend.blog.models.RefreshTokenEntity;
+import com.myblogbackend.blog.models.RoleEntity;
+import com.myblogbackend.blog.models.UserDeviceEntity;
+import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.models.UserVerificationTokenEntity;
+import com.myblogbackend.blog.repositories.RefreshTokenRepository;
+import com.myblogbackend.blog.repositories.RoleRepository;
+import com.myblogbackend.blog.repositories.UserDeviceRepository;
+import com.myblogbackend.blog.repositories.UserTokenRepository;
+import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.request.DeviceInfoRequest;
+import com.myblogbackend.blog.request.ExchangeTokenRequest;
+import com.myblogbackend.blog.request.ForgotPasswordRequest;
+import com.myblogbackend.blog.request.LoginFormOutboundRequest;
+import com.myblogbackend.blog.request.LoginFormRequest;
+import com.myblogbackend.blog.request.MailRequest;
+import com.myblogbackend.blog.request.SignUpFormRequest;
+import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.JwtResponse;
-import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.AuthService;
+import com.myblogbackend.blog.utils.GsonUtils;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
@@ -24,7 +39,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -45,7 +59,14 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 
@@ -58,8 +79,6 @@ public class AuthServiceImpl implements AuthService {
     public static final String TEMPLATES_INVALIDTOKEN_HTML = "/templates/invalidtoken.html";
     public static final String TEMPLATES_ALREADYCONFIRMED_HTML = "/templates/alreadyconfirmed.html";
     public static final String TEMPLATES_EMAIL_ACTIVATED_HTML = "/templates/emailActivated.html";
-    public static final String TEMPLATES_FORGOT_PASSWORD_HTML = "/templates/password-forgot.html";
-    public static final String TEMPLATES_CREATE_NEW_PASSWORD_HTML = "/templates/create-new-password.html";
     private static final int EXPIRATION_TIME_MINUTES = 15;
 
     @NonFinal
@@ -89,7 +108,8 @@ public class AuthServiceImpl implements AuthService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final KafkaTopicManager kafkaTopicManager;
     private final RedisTemplate<String, String> redisTemplate;
-
+    private static final long EXPIRATION_TIME = 24;
+    private static final String EMAIL_PREFIX = "email_verification:";
 
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
@@ -99,57 +119,95 @@ public class AuthServiceImpl implements AuthService {
         if (!userEntity.getActive()) {
             throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
         }
-        // Authenticate user
         var authentication = authenticateUser(loginRequest);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Generate JWT and store the device ID in Redis
         var jwtToken = jwtProvider.generateJwtToken(userEntity, loginRequest.getDeviceInfo().getDeviceId());
         var refreshTokenEntity = createRefreshToken(loginRequest.getDeviceInfo(), userEntity);
         return new JwtResponse(jwtToken, refreshTokenEntity.getToken());
     }
 
-    private void saveDeviceToRedis(final LoginFormRequest loginRequest, final UserEntity userEntity) {
-        redisTemplate.opsForValue().set(userEntity.getEmail() + ":deviceId", loginRequest.getDeviceInfo().getDeviceId(),
-                Duration.ofMinutes(30));
+    @Override
+    public void registerUserV2(final SignUpFormRequest signUpRequest) {
+        var email = signUpRequest.getEmail();
+
+        if (usersRepository.existsByEmail(email)) {
+            throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
+        }
+
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(EMAIL_PREFIX + email))) {
+            throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
+        }
+
+        usersRepository.findByEmailAndIsPendingTrue(email).ifPresent(usersRepository::delete);
+
+        var token = UUID.randomUUID().toString();
+
+        saveVerificationToken(token, signUpRequest);
+
+        var confirmationLink = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
+        var mailRequest = createMailRequest(email, confirmationLink);
+
+        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
+
+        logger.info("User registration request stored in Redis for email '{}'", email);
     }
 
-    private void checkLoginAnotherDevices(final LoginFormRequest loginRequest, final UserEntity userEntity) {
-        // Check if the user is already logged in from another device
-        String existingDeviceId = redisTemplate.opsForValue().get(userEntity.getEmail() + ":deviceId");
-        if (existingDeviceId != null && !existingDeviceId.equals(loginRequest.getDeviceInfo().getDeviceId())) {
-            throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN); // Define appropriate error code
-        }
+    public void saveVerificationToken(final String token, final SignUpFormRequest user) {
+        var emailKey = EMAIL_PREFIX + user.getEmail();
+        var userJson = GsonUtils.objectToString(user);
+        redisTemplate.opsForValue().set(token, userJson, EXPIRATION_TIME, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(emailKey, token, EXPIRATION_TIME, TimeUnit.HOURS);
+    }
+
+    public SignUpFormRequest getUserByToken(final String token) {
+        var userJson = redisTemplate.opsForValue().get(token);
+        return GsonUtils.stringToObject(userJson, SignUpFormRequest.class);
+    }
+
+    public void deleteToken(final String token, final String email) {
+        redisTemplate.delete(token);
+        redisTemplate.delete(EMAIL_PREFIX + email);
     }
 
     @Override
-    public UserResponse registerUserV2(final SignUpFormRequest signUpRequest) {
+    public ResponseEntity<?> confirmationEmail(final String token) throws IOException {
+        var responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.TEXT_HTML);
+
+        var signUpRequest = getUserByToken(token);
+
+        if (signUpRequest == null) {
+            return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
+        }
+
+        var existingUser = usersRepository.findByEmail(signUpRequest.getEmail());
+        if (existingUser.isPresent() && !existingUser.get().getIsPending()) {
+            return loadHtmlTemplate(TEMPLATES_ALREADYCONFIRMED_HTML, responseHeaders);
+        }
+
+        usersRepository.findByEmailAndIsPendingTrue(signUpRequest.getEmail()).ifPresent(usersRepository::delete);
+
         var newUser = UserEntity.builder()
                 .email(signUpRequest.getEmail())
                 .password(encoder.encode(signUpRequest.getPassword()))
                 .active(true)
-                .isPending(true)
+                .isPending(false)
                 .followers(0L)
                 .name(signUpRequest.getName())
                 .userName(splitFromEmail(signUpRequest.getEmail()))
                 .provider(OAuth2Provider.LOCAL)
                 .roles(Set.of(getUserRole()))
                 .build();
-        try {
-            var result = usersRepository.save(newUser);
-            logger.info("Created user successfully '{}'", result);
-            // Generate verification token and confirmation link
-            var token = createVerificationToken(result);
-            var confirmationLink = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
-            var mailRequest = createMailRequest(result.getEmail(), confirmationLink);
-            kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
-            return userMapper.toUserDTO(result);
 
-        } catch (DataIntegrityViolationException e) {
-            logger.warn("User registration failed: Email already exists - {}", signUpRequest.getEmail(), e);
-            throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
-        }
+        usersRepository.save(newUser);
+        logger.info("User activated successfully: {}", newUser);
+
+        deleteToken(token, signUpRequest.getEmail());
+
+        return loadHtmlTemplate(TEMPLATES_EMAIL_ACTIVATED_HTML, responseHeaders);
+
     }
 
     public void sendEmailForgotPassword(final String email) {
@@ -204,26 +262,6 @@ public class AuthServiceImpl implements AuthService {
         return mailRequest;
     }
 
-    @Override
-    public ResponseEntity<?> confirmationEmail(final String token) throws IOException {
-        UserVerificationTokenEntity verificationToken = userTokenRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(MediaType.TEXT_HTML);
-
-        if (verificationToken == null || isTokenExpired(verificationToken)) {
-            return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
-        }
-
-        UserEntity userEntity = verificationToken.getUser();
-        if (!userEntity.getIsPending()) {
-            return loadHtmlTemplate(TEMPLATES_ALREADYCONFIRMED_HTML, responseHeaders);
-        }
-        userEntity.setIsPending(false);
-        userEntity.setActive(true);
-        usersRepository.save(userEntity);
-        return loadHtmlTemplate(TEMPLATES_EMAIL_ACTIVATED_HTML, responseHeaders);
-    }
 
     @Override
     public JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest) {
@@ -445,5 +483,18 @@ public class AuthServiceImpl implements AuthService {
         calendar.setTime(new Date());
         calendar.add(Calendar.MINUTE, AuthServiceImpl.EXPIRATION_TIME_MINUTES);
         return calendar.getTime();
+    }
+
+    private void saveDeviceToRedis(final LoginFormRequest loginRequest, final UserEntity userEntity) {
+        redisTemplate.opsForValue().set(userEntity.getEmail() + ":deviceId", loginRequest.getDeviceInfo().getDeviceId(),
+                Duration.ofMinutes(30));
+    }
+
+    private void checkLoginAnotherDevices(final LoginFormRequest loginRequest, final UserEntity userEntity) {
+        // Check if the user is already logged in from another device
+        String existingDeviceId = redisTemplate.opsForValue().get(userEntity.getEmail() + ":deviceId");
+        if (existingDeviceId != null && !existingDeviceId.equals(loginRequest.getDeviceInfo().getDeviceId())) {
+            throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN); // Define appropriate error code
+        }
     }
 }
