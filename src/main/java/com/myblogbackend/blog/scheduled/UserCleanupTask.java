@@ -1,17 +1,11 @@
 package com.myblogbackend.blog.scheduled;
 
-import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.repositories.UserTokenRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
