@@ -11,35 +11,20 @@ import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.feign.OutboundIdentityClient;
 import com.myblogbackend.blog.feign.OutboundUserClient;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.RefreshTokenEntity;
-import com.myblogbackend.blog.models.RoleEntity;
-import com.myblogbackend.blog.models.UserDeviceEntity;
-import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.models.UserVerificationTokenEntity;
-import com.myblogbackend.blog.repositories.RefreshTokenRepository;
-import com.myblogbackend.blog.repositories.RoleRepository;
-import com.myblogbackend.blog.repositories.UserDeviceRepository;
-import com.myblogbackend.blog.repositories.UserTokenRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
-import com.myblogbackend.blog.request.DeviceInfoRequest;
-import com.myblogbackend.blog.request.ExchangeTokenRequest;
-import com.myblogbackend.blog.request.ForgotPasswordRequest;
-import com.myblogbackend.blog.request.LoginFormOutboundRequest;
-import com.myblogbackend.blog.request.LoginFormRequest;
-import com.myblogbackend.blog.request.MailRequest;
-import com.myblogbackend.blog.request.SignUpFormRequest;
-import com.myblogbackend.blog.request.TokenRefreshRequest;
+import com.myblogbackend.blog.models.*;
+import com.myblogbackend.blog.repositories.*;
+import com.myblogbackend.blog.request.*;
 import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.AuthService;
 import feign.FeignException;
-import freemarker.template.TemplateException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -60,13 +45,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 
@@ -145,12 +124,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public UserResponse registerUserV2(final SignUpFormRequest signUpRequest) throws TemplateException, IOException {
-        usersRepository.findByEmail(signUpRequest.getEmail())
-                .ifPresent(user -> {
-                    logger.warn("Account already exists '{}'", user.getEmail());
-                    throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
-                });
+    public UserResponse registerUserV2(final SignUpFormRequest signUpRequest) {
         var newUser = UserEntity.builder()
                 .email(signUpRequest.getEmail())
                 .password(encoder.encode(signUpRequest.getPassword()))
@@ -162,17 +136,20 @@ public class AuthServiceImpl implements AuthService {
                 .provider(OAuth2Provider.LOCAL)
                 .roles(Set.of(getUserRole()))
                 .build();
+        try {
+            var result = usersRepository.save(newUser);
+            logger.info("Created user successfully '{}'", result);
+            // Generate verification token and confirmation link
+            var token = createVerificationToken(result);
+            var confirmationLink = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
+            var mailRequest = createMailRequest(result.getEmail(), confirmationLink);
+            kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
+            return userMapper.toUserDTO(result);
 
-        var result = usersRepository.save(newUser);
-        logger.info("Created user successfully '{}'", result);
-
-        // Generate verification token and confirmation link
-        var token = createVerificationToken(result);
-        var confirmationLink = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
-        var mailRequest = createMailRequest(result.getEmail(), confirmationLink);
-
-        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
-        return userMapper.toUserDTO(result);
+        } catch (DataIntegrityViolationException e) {
+            logger.warn("User registration failed: Email already exists - {}", signUpRequest.getEmail(), e);
+            throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
+        }
     }
 
     public void sendEmailForgotPassword(final String email) {

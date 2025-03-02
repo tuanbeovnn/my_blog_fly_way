@@ -2,24 +2,14 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.AuthRoutes;
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
-import com.myblogbackend.blog.request.ForgotPasswordRequest;
-import com.myblogbackend.blog.request.LoginFormOutboundRequest;
-import com.myblogbackend.blog.request.LoginFormRequest;
-import com.myblogbackend.blog.request.SignUpFormRequest;
-import com.myblogbackend.blog.request.TokenRefreshRequest;
+import com.myblogbackend.blog.request.*;
 import com.myblogbackend.blog.response.ApiResponse;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.AuthService;
-import freemarker.template.TemplateException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
@@ -50,7 +40,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) throws TemplateException, IOException {
+    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) {
         var newUser = authService.registerUserV2(signUpRequest);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentContextPath().path("/user/me")
