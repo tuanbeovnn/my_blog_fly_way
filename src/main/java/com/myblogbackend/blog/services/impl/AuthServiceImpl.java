@@ -163,16 +163,16 @@ public class AuthServiceImpl implements AuthService {
                 .roles(Set.of(getUserRole()))
                 .build();
 
-//        var result = usersRepository.save(newUser);
-        logger.info("Created user successfully '{}'", newUser);
+        var result = usersRepository.save(newUser);
+        logger.info("Created user successfully '{}'", result);
 
         // Generate verification token and confirmation link
-        var token = "123456";
+        var token = createVerificationToken(result);
         var confirmationLink = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
-        var mailRequest = createMailRequest(newUser.getEmail(), confirmationLink);
+        var mailRequest = createMailRequest(result.getEmail(), confirmationLink);
 
         kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
-        return userMapper.toUserDTO(newUser);
+        return userMapper.toUserDTO(result);
     }
 
     public void sendEmailForgotPassword(final String email) {
