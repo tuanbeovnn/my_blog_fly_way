@@ -75,7 +75,11 @@ email:
         template: forgot-password-template.html
         subject: Registration Confirmation
         from: noreply@pezzie.com
-        base-url: http://localhost:8081/api/v1/auth/forgotPasswordConfirmation?token=%s
+        base-url: http://localhost:8080/api/v1/auth/reset-password?email=%s&token=%s
+    currently-password:
+        template: password.html
+        subject: Your New Password
+        from: noreply@pezzie.com
 app:
     generate-categories: true
 

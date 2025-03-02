@@ -15,6 +15,7 @@ public class EmailProperties {
     private EmailInfo registrationConfirmation;
     private EmailInfo forgotPasswordConfirmation;
     private EmailInfo forgotPasswordEmail;
+    private EmailInfo currentlyPassword;
 
     @Getter
     @AllArgsConstructor

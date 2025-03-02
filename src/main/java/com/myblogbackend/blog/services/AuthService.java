@@ -23,7 +23,7 @@ public interface AuthService {
 
     void forgotPassword(ForgotPasswordRequest forgotPasswordDto);
 
-    void handleForgotPassword(ForgotPasswordRequest forgotPasswordRequest, String token) throws IOException;
+    void resetPassword(final String email, final String token);
 
     void sendEmailForgotPassword(String email);
 

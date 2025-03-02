@@ -110,6 +110,7 @@ public class AuthServiceImpl implements AuthService {
     private final RedisTemplate<String, String> redisTemplate;
     private static final long EXPIRATION_TIME = 24;
     private static final String EMAIL_PREFIX = "email_verification:";
+    private static final String EMAIL_FORGOT_PASSWORD = "email_forgotPassword";
 
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
@@ -211,40 +212,46 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public void sendEmailForgotPassword(final String email) {
-        var userEntity = usersRepository.findByEmail(email).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        var token = createVerificationToken(userEntity);
-        // here, later on, using front-end url link to load a creating new password form (react router)
-        var confirmationLink = String.format(emailProperties.getForgotPasswordConfirmation().getBaseUrl(), token);
+        var userEntity = usersRepository.findByEmail(email)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+
+        var token = UUID.randomUUID().toString();
+        var redisKey = "password_reset:" + email;
+
+        redisTemplate.opsForValue().set(redisKey, token, 15, TimeUnit.MINUTES);
+
+        var confirmationLink = String.format(
+                emailProperties.getForgotPasswordConfirmation().getBaseUrl(),
+                email, token
+        );
         var mailRequest = createMailRequest(userEntity.getEmail(), confirmationLink);
 
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(MediaType.TEXT_HTML);
+        kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest);
 
-        try {
-            kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest);
-        } catch (Exception e) {
-            throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
-        }
+        logger.info("Password reset link generated for email '{}' and stored in Redis", email);
     }
 
-    public void handleForgotPassword(final ForgotPasswordRequest forgotPasswordRequest,
-                                     final String token) throws IOException {
-        UserEntity userEntity = checkValidUserLogin(forgotPasswordRequest.getEmail());
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(MediaType.TEXT_HTML);
-        if (!userEntity.getActive()) {
-            throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
-        }
-        logger.info("Sending forgot password email to '{}'", userEntity.getEmail());
-        var userVerificationTokenFound = userTokenRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
 
-        if (userVerificationTokenFound == null || isTokenExpired(userVerificationTokenFound)) {
+    public void resetPassword(final String email, final String token) {
+        var redisKey = "password_reset:" + email;
+        var storedToken = redisTemplate.opsForValue().get(redisKey);
+        if (storedToken == null || !storedToken.equals(token)) {
             throw new BlogRuntimeException(ErrorCode.INVALID_TOKEN);
         }
-        UserEntity user = userVerificationTokenFound.getUser();
-        user.setPassword(encoder.encode(forgotPasswordRequest.getNewPassword()));
-        usersRepository.save(user);
+        var userEntity = usersRepository.findByEmail(email)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
+
+        var newPassword = UUID.randomUUID().toString();
+        userEntity.setPassword(encoder.encode(newPassword));
+        usersRepository.save(userEntity);
+
+        redisTemplate.delete(redisKey);
+
+        var mailRequest = createMailRequest(userEntity.getEmail(), newPassword);
+
+        kafkaTemplate.send(kafkaTopicManager.getNotificationCurrentlyPasswordTopic(), mailRequest);
+
+        logger.info("Password successfully reset for user '{}' and sent via email", email);
     }
 
 

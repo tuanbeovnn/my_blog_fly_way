@@ -71,6 +71,7 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v1/auth/**").permitAll();
+                    auth.requestMatchers("/favicon.ico", "/static/**", "/resources/**").permitAll();
                     auth.requestMatchers("/api/v1/public/**").permitAll();
                     auth.requestMatchers("/api/v1/admin/**").hasRole("ADMIN");
                     auth.requestMatchers("/api/v2/public/**").permitAll();
@@ -82,7 +83,6 @@ public class WebSecurityConfig {
                     auth.anyRequest().authenticated();
                 });
 
-        // fix H2 database console: Refused to display ' in a frame because it set 'X-Frame-Options' to 'deny'
         http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
         http.authenticationProvider(authenticationProvider());
