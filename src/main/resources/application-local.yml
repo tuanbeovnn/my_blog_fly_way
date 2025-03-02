@@ -148,7 +148,7 @@ resilience4j:
                 slidingWindowType: COUNT_BASED
                 waitDurationInOpenState: PT30S
         instances:
-            peopleProxyCircuitBreaker:
+            uploadMinioProxyCircuitBreaker:
                 baseConfig: default
     retry:
         configs:
@@ -158,6 +158,6 @@ resilience4j:
                 maxAttempts: 3
                 waitDuration: 1000
         instances:
-            peopleProxyRetry:
+            uploadMinioProxyRetry:
                 baseConfig: default
 
