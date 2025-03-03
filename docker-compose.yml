@@ -1,4 +1,3 @@
-version: '3'
 services:
     otel-collector:
         image: otel/opentelemetry-collector-contrib:0.82.0
@@ -90,6 +89,7 @@ services:
 
     splunk:
         image: splunk/splunk:latest
+        platform: linux/amd64  # Ensures compatibility with Apple Silicon (M1/M2/M3)
         container_name: splunk
         restart: unless-stopped
         ports:
@@ -107,3 +107,19 @@ services:
         volumes:
             - splunk-data:/opt/splunk/var
             - splunk-etc:/opt/splunk/etc
+        networks:
+            - backend-network
+# The `volumes` section should be defined **outside** the `services` block
+volumes:
+    postgres-db-volume:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: ~/apps/postgres
+    splunk-data:
+    splunk-etc:
+
+networks:
+    backend-network:
+        driver: bridge
