@@ -55,6 +55,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -126,24 +127,17 @@ public class AuthServiceImpl implements AuthService {
     public void registerUserV2(final SignUpFormRequest signUpRequest) {
         var email = signUpRequest.getEmail();
 
-        if (usersRepository.existsByEmail(email)) {
-            throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
-        }
-
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(EMAIL_PREFIX + email))) {
+        if (usersRepository.existsByEmail(email) || Boolean.TRUE.equals(redisTemplate.hasKey(EMAIL_PREFIX + email))) {
             throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
         }
 
         usersRepository.findByEmailAndIsPendingTrue(email).ifPresent(usersRepository::delete);
 
         var token = UUID.randomUUID().toString();
-
         saveVerificationToken(token, signUpRequest);
 
-        var confirmationLink = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
-        var mailRequest = createMailRequest(email, confirmationLink);
-
-        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
+        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(),
+                createMailRequest(email, emailProperties.getRegistrationConfirmation().getBaseUrl() + token));
 
         logger.info("User registration request stored in Redis for email '{}'", email);
     }
@@ -161,8 +155,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public void deleteToken(final String token, final String email) {
-        redisTemplate.delete(token);
-        redisTemplate.delete(EMAIL_PREFIX + email);
+        redisTemplate.delete(Arrays.asList(token, EMAIL_PREFIX + email));
     }
 
     @Override
