@@ -4,13 +4,13 @@ spring:
     application:
         name: blogs-technology
     datasource:
-        password: P@ssword*123
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
-        username: dev
+        password: P@ssword112233
+        url: jdbc:postgresql://localhost:5432/blogs?currentSchema=blog_dbo2
+        username: admin
     flyway:
-        password: P@ssword*123
+        password: P@ssword112233
         url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
-        user: dev
+        user: admin
     jackson:
         deserialization:
             fail-on-unknown-properties: true
