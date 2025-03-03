@@ -71,7 +71,7 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v1/auth/**").permitAll();
-                    auth.requestMatchers("/favicon.ico", "/static/**", "/resources/**").permitAll();
+                    auth.requestMatchers("/css/**", "/js/**", "/img/**", "**/favicon.ico").anonymous();
                     auth.requestMatchers("/api/v1/public/**").permitAll();
                     auth.requestMatchers("/api/v1/admin/**").hasRole("ADMIN");
                     auth.requestMatchers("/api/v2/public/**").permitAll();
