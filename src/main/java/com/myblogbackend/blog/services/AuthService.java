@@ -1,6 +1,5 @@
 package com.myblogbackend.blog.services;
 
-import com.myblogbackend.blog.request.ForgotPasswordRequest;
 import com.myblogbackend.blog.request.LoginFormOutboundRequest;
 import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.request.SignUpFormRequest;
@@ -20,8 +19,6 @@ public interface AuthService {
     ResponseEntity<?> confirmationEmail(String token) throws IOException;
 
     JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest);
-
-    void forgotPassword(ForgotPasswordRequest forgotPasswordDto);
 
     void resetPassword(final String email, final String token);
 

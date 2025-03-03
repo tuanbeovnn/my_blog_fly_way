@@ -15,7 +15,6 @@ import com.myblogbackend.blog.models.RefreshTokenEntity;
 import com.myblogbackend.blog.models.RoleEntity;
 import com.myblogbackend.blog.models.UserDeviceEntity;
 import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.models.UserVerificationTokenEntity;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
 import com.myblogbackend.blog.repositories.RoleRepository;
 import com.myblogbackend.blog.repositories.UserDeviceRepository;
@@ -23,7 +22,6 @@ import com.myblogbackend.blog.repositories.UserTokenRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.DeviceInfoRequest;
 import com.myblogbackend.blog.request.ExchangeTokenRequest;
-import com.myblogbackend.blog.request.ForgotPasswordRequest;
 import com.myblogbackend.blog.request.LoginFormOutboundRequest;
 import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.request.MailRequest;
@@ -52,15 +50,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -79,7 +73,9 @@ public class AuthServiceImpl implements AuthService {
     public static final String TEMPLATES_INVALIDTOKEN_HTML = "/templates/invalidtoken.html";
     public static final String TEMPLATES_ALREADYCONFIRMED_HTML = "/templates/alreadyconfirmed.html";
     public static final String TEMPLATES_EMAIL_ACTIVATED_HTML = "/templates/emailActivated.html";
-    private static final int EXPIRATION_TIME_MINUTES = 15;
+    private static final String GRANT_TYPE = "authorization_code";
+    private static final long EXPIRATION_TIME = 24;
+    private static final String EMAIL_PREFIX = "email_verification:";
 
     @NonFinal
     @Value("${outbound.identity.client-id}")
@@ -92,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
     @NonFinal
     @Value("${outbound.identity.redirect-uri}")
     private String REDIRECT_URI;
-    private static final String GRANT_TYPE = "authorization_code";
+
     private final UsersRepository usersRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
@@ -108,9 +104,6 @@ public class AuthServiceImpl implements AuthService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final KafkaTopicManager kafkaTopicManager;
     private final RedisTemplate<String, String> redisTemplate;
-    private static final long EXPIRATION_TIME = 24;
-    private static final String EMAIL_PREFIX = "email_verification:";
-    private static final String EMAIL_FORGOT_PASSWORD = "email_forgotPassword";
 
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
@@ -269,7 +262,6 @@ public class AuthServiceImpl implements AuthService {
         return mailRequest;
     }
 
-
     @Override
     public JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest) {
         try {
@@ -319,38 +311,6 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void forgotPassword(final ForgotPasswordRequest forgotPasswordDto) {
-        UserEntity userEntity = checkValidUserLogin(forgotPasswordDto.getEmail());
-        if (!userEntity.getActive()) {
-            logger.info("Sending activation email to '{}'", userEntity);
-            var newPassword = UUID.randomUUID().toString().substring(0, 8);
-            userEntity.setPassword(encoder.encode(newPassword));
-            UserEntity result = usersRepository.save(userEntity);
-//            createVerificationToken(result, newPassword, EMAIL_FORGOT_PASSWORD);
-            try {
-//                mailStrategy.sendForgotPasswordEmail(result, newPassword);
-            } catch (Exception e) {
-                // Roll back the transaction if email sending fails
-                logger.error("Failed to send activation email", e);
-                throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
-            }
-        }
-    }
-
-
-    private UserEntity checkValidUserLogin(final String email) {
-        UserEntity userEntity = usersRepository
-                .findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User not found."));
-        if (!userEntity.getProvider().equals(OAuth2Provider.LOCAL)) {
-            throw new RuntimeException("Email already existed with sign in by oauth2 method!");
-        }
-        return userEntity;
-    }
-
     private UserEntity createNewUser(final String email, final String name) {
         var roles = new HashSet<RoleEntity>();
         var userRole = roleRepository.findByName(RoleName.ROLE_USER)
@@ -372,20 +332,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtResponse refreshJwtToken(final TokenRefreshRequest tokenRefreshRequest) {
-        String requestRefreshToken = tokenRefreshRequest.getRefreshToken();
+        var requestRefreshToken = tokenRefreshRequest.getRefreshToken();
 
-        // Retrieve the refresh token from the database
-        RefreshTokenEntity refreshToken = refreshTokenRepository.findByToken(requestRefreshToken)
+        var refreshToken = refreshTokenRepository.findByToken(requestRefreshToken)
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database. Please login again"));
 
-        // Verify expiration and availability of the refresh token
         verifyExpiration(refreshToken);
         verifyRefreshAvailability(refreshToken);
-        increaseCount(refreshToken); // Assuming this increments usage count or something similar
+        increaseCount(refreshToken);
 
-        // Generate new access token using user details from the refresh token
-        UserEntity userEntity = refreshToken.getUserDevice().getUser();
-        String newAccessToken = jwtProvider.generateJwtToken(userEntity, refreshToken.getUserDevice().getDeviceId());
+        var userEntity = refreshToken.getUserDevice().getUser();
+        var newAccessToken = jwtProvider.generateJwtToken(userEntity, refreshToken.getUserDevice().getDeviceId());
 
         return new JwtResponse(newAccessToken, requestRefreshToken);
     }
@@ -454,11 +411,6 @@ public class AuthServiceImpl implements AuthService {
         return refreshTokenEntity;
     }
 
-    private boolean isTokenExpired(final UserVerificationTokenEntity verificationToken) {
-        long timeDifference = verificationToken.getExpDate().getTime() - Calendar.getInstance().getTime().getTime();
-        return timeDifference <= 0;
-    }
-
     private ResponseEntity<String> loadHtmlTemplate(final String templatePath,
                                                     final HttpHeaders headers) throws IOException {
         try (InputStream in = getClass().getResourceAsStream(templatePath)) {
@@ -468,40 +420,5 @@ public class AuthServiceImpl implements AuthService {
             }
         }
         return new ResponseEntity<>(HttpStatus.OK);
-    }
-
-
-    public String createVerificationToken(final UserEntity user) {
-        // Generate a new token
-        var token = UUID.randomUUID().toString();
-        var expirationDate = calculateExpirationDate();
-        var verificationToken = UserVerificationTokenEntity.builder()
-                .verificationToken(token)
-                .expDate(expirationDate)
-                .user(user)
-                .build();
-        userTokenRepository.save(verificationToken);
-
-        return token;
-    }
-
-    private Date calculateExpirationDate() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(new Date());
-        calendar.add(Calendar.MINUTE, AuthServiceImpl.EXPIRATION_TIME_MINUTES);
-        return calendar.getTime();
-    }
-
-    private void saveDeviceToRedis(final LoginFormRequest loginRequest, final UserEntity userEntity) {
-        redisTemplate.opsForValue().set(userEntity.getEmail() + ":deviceId", loginRequest.getDeviceInfo().getDeviceId(),
-                Duration.ofMinutes(30));
-    }
-
-    private void checkLoginAnotherDevices(final LoginFormRequest loginRequest, final UserEntity userEntity) {
-        // Check if the user is already logged in from another device
-        String existingDeviceId = redisTemplate.opsForValue().get(userEntity.getEmail() + ":deviceId");
-        if (existingDeviceId != null && !existingDeviceId.equals(loginRequest.getDeviceInfo().getDeviceId())) {
-            throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN); // Define appropriate error code
-        }
     }
 }
