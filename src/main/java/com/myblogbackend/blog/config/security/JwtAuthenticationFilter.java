@@ -22,6 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +37,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
 
+    private static final List<String> SKIP_PATHS = Arrays.asList(
+            "/favicon.ico", "/static/", "/images/", "/css/", "/js/",
+            "/v3/api-docs", "/swagger-ui", "/api/v1/auth/", "/api/v1/public/", "/api/v2/public/"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(final HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return SKIP_PATHS.stream().anyMatch(path::startsWith);
+    }
+
     @Override
     protected void doFilterInternal(@NotNull final HttpServletRequest request,
                                     @NotNull final HttpServletResponse response,
                                     @NotNull final FilterChain filterChain) throws ServletException, IOException {
         try {
-            logger.info("Incoming request: " + request.getRequestURI());
             getJwt(request).ifPresent(jwt -> {
                 if (tokenProvider.validateJwtToken(jwt, TokenType.ACCESS_TOKEN, request)) {
                     String username = tokenProvider.getUserNameFromJwtToken(jwt, TokenType.ACCESS_TOKEN);

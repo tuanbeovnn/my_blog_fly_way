@@ -60,7 +60,7 @@ public class WebSecurityConfig {
     private static final String[] AUTH_WHITELIST = {
             "/v3/api-docs/**", "/v3/api-docs.yaml", "/swagger-ui/**",
             "/swagger-ui.html", "/favicon.ico", "/**/*.json",
-            "/**/*.gif", "/**/*.svg", "/**/*.jpg", "/**/*.jpeg",
+            "/**/*.gif", "/**/*.svg", "/**/*.jpg", "/**/*.jpeg", "/error",
             "/**/*.html", "/**/*.css", "/**/*.js"
     };
 
@@ -71,7 +71,6 @@ public class WebSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v1/auth/**").permitAll();
-                    auth.requestMatchers("/css/**", "/js/**", "/img/**", "**/favicon.ico").anonymous();
                     auth.requestMatchers("/api/v1/public/**").permitAll();
                     auth.requestMatchers("/api/v1/admin/**").hasRole("ADMIN");
                     auth.requestMatchers("/api/v2/public/**").permitAll();
