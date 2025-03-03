@@ -70,11 +70,9 @@ import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 public class AuthServiceImpl implements AuthService {
     private static final Logger logger = LogManager.getLogger(AuthServiceImpl.class);
     public static final long ONE_DAY_IN_MILLIS = 86400000;
-    public static final String JSON = "json";
     public static final String TEMPLATES_INVALIDTOKEN_HTML = "/templates/invalidtoken.html";
     public static final String TEMPLATES_ALREADYCONFIRMED_HTML = "/templates/alreadyconfirmed.html";
     public static final String TEMPLATES_EMAIL_ACTIVATED_HTML = "/templates/emailActivated.html";
-    private static final String GRANT_TYPE = "authorization_code";
     private static final long EXPIRATION_TIME = 24;
     private static final String EMAIL_PREFIX = "email_verification:";
 
@@ -260,7 +258,7 @@ public class AuthServiceImpl implements AuthService {
                     .clientId(CLIENT_ID)
                     .clientSecret(CLIENT_SECRET)
                     .redirectUri(REDIRECT_URI)
-                    .grantType(GRANT_TYPE)
+                    .grantType("authorization_code")
                     .build());
 
             if (response == null || response.getAccessToken() == null) {
@@ -270,7 +268,7 @@ public class AuthServiceImpl implements AuthService {
 
             logger.info("Access token successfully received from Google: {}", response.getAccessToken());
 
-            var userInfo = outboundUserClient.getUserInfo(JSON, response.getAccessToken());
+            var userInfo = outboundUserClient.getUserInfo("json", response.getAccessToken());
             logger.info("User info retrieved from Google: Email: {}, Name: {}", userInfo.getEmail(), userInfo.getName());
 
             var user = usersRepository.findByEmail(userInfo.getEmail())
