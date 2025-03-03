@@ -87,7 +87,7 @@ flywaypf:
     active: blog_dbo2
 
 logging:
-    config: classpath:log4j2-spring-dev.xml
+    config: classpath:log4j2-spring-local.xml
 
 outbound:
     identity:

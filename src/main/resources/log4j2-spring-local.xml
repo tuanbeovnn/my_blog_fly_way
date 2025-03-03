@@ -7,9 +7,9 @@
         </Console>
         <SplunkHttp
                 name="splunkhttp"
-                url="https://code4fun.xyz:8088"
-                token="cc8b6dcd-1bc4-4078-90d9-39c0196aa5bf"
-                host="code4fun.xyz"
+                url="http://localhost:8088"
+                token="83c2436c-d751-4fd6-80f8-e0f40093efe5"
+                host="localhost"
                 index="spring_dev"
                 type="raw"
                 source="source name"
