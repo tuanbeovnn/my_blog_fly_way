@@ -126,20 +126,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void registerUserV2(final SignUpFormRequest signUpRequest) {
         var email = signUpRequest.getEmail();
-
         if (usersRepository.existsByEmail(email) || Boolean.TRUE.equals(redisTemplate.hasKey(EMAIL_PREFIX + email))) {
             throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
         }
-
         usersRepository.findByEmailAndIsPendingTrue(email).ifPresent(usersRepository::delete);
-
         var token = UUID.randomUUID().toString();
         saveVerificationToken(token, signUpRequest);
-
         kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(),
                 createMailRequest(email, emailProperties.getRegistrationConfirmation().getBaseUrl() + token));
-
-        logger.info("User registration request stored in Redis for email '{}'", email);
     }
 
     public void saveVerificationToken(final String token, final SignUpFormRequest user) {
