@@ -1,3 +1,4 @@
+version: '3'
 services:
     otel-collector:
         image: otel/opentelemetry-collector-contrib:0.82.0
