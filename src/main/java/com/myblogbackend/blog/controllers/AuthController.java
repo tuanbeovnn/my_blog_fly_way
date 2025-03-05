@@ -20,9 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.Map;
 import java.util.Objects;
 
 @RestController
@@ -48,7 +47,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) {
+    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) throws IOException {
         authService.registerUserV2(signUpRequest);
 
         var responseBuilder = ResponseEntityBuilder.getBuilder()
@@ -85,23 +84,20 @@ public class AuthController {
     }
 
     @PostMapping("/send-email-forgot-password")
-    public ResponseEntity<?> sendEmailForgotPassword(@RequestParam("email") final String email) {
-        authService.sendEmailForgotPassword(email);
-        var responseBuilder = ResponseEntityBuilder.getBuilder()
-                .setCode(200)
-                .setMessage("Sent email successfully!")
-                .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
-
-        return ResponseEntity.ok(responseBuilder.build());
+    public ResponseEntity<?> sendEmailForgotPassword(@Valid @RequestParam("email") final String email)  {
+        try {
+           return authService.sendEmailForgotPassword(email);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid or expired token");
+        }
     }
 
     @GetMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestParam final String email, @RequestParam final String token) {
-        authService.resetPassword(email, token);
-
-        return ResponseEntity.ok(Map.of(
-                "message", "A new password has been sent to your email.",
-                "timestamp", Instant.now().toString()
-        ));
+        try {
+            return  authService.resetPassword(email, token);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid or expired token");
+        }
     }
 }
