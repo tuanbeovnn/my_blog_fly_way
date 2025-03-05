@@ -12,7 +12,7 @@ import java.io.IOException;
 public interface AuthService {
     JwtResponse userLogin(LoginFormRequest loginFormRequest);
 
-    void registerUserV2(SignUpFormRequest signUpRequest);
+    void registerUserV2(SignUpFormRequest signUpRequest) throws IOException;
 
     JwtResponse refreshJwtToken(TokenRefreshRequest tokenRefreshRequest);
 
@@ -20,8 +20,8 @@ public interface AuthService {
 
     JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest);
 
-    void resetPassword(final String email, final String token);
+    ResponseEntity<?>  resetPassword(final String email, final String token) throws IOException;
 
-    void sendEmailForgotPassword(String email);
+    ResponseEntity<?> sendEmailForgotPassword(String email);
 
 }

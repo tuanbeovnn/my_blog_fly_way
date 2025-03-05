@@ -73,6 +73,8 @@ public class AuthServiceImpl implements AuthService {
     public static final String TEMPLATES_INVALIDTOKEN_HTML = "/templates/invalidtoken.html";
     public static final String TEMPLATES_ALREADYCONFIRMED_HTML = "/templates/alreadyconfirmed.html";
     public static final String TEMPLATES_EMAIL_ACTIVATED_HTML = "/templates/emailActivated.html";
+    public static final String TEMPLATES_NEW_PASSWORD_CREATED_HTML = "/templates/new-password-created.html";
+    public static final String TEMPLATES_FORGOT_PASSWORD_HTML = "/templates/forgot-password-template.html";
     private static final long EXPIRATION_TIME = 24;
     private static final String EMAIL_PREFIX = "email_verification:";
 
@@ -125,7 +127,7 @@ public class AuthServiceImpl implements AuthService {
     public void registerUserV2(final SignUpFormRequest signUpRequest) {
         var email = signUpRequest.getEmail();
         if (usersRepository.existsByEmail(email) || Boolean.TRUE.equals(redisTemplate.hasKey(EMAIL_PREFIX + email))) {
-            throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
+           throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
         }
         usersRepository.findByEmailAndIsPendingTrue(email).ifPresent(usersRepository::delete);
         var token = UUID.randomUUID().toString();
@@ -189,7 +191,7 @@ public class AuthServiceImpl implements AuthService {
 
     }
 
-    public void sendEmailForgotPassword(final String email) {
+    public ResponseEntity<?> sendEmailForgotPassword(final String email) {
         var userEntity = usersRepository.findByEmail(email)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
 
@@ -205,16 +207,18 @@ public class AuthServiceImpl implements AuthService {
         var mailRequest = createMailRequest(userEntity.getEmail(), confirmationLink);
 
         kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest);
-
         logger.info("Password reset link generated for email '{}' and stored in Redis", email);
+        return null;
     }
 
+    public ResponseEntity<?> resetPassword(final String email, final String token)  throws IOException {
+        var responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.TEXT_HTML);
 
-    public void resetPassword(final String email, final String token) {
         var redisKey = "password_reset:" + email;
         var storedToken = redisTemplate.opsForValue().get(redisKey);
         if (storedToken == null || !storedToken.equals(token)) {
-            throw new BlogRuntimeException(ErrorCode.INVALID_TOKEN);
+           return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
         }
         var userEntity = usersRepository.findByEmail(email)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
@@ -230,6 +234,7 @@ public class AuthServiceImpl implements AuthService {
         kafkaTemplate.send(kafkaTopicManager.getNotificationCurrentlyPasswordTopic(), mailRequest);
 
         logger.info("Password successfully reset for user '{}' and sent via email", email);
+        return loadHtmlTemplate(TEMPLATES_NEW_PASSWORD_CREATED_HTML, responseHeaders);
     }
 
 

@@ -9,7 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
+
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -106,16 +106,6 @@ public class ControllerExceptionHandler {
                 .build();
     }
 
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    @ResponseBody
-    public ResponseEntity<?> handleHttpMessageNotReadableException(final HttpMessageNotReadableException ex) {
-        String errorMessage = "Invalid request body: " + ex.getLocalizedMessage();
-        return ResponseEntityBuilder.getBuilder()
-                .setCode(HttpStatus.BAD_REQUEST)
-                .setMessage(errorMessage)
-                .build();
-    }
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Object> handleResponseStatusException(final ResponseStatusException ex) {
