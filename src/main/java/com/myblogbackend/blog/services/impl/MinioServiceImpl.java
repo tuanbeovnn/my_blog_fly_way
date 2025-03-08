@@ -21,11 +21,6 @@ public class MinioServiceImpl implements MinioService {
 
     @Override
     public List<FileResponse> uploadMultiFiles(final MultipartFile[] multipartFile) {
-        try {
-            return outboundUploadMultiFiles.uploadMultipleFiles(multipartFile);
-        } catch (Exception e) {
-            LOGGER.error("Error occurred while uploading files", e);
-            throw new RuntimeException("Failed to upload files", e);
-        }
+        return outboundUploadMultiFiles.uploadMultipleFiles(multipartFile);
     }
 }

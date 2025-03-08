@@ -15,7 +15,6 @@ import com.myblogbackend.blog.models.RefreshTokenEntity;
 import com.myblogbackend.blog.models.RoleEntity;
 import com.myblogbackend.blog.models.UserDeviceEntity;
 import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.models.UserVerificationTokenEntity;
 import com.myblogbackend.blog.repositories.RefreshTokenRepository;
 import com.myblogbackend.blog.repositories.RoleRepository;
 import com.myblogbackend.blog.repositories.UserDeviceRepository;
@@ -23,21 +22,18 @@ import com.myblogbackend.blog.repositories.UserTokenRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.DeviceInfoRequest;
 import com.myblogbackend.blog.request.ExchangeTokenRequest;
-import com.myblogbackend.blog.request.ForgotPasswordRequest;
 import com.myblogbackend.blog.request.LoginFormOutboundRequest;
 import com.myblogbackend.blog.request.LoginFormRequest;
 import com.myblogbackend.blog.request.MailRequest;
 import com.myblogbackend.blog.request.SignUpFormRequest;
 import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.JwtResponse;
-import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.services.AuthService;
+import com.myblogbackend.blog.utils.GsonUtils;
 import feign.FeignException;
-import freemarker.template.TemplateException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
 import org.apache.commons.io.IOUtils;
-import org.apache.kafka.common.KafkaException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,20 +50,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 
@@ -76,13 +70,13 @@ import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 public class AuthServiceImpl implements AuthService {
     private static final Logger logger = LogManager.getLogger(AuthServiceImpl.class);
     public static final long ONE_DAY_IN_MILLIS = 86400000;
-    public static final String JSON = "json";
     public static final String TEMPLATES_INVALIDTOKEN_HTML = "/templates/invalidtoken.html";
     public static final String TEMPLATES_ALREADYCONFIRMED_HTML = "/templates/alreadyconfirmed.html";
     public static final String TEMPLATES_EMAIL_ACTIVATED_HTML = "/templates/emailActivated.html";
-    public static final String TEMPLATES_FORGOT_PASSWORD_HTML = "/templates/password-forgot.html";
-    public static final String TEMPLATES_CREATE_NEW_PASSWORD_HTML = "/templates/create-new-password.html";
-    private static final int EXPIRATION_TIME_MINUTES = 15;
+    public static final String TEMPLATES_NEW_PASSWORD_CREATED_HTML = "/templates/new-password-created.html";
+    public static final String TEMPLATES_FORGOT_PASSWORD_HTML = "/templates/forgot-password-template.html";
+    private static final long EXPIRATION_TIME = 24;
+    private static final String EMAIL_PREFIX = "email_verification:";
 
     @NonFinal
     @Value("${outbound.identity.client-id}")
@@ -95,7 +89,7 @@ public class AuthServiceImpl implements AuthService {
     @NonFinal
     @Value("${outbound.identity.redirect-uri}")
     private String REDIRECT_URI;
-    private static final String GRANT_TYPE = "authorization_code";
+
     private final UsersRepository usersRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
@@ -112,7 +106,6 @@ public class AuthServiceImpl implements AuthService {
     private final KafkaTopicManager kafkaTopicManager;
     private final RedisTemplate<String, String> redisTemplate;
 
-
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
         var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
@@ -121,42 +114,67 @@ public class AuthServiceImpl implements AuthService {
         if (!userEntity.getActive()) {
             throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
         }
-        // Authenticate user
         var authentication = authenticateUser(loginRequest);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Generate JWT and store the device ID in Redis
         var jwtToken = jwtProvider.generateJwtToken(userEntity, loginRequest.getDeviceInfo().getDeviceId());
         var refreshTokenEntity = createRefreshToken(loginRequest.getDeviceInfo(), userEntity);
         return new JwtResponse(jwtToken, refreshTokenEntity.getToken());
     }
 
-    private void saveDeviceToRedis(final LoginFormRequest loginRequest, final UserEntity userEntity) {
-        redisTemplate.opsForValue().set(userEntity.getEmail() + ":deviceId", loginRequest.getDeviceInfo().getDeviceId(),
-                Duration.ofMinutes(30));
+    @Override
+    public void registerUserV2(final SignUpFormRequest signUpRequest) {
+        var email = signUpRequest.getEmail();
+        if (usersRepository.existsByEmail(email) || Boolean.TRUE.equals(redisTemplate.hasKey(EMAIL_PREFIX + email))) {
+           throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
+        }
+        usersRepository.findByEmailAndIsPendingTrue(email).ifPresent(usersRepository::delete);
+        var token = UUID.randomUUID().toString();
+        saveVerificationToken(token, signUpRequest);
+        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(),
+                createMailRequest(email, emailProperties.getRegistrationConfirmation().getBaseUrl() + token));
     }
 
-    private void checkLoginAnotherDevices(final LoginFormRequest loginRequest, final UserEntity userEntity) {
-        // Check if the user is already logged in from another device
-        String existingDeviceId = redisTemplate.opsForValue().get(userEntity.getEmail() + ":deviceId");
-        if (existingDeviceId != null && !existingDeviceId.equals(loginRequest.getDeviceInfo().getDeviceId())) {
-            throw new BlogRuntimeException(ErrorCode.USER_ALREADY_LOGGED_IN); // Define appropriate error code
-        }
+    public void saveVerificationToken(final String token, final SignUpFormRequest user) {
+        var emailKey = EMAIL_PREFIX + user.getEmail();
+        var userJson = GsonUtils.objectToString(user);
+        redisTemplate.opsForValue().set(token, userJson, EXPIRATION_TIME, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(emailKey, token, EXPIRATION_TIME, TimeUnit.HOURS);
+    }
+
+    public SignUpFormRequest getUserByToken(final String token) {
+        var userJson = redisTemplate.opsForValue().get(token);
+        return GsonUtils.stringToObject(userJson, SignUpFormRequest.class);
+    }
+
+    public void deleteToken(final String token, final String email) {
+        redisTemplate.delete(Arrays.asList(token, EMAIL_PREFIX + email));
     }
 
     @Override
-    public UserResponse registerUserV2(final SignUpFormRequest signUpRequest) throws TemplateException, IOException {
-        usersRepository.findByEmail(signUpRequest.getEmail())
-                .ifPresent(user -> {
-                    logger.warn("Account already exists '{}'", user.getEmail());
-                    throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
-                });
+    public ResponseEntity<?> confirmationEmail(final String token) throws IOException {
+        var responseHeaders = new HttpHeaders();
+        responseHeaders.setContentType(MediaType.TEXT_HTML);
+
+        var signUpRequest = getUserByToken(token);
+
+        if (signUpRequest == null) {
+            return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
+        }
+
+        var existingUser = usersRepository.findByEmail(signUpRequest.getEmail());
+        if (existingUser.isPresent() && !existingUser.get().getIsPending()) {
+            return loadHtmlTemplate(TEMPLATES_ALREADYCONFIRMED_HTML, responseHeaders);
+        }
+
+        usersRepository.findByEmailAndIsPendingTrue(signUpRequest.getEmail()).ifPresent(usersRepository::delete);
+
         var newUser = UserEntity.builder()
                 .email(signUpRequest.getEmail())
                 .password(encoder.encode(signUpRequest.getPassword()))
                 .active(true)
-                .isPending(true)
+                .isPending(false)
                 .followers(0L)
                 .name(signUpRequest.getName())
                 .userName(splitFromEmail(signUpRequest.getEmail()))
@@ -164,53 +182,59 @@ public class AuthServiceImpl implements AuthService {
                 .roles(Set.of(getUserRole()))
                 .build();
 
-        var result = usersRepository.save(newUser);
-        logger.info("Created user successfully '{}'", result);
+        usersRepository.save(newUser);
+        logger.info("User activated successfully: {}", newUser);
 
-        // Generate verification token and confirmation link
-        var token = createVerificationToken(result);
-        var confirmationLink = String.format(emailProperties.getRegistrationConfirmation().getBaseUrl(), token);
-        var mailRequest = createMailRequest(result.getEmail(), confirmationLink);
+        deleteToken(token, signUpRequest.getEmail());
 
-        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), mailRequest);
-        return userMapper.toUserDTO(result);
+        return loadHtmlTemplate(TEMPLATES_EMAIL_ACTIVATED_HTML, responseHeaders);
+
     }
 
-    public void sendEmailForgotPassword(final String email) {
-        var userEntity = usersRepository.findByEmail(email).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        var token = createVerificationToken(userEntity);
-        // here, later on, using front-end url link to load a creating new password form (react router)
-        var confirmationLink = String.format(emailProperties.getForgotPasswordConfirmation().getBaseUrl(), token);
+    public ResponseEntity<?> sendEmailForgotPassword(final String email) {
+        var userEntity = usersRepository.findByEmail(email)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+
+        var token = UUID.randomUUID().toString();
+        var redisKey = "password_reset:" + email;
+
+        redisTemplate.opsForValue().set(redisKey, token, 15, TimeUnit.MINUTES);
+
+        var confirmationLink = String.format(
+                emailProperties.getForgotPasswordConfirmation().getBaseUrl(),
+                email, token
+        );
         var mailRequest = createMailRequest(userEntity.getEmail(), confirmationLink);
 
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(MediaType.TEXT_HTML);
-
-        try {
-            kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest).get();
-        } catch (Exception e) {
-            throw new KafkaException("Failed to send message to Kafka: " + e.getMessage(), e);
-        }
+        kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest);
+        logger.info("Password reset link generated for email '{}' and stored in Redis", email);
+        return null;
     }
 
-    public void handleForgotPassword(final ForgotPasswordRequest forgotPasswordRequest,
-                                     final String token) throws IOException {
-        UserEntity userEntity = checkValidUserLogin(forgotPasswordRequest.getEmail());
-        HttpHeaders responseHeaders = new HttpHeaders();
+    public ResponseEntity<?> resetPassword(final String email, final String token)  throws IOException {
+        var responseHeaders = new HttpHeaders();
         responseHeaders.setContentType(MediaType.TEXT_HTML);
-        if (!userEntity.getActive()) {
-            throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
+
+        var redisKey = "password_reset:" + email;
+        var storedToken = redisTemplate.opsForValue().get(redisKey);
+        if (storedToken == null || !storedToken.equals(token)) {
+           return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
         }
-        logger.info("Sending forgot password email to '{}'", userEntity.getEmail());
-        var userVerificationTokenFound = userTokenRepository.findByVerificationToken(token)
+        var userEntity = usersRepository.findByEmail(email)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
 
-        if (userVerificationTokenFound == null || isTokenExpired(userVerificationTokenFound)) {
-            throw new BlogRuntimeException(ErrorCode.INVALID_TOKEN);
-        }
-        UserEntity user = userVerificationTokenFound.getUser();
-        user.setPassword(encoder.encode(forgotPasswordRequest.getNewPassword()));
-        usersRepository.save(user);
+        var newPassword = UUID.randomUUID().toString();
+        userEntity.setPassword(encoder.encode(newPassword));
+        usersRepository.save(userEntity);
+
+        redisTemplate.delete(redisKey);
+
+        var mailRequest = createMailRequest(userEntity.getEmail(), newPassword);
+
+        kafkaTemplate.send(kafkaTopicManager.getNotificationCurrentlyPasswordTopic(), mailRequest);
+
+        logger.info("Password successfully reset for user '{}' and sent via email", email);
+        return loadHtmlTemplate(TEMPLATES_NEW_PASSWORD_CREATED_HTML, responseHeaders);
     }
 
 
@@ -229,27 +253,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ResponseEntity<?> confirmationEmail(final String token) throws IOException {
-        UserVerificationTokenEntity verificationToken = userTokenRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.setContentType(MediaType.TEXT_HTML);
-
-        if (verificationToken == null || isTokenExpired(verificationToken)) {
-            return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
-        }
-
-        UserEntity userEntity = verificationToken.getUser();
-        if (!userEntity.getIsPending()) {
-            return loadHtmlTemplate(TEMPLATES_ALREADYCONFIRMED_HTML, responseHeaders);
-        }
-        userEntity.setIsPending(false);
-        userEntity.setActive(true);
-        usersRepository.save(userEntity);
-        return loadHtmlTemplate(TEMPLATES_EMAIL_ACTIVATED_HTML, responseHeaders);
-    }
-
-    @Override
     public JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest) {
         try {
             logger.info("Starting OAuth authentication for user. Code: {}, Client ID: {}, Redirect URI: {}",
@@ -260,7 +263,7 @@ public class AuthServiceImpl implements AuthService {
                     .clientId(CLIENT_ID)
                     .clientSecret(CLIENT_SECRET)
                     .redirectUri(REDIRECT_URI)
-                    .grantType(GRANT_TYPE)
+                    .grantType("authorization_code")
                     .build());
 
             if (response == null || response.getAccessToken() == null) {
@@ -270,7 +273,7 @@ public class AuthServiceImpl implements AuthService {
 
             logger.info("Access token successfully received from Google: {}", response.getAccessToken());
 
-            var userInfo = outboundUserClient.getUserInfo(JSON, response.getAccessToken());
+            var userInfo = outboundUserClient.getUserInfo("json", response.getAccessToken());
             logger.info("User info retrieved from Google: Email: {}, Name: {}", userInfo.getEmail(), userInfo.getName());
 
             var user = usersRepository.findByEmail(userInfo.getEmail())
@@ -298,38 +301,6 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void forgotPassword(final ForgotPasswordRequest forgotPasswordDto) {
-        UserEntity userEntity = checkValidUserLogin(forgotPasswordDto.getEmail());
-        if (!userEntity.getActive()) {
-            logger.info("Sending activation email to '{}'", userEntity);
-            var newPassword = UUID.randomUUID().toString().substring(0, 8);
-            userEntity.setPassword(encoder.encode(newPassword));
-            UserEntity result = usersRepository.save(userEntity);
-//            createVerificationToken(result, newPassword, EMAIL_FORGOT_PASSWORD);
-            try {
-//                mailStrategy.sendForgotPasswordEmail(result, newPassword);
-            } catch (Exception e) {
-                // Roll back the transaction if email sending fails
-                logger.error("Failed to send activation email", e);
-                throw new BlogRuntimeException(ErrorCode.EMAIL_SEND_FAILED);
-            }
-        }
-    }
-
-
-    private UserEntity checkValidUserLogin(final String email) {
-        UserEntity userEntity = usersRepository
-                .findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User not found."));
-        if (!userEntity.getProvider().equals(OAuth2Provider.LOCAL)) {
-            throw new RuntimeException("Email already existed with sign in by oauth2 method!");
-        }
-        return userEntity;
-    }
-
     private UserEntity createNewUser(final String email, final String name) {
         var roles = new HashSet<RoleEntity>();
         var userRole = roleRepository.findByName(RoleName.ROLE_USER)
@@ -351,20 +322,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtResponse refreshJwtToken(final TokenRefreshRequest tokenRefreshRequest) {
-        String requestRefreshToken = tokenRefreshRequest.getRefreshToken();
+        var requestRefreshToken = tokenRefreshRequest.getRefreshToken();
 
-        // Retrieve the refresh token from the database
-        RefreshTokenEntity refreshToken = refreshTokenRepository.findByToken(requestRefreshToken)
+        var refreshToken = refreshTokenRepository.findByToken(requestRefreshToken)
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database. Please login again"));
 
-        // Verify expiration and availability of the refresh token
         verifyExpiration(refreshToken);
         verifyRefreshAvailability(refreshToken);
-        increaseCount(refreshToken); // Assuming this increments usage count or something similar
+        increaseCount(refreshToken);
 
-        // Generate new access token using user details from the refresh token
-        UserEntity userEntity = refreshToken.getUserDevice().getUser();
-        String newAccessToken = jwtProvider.generateJwtToken(userEntity, refreshToken.getUserDevice().getDeviceId());
+        var userEntity = refreshToken.getUserDevice().getUser();
+        var newAccessToken = jwtProvider.generateJwtToken(userEntity, refreshToken.getUserDevice().getDeviceId());
 
         return new JwtResponse(newAccessToken, requestRefreshToken);
     }
@@ -433,11 +401,6 @@ public class AuthServiceImpl implements AuthService {
         return refreshTokenEntity;
     }
 
-    private boolean isTokenExpired(final UserVerificationTokenEntity verificationToken) {
-        long timeDifference = verificationToken.getExpDate().getTime() - Calendar.getInstance().getTime().getTime();
-        return timeDifference <= 0;
-    }
-
     private ResponseEntity<String> loadHtmlTemplate(final String templatePath,
                                                     final HttpHeaders headers) throws IOException {
         try (InputStream in = getClass().getResourceAsStream(templatePath)) {
@@ -447,27 +410,5 @@ public class AuthServiceImpl implements AuthService {
             }
         }
         return new ResponseEntity<>(HttpStatus.OK);
-    }
-
-
-    public String createVerificationToken(final UserEntity user) {
-        // Generate a new token
-        var token = UUID.randomUUID().toString();
-        var expirationDate = calculateExpirationDate();
-        var verificationToken = UserVerificationTokenEntity.builder()
-                .verificationToken(token)
-                .expDate(expirationDate)
-                .user(user)
-                .build();
-        userTokenRepository.save(verificationToken);
-
-        return token;
-    }
-
-    private Date calculateExpirationDate() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(new Date());
-        calendar.add(Calendar.MINUTE, AuthServiceImpl.EXPIRATION_TIME_MINUTES);
-        return calendar.getTime();
     }
 }

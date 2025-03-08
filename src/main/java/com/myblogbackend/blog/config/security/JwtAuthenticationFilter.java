@@ -22,6 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
 
+    private static final List<String> SKIP_PATHS = Arrays.asList(
+            "/favicon.ico", "/static/", "/images/", "/css/", "/js/",
+            "/v3/api-docs", "/swagger-ui", "/api/v1/auth/", "/api/v1/public/", "/api/v2/public/"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(final HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return SKIP_PATHS.stream().anyMatch(path::startsWith);
+    }
+
     @Override
     protected void doFilterInternal(@NotNull final HttpServletRequest request,
                                     @NotNull final HttpServletResponse response,
@@ -49,15 +61,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             });
             filterChain.doFilter(request, response);
-        }catch (InvalidTokenRequestException ex) {
-            logger.warn("Blacklisted JWT token: {}", ex.getMessage());
-            setErrorResponse(HttpStatus.UNAUTHORIZED, response, "Unauthorized access: Invalid token.");
-        } catch (JwtTokenExpiredException ex) {
-            logger.warn("JWT token expired: {}", ex.getMessage());
-            setErrorResponse(HttpStatus.UNAUTHORIZED, response, "Expired JWT token");
-        } catch (BadCredentialsException ex) {
-            logger.error("Invalid JWT token: {}", ex.getMessage());
-            setErrorResponse(HttpStatus.UNAUTHORIZED, response, "Invalid credentials");
+        } catch (InvalidTokenRequestException | JwtTokenExpiredException | BadCredentialsException ex) {
+            logger.warn("Authentication error: {}", ex.getMessage());
+            setErrorResponse(HttpStatus.UNAUTHORIZED, response, ex.getMessage());
+            return;
         }
     }
 

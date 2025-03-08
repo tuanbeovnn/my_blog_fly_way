@@ -60,7 +60,7 @@ public class WebSecurityConfig {
     private static final String[] AUTH_WHITELIST = {
             "/v3/api-docs/**", "/v3/api-docs.yaml", "/swagger-ui/**",
             "/swagger-ui.html", "/favicon.ico", "/**/*.json",
-            "/**/*.gif", "/**/*.svg", "/**/*.jpg", "/**/*.jpeg",
+            "/**/*.gif", "/**/*.svg", "/**/*.jpg", "/**/*.jpeg", "/error",
             "/**/*.html", "/**/*.css", "/**/*.js"
     };
 
@@ -82,7 +82,6 @@ public class WebSecurityConfig {
                     auth.anyRequest().authenticated();
                 });
 
-        // fix H2 database console: Refused to display ' in a frame because it set 'X-Frame-Options' to 'deny'
         http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
         http.authenticationProvider(authenticationProvider());

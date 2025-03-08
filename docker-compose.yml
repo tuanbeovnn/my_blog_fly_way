@@ -75,3 +75,52 @@ services:
             - '5540:5540'
         volumes:
             - ./Users/ajeetraina/data/redisinsight:/db
+
+    postgres:
+        image: postgres:16-alpine
+        restart: unless-stopped
+        ports:
+            - 5432:5432
+        volumes:
+            - ~/apps/postgres:/var/lib/postgresql/data
+        environment:
+            POSTGRES_PASSWORD: P@ssword112233
+            POSTGRES_USER: admin
+            POSTGRES_DB: blogs
+
+    splunk:
+        image: splunk/splunk:latest
+        platform: linux/amd64  # Ensures compatibility with Apple Silicon (M1/M2/M3)
+        container_name: splunk
+        restart: unless-stopped
+        ports:
+            - "8002:8000"  # Splunk Web UI
+            - "8088:8088"  # HTTP Event Collector (HEC) for logging
+            - "9997:9997"  # Indexing Port (for forwarding logs)
+            - "514:514/udp" # Syslog UDP Port
+        environment:
+            SPLUNK_START_ARGS: "--accept-license"
+            SPLUNK_PASSWORD: "S3cureP@ssw0rd"
+            SPLUNK_HEC_TOKEN: "my-hec-token"
+            SPLUNK_HEC_ENABLE: "true"
+            SPLUNK_ENABLE_LISTEN: "9997"
+            SPLUNK_ADD: "udp 514"
+        volumes:
+            - splunk-data:/opt/splunk/var
+            - splunk-etc:/opt/splunk/etc
+        networks:
+            - backend-network
+# The `volumes` section should be defined **outside** the `services` block
+volumes:
+    postgres-db-volume:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: ~/apps/postgres
+    splunk-data:
+    splunk-etc:
+
+networks:
+    backend-network:
+        driver: bridge

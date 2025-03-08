@@ -2,7 +2,7 @@ server:
     port: 8080
 spring:
     application:
-        name: blogs-technology
+        name: blogs-technology-development
     datasource:
         password: ${DB_PASSWORD}
         url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
@@ -85,6 +85,12 @@ management:
         sampling:
             probability: 1.0
         enabled: true
+    endpoint:
+        health:
+            show-details: always
+    health:
+        circuitbreakers:
+            enabled: true
 
 # Email Sender
 email:
@@ -95,7 +101,7 @@ email:
         base-url: https://blogs-be-dev.code4fun.xyz/api/v1/auth/registrationConfirm?token=%s
     forgot-password-confirmation:
         template: forgot-password-template.html
-        subject: Forgot Password Confirmation
+        subject: ForgotPassword Confirmation
         from: noreply@pezzie.com
         base-url: https://blogs-be-dev.code4fun.xyz/api/v1/auth/forgotPasswordConfirmation?token=%s
 app:
@@ -138,24 +144,26 @@ jwt:
 
 resilience4j:
     circuitbreaker:
-        instances:
-            sendEmailCircuitBreakerService:
-                failureRateThreshold: 75
-                slidingWindowType: COUNT_BASED
-                slidingWindowSize: 5
-                minimumNumberOfCalls: 3
-                permittedNumberOfCallsInHalfOpenState: 2
-                waitDurationInOpenState: 5s
-                registerHealthIndicator: true
+        configs:
+            default:
                 automaticTransitionFromOpenToHalfOpenEnabled: true
-    retry:
+                failureRateThreshold: 50
+                minimumNumberOfCalls: 4
+                permittedNumberOfCallsInHalfOpenState: 3
+                registerHealthIndicator: true
+                slidingWindowSize: 6
+                slidingWindowType: COUNT_BASED
+                waitDurationInOpenState: PT30S
         instances:
-            sendEmailRetryService:
-                maxAttempts: 5
-                waitDuration: 2s
-                retryExceptions:
-                    - org.springframework.web.client.HttpServerErrorException
-                    - org.springframework.web.client.HttpClientErrorException
-                    - java.lang.RuntimeException
-                    - java.net.ConnectException
-                eventConsumerBufferSize: 10
+            uploadMinioProxyCircuitBreaker:
+                baseConfig: default
+    retry:
+        configs:
+            default:
+                enableExponentialBackoff: true
+                exponentialBackoffMultiplier: 2
+                maxAttempts: 3
+                waitDuration: 1000
+        instances:
+            uploadMinioProxyRetry:
+                baseConfig: default

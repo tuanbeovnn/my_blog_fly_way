@@ -2,7 +2,7 @@ server:
     port: 8080
 spring:
     application:
-        name: blogs-technology
+        name: blogs-technology-production
     config:
         import: optional:classpath:.env[.properties]
     datasource:
@@ -84,6 +84,12 @@ management:
     tracing:
         sampling:
             probability: 1.0
+    endpoint:
+        health:
+            show-details: always
+    health:
+        circuitbreakers:
+            enabled: true
 # Email Sender
 email:
     registration-confirmation:
@@ -128,3 +134,29 @@ jwt:
     expiryDay: 14
     accessKey: c2VjcmV0QGtleS5hcGlfaGFzX2JlZW5fZGVzaWduZWRfYnlfVGF5TFE=
     refreshKey: 9k1jJAWAKQCnCEz1pwcPNegbHoLugf9hgEnn6sz5pFc=
+
+resilience4j:
+    circuitbreaker:
+        configs:
+            default:
+                automaticTransitionFromOpenToHalfOpenEnabled: true
+                failureRateThreshold: 50
+                minimumNumberOfCalls: 4
+                permittedNumberOfCallsInHalfOpenState: 3
+                registerHealthIndicator: true
+                slidingWindowSize: 6
+                slidingWindowType: COUNT_BASED
+                waitDurationInOpenState: PT30S
+        instances:
+            uploadMinioProxyCircuitBreaker:
+                baseConfig: default
+    retry:
+        configs:
+            default:
+                enableExponentialBackoff: true
+                exponentialBackoffMultiplier: 2
+                maxAttempts: 3
+                waitDuration: 1000
+        instances:
+            uploadMinioProxyRetry:
+                baseConfig: default

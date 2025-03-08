@@ -10,24 +10,18 @@ import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.ApiResponse;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.AuthService;
-import freemarker.template.TemplateException;
-import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
-import java.net.URI;
 import java.sql.Timestamp;
-import java.util.Date;
 import java.util.Objects;
 
 @RestController
@@ -35,7 +29,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private int attempt = 1;
     private final AuthService authService;
 
     @PostMapping("/identity/outbound/authentication")
@@ -54,23 +47,24 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) throws TemplateException, IOException {
-        var newUser = authService.registerUserV2(signUpRequest);
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentContextPath().path("/user/me")
-                .buildAndExpand(newUser.getId()).toUri();
+    public ResponseEntity<?> registerUser(final @Valid @RequestBody SignUpFormRequest signUpRequest) throws IOException {
+        authService.registerUserV2(signUpRequest);
 
         var responseBuilder = ResponseEntityBuilder.getBuilder()
                 .setCode(200)
-                .setMessage("Register successfully")
+                .setMessage("Registration successful. Please check your email to verify your account.")
                 .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
 
-        return ResponseEntity.created(location).body(responseBuilder.build());
+        return ResponseEntity.ok().body(responseBuilder.build());
     }
 
     @GetMapping("/registrationConfirm")
-    public ResponseEntity<?> confirmRegistration(final @RequestParam("token") String token) throws IOException {
-        return authService.confirmationEmail(token);
+    public ResponseEntity<?> confirmEmail(@RequestParam("token") final String token) {
+        try {
+            return authService.confirmationEmail(token);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid or expired token");
+        }
     }
 
     @PostMapping("/refresh")
@@ -89,37 +83,21 @@ public class AuthController {
         return ResponseEntity.ok(responseBuilder.build());
     }
 
-    @GetMapping("/send-email-forgot-password")
-    @Retry(name = "sendEmailRetryService", fallbackMethod = "sendEmailFallback")
-    public ResponseEntity<?> sendEmailForgotPassword(@RequestParam("email") final String email) {
-        authService.sendEmailForgotPassword(email);
-        var responseBuilder = ResponseEntityBuilder.getBuilder()
-                .setCode(200)
-                .setMessage("Sent email successfully!")
-                .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
-        var attemptIncreased = attempt++;
-        System.out.println("retry method called " + attemptIncreased + " times at " + new Date());
-        return ResponseEntity.ok(responseBuilder.build());
-    }
-    public ResponseEntity<?> sendEmailFallback(final String email, final Exception ex) {
-        System.err.println("Fallback triggered due to: " + ex.getMessage());
-        var responseBuilder = ResponseEntityBuilder.getBuilder()
-                .setCode(500)
-                .setMessage("Failed to send email. Please try again later.")
-                .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
-        return ResponseEntity.status(500).body(responseBuilder.build());
+    @PostMapping("/send-email-forgot-password")
+    public ResponseEntity<?> sendEmailForgotPassword(@Valid @RequestParam("email") final String email)  {
+        try {
+           return authService.sendEmailForgotPassword(email);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid or expired token");
+        }
     }
 
-    @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPasswordV2(@Valid @RequestBody final
-                                              ForgotPasswordRequest forgotPasswordDto,
-                                              @RequestParam("token") final String token) throws IOException {
-        authService.handleForgotPassword(forgotPasswordDto, token);
-        var responseBuilder = ResponseEntityBuilder.getBuilder()
-                .setCode(200)
-                .setMessage("Forgot password works successfully!")
-                .set("timestamp", new Timestamp(System.currentTimeMillis()).toInstant().toString());
-
-        return ResponseEntity.ok(responseBuilder.build());
+    @GetMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestParam final String email, @RequestParam final String token) {
+        try {
+            return  authService.resetPassword(email, token);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid or expired token");
+        }
     }
 }

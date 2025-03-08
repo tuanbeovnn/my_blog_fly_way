@@ -1,16 +1,16 @@
 server:
-    port: 8081
+    port: 8080
 spring:
     application:
         name: blogs-technology
     datasource:
-        password: P@ssword*123
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
-        username: dev
+        url: jdbc:postgresql://localhost:5432/blogs?currentSchema=blog_dbo2
+        username: admin
+        password: P@ssword112233
     flyway:
-        password: P@ssword*123
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
-        user: dev
+        url: jdbc:postgresql://localhost:5432/blogs?currentSchema=blog_dbo2
+        user: admin
+        password: P@ssword112233
     jackson:
         deserialization:
             fail-on-unknown-properties: true
@@ -64,22 +64,6 @@ spring:
             database: 0
             password:
             username: default
-management:
-    endpoints:
-        web:
-            exposure:
-                include: health
-    otlp:
-        metrics:
-            export:
-                enabled: false
-        tracing:
-            endpoint: ""
-    tracing:
-        sampling:
-            probability: 1.0
-        enabled: false
-
 # Email Sender
 email:
     registration-confirmation:
@@ -89,21 +73,19 @@ email:
         base-url: http://localhost:8080/api/v1/auth/registrationConfirm?token=%s
     forgot-password-confirmation:
         template: forgot-password-template.html
-        subject: Forgot Password Confirmation
+        subject: Forgot Password Reset
         from: noreply@pezzie.com
-        base-url: http://localhost:8081/api/v1/auth/forgotPasswordConfirmation?token=%s
+        base-url: http://localhost:8080/api/v1/auth/reset-password?email=%s&token=%s
+    currently-password:
+        template: password.html
+        subject: Your New Password
+        from: noreply@pezzie.com
 app:
     generate-categories: true
 
 flywaypf:
     active: blog_dbo2
-#
-#springdoc:
-#    api-docs:
-#        enabled: false
-#    swagger-ui:
-#        enabled: false
-# For development
+
 logging:
     config: classpath:log4j2-spring-dev.xml
 
@@ -119,7 +101,7 @@ api:
 
 file:
     upload:
-        url: https://minio-be.code4fun.xyz
+        url: http://localhost:8081
 
 notifications:
     event:
@@ -129,27 +111,57 @@ jwt:
     expiryDay: 14
     accessKey: c2VjcmV0QGtleS5hcGlfaGFzX2JlZW5fZGVzaWduZWRfYnlfVGF5TFE=
     refreshKey: 9k1jJAWAKQCnCEz1pwcPNegbHoLugf9hgEnn6sz5pFc=
+
+feign:
+    client:
+        config:
+            default:
+                connectTimeout: 5000
+                readTimeout: 5000
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health
+    otlp:
+        metrics:
+            export:
+                enabled: false
+        tracing:
+            endpoint: ""
+    tracing:
+        sampling:
+            probability: 1.0
+        enabled: false
+    endpoint:
+        health:
+            show-details: always
+    health:
+        circuitbreakers:
+            enabled: true
 resilience4j:
     circuitbreaker:
-        instances:
-            sendEmailCircuitBreakerService:
-                failureRateThreshold: 75
-                slidingWindowType: COUNT_BASED
-                slidingWindowSize: 5
-                minimumNumberOfCalls: 3
-                permittedNumberOfCallsInHalfOpenState: 2
-                waitDurationInOpenState: 5s
-                registerHealthIndicator: true
+        configs:
+            default:
                 automaticTransitionFromOpenToHalfOpenEnabled: true
-    retry:
+                failureRateThreshold: 50
+                minimumNumberOfCalls: 4
+                permittedNumberOfCallsInHalfOpenState: 3
+                registerHealthIndicator: true
+                slidingWindowSize: 6
+                slidingWindowType: COUNT_BASED
+                waitDurationInOpenState: PT30S
         instances:
-            sendEmailRetryService:
-                maxAttempts: 5
-                waitDuration: 2s
-                retryExceptions:
-                    - org.springframework.web.client.HttpServerErrorException
-                    - org.springframework.web.client.HttpClientErrorException
-                    - org.apache.kafka.common.KafkaException
-                    - java.lang.RuntimeException
-                    - java.net.ConnectException
-                eventConsumerBufferSize: 10
+            uploadMinioProxyCircuitBreaker:
+                baseConfig: default
+    retry:
+        configs:
+            default:
+                enableExponentialBackoff: true
+                exponentialBackoffMultiplier: 2
+                maxAttempts: 3
+                waitDuration: 1000
+        instances:
+            uploadMinioProxyRetry:
+                baseConfig: default
+
