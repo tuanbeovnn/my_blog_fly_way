@@ -2,7 +2,7 @@ server:
     port: 8080
 spring:
     application:
-        name: blogs-technology
+        name: blogs-technology-development
     datasource:
         password: ${DB_PASSWORD}
         url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2

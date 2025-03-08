@@ -2,7 +2,7 @@ server:
     port: 8080
 spring:
     application:
-        name: blogs-technology
+        name: blogs-technology-production
     config:
         import: optional:classpath:.env[.properties]
     datasource:
