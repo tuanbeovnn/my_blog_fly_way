@@ -77,13 +77,15 @@ management:
     otlp:
         metrics:
             export:
-                url: http://code4fun.xyz:4318/v1/metrics
-                step: 10s
+                url: https://otel-collectors.code4fun.xyz/v1/metrics
+                step: 3s
+                enabled: true
         tracing:
-            endpoint: http://code4fun.xyz:4318/v1/traces
+            endpoint: https://otel-collectors.code4fun.xyz/v1/traces
     tracing:
         sampling:
             probability: 1.0
+        enabled: true
     endpoint:
         health:
             show-details: always
