@@ -162,3 +162,8 @@ resilience4j:
         instances:
             uploadMinioProxyRetry:
                 baseConfig: default
+springdoc:
+    swagger-ui:
+        enabled: false
+    api-docs:
+        enabled: false
