@@ -3,7 +3,7 @@
     <Appenders>
         <Console name="console" target="SYSTEM_OUT">
             <PatternLayout
-                    pattern="%style{%d{ISO8601}} %highlight{%-5level }[%style{%t}{bright,blue}] %style{%C{10}}{bright,yellow}: %msg%n%throwable" />
+                    pattern="%style{%d{ISO8601}} %highlight{%-5level} [%style{%t}{bright,blue}] %style{%C{10}}{bright,yellow}: %msg%n%throwable" />
         </Console>
         <SplunkHttp
                 name="splunkhttp"
@@ -14,15 +14,26 @@
                 type="raw"
                 source="source name"
                 sourcetype="log4j"
-                messageFormat="text"
+                messageFormat="json"
                 disableCertificateValidation="true">
-            <PatternLayout pattern="%m" />
+            <JsonTemplateLayout>
+                <EventTemplate>
+                    {
+                    "time": "%d{ISO8601}",
+                    "level": "%p",
+                    "thread": "%t",
+                    "logger": "%c",
+                    "message": "%m",
+                    "exception": "%ex"
+                    }
+                </EventTemplate>
+            </JsonTemplateLayout>
         </SplunkHttp>
 
     </Appenders>
 
     <Loggers>
-        <Root level="info">
+        <Root level="error">
             <AppenderRef ref="console" />
             <AppenderRef ref="splunkhttp" />
         </Root>
