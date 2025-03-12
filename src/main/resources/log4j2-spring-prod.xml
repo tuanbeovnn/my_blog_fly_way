@@ -16,9 +16,9 @@
                 sourcetype="log4j"
                 messageFormat="json"
                 disableCertificateValidation="true">
-            <PatternLayout pattern="{\"\":\"%d{ISO8601}\", \"level\":\"%p\", \"thread\":\"%t\", \"logger\":\"%c\", \"message\":\"%msg\", \"exception\":\"%ex\"}"/>
-        </SplunkHttp>
+            <PatternLayout pattern="{&quot;time&quot;:&quot;%d{ISO8601}&quot;, &quot;level&quot;:&quot;%p&quot;, &quot;thread&quot;:&quot;%t&quot;, &quot;logger&quot;:&quot;%c&quot;, &quot;message&quot;:&quot;%msg&quot;, &quot;exception&quot;:&quot;%ex&quot;}" />
 
+        </SplunkHttp>
     </Appenders>
 
     <Loggers>
