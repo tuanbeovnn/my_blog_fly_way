@@ -14,15 +14,15 @@
                 type="raw"
                 source="source name"
                 sourcetype="log4j"
-                messageFormat="json"
+                messageFormat="text"
                 disableCertificateValidation="true">
-            <PatternLayout pattern="{&quot;time&quot;:&quot;%d{ISO8601}&quot;, &quot;level&quot;:&quot;%p&quot;, &quot;thread&quot;:&quot;%t&quot;, &quot;logger&quot;:&quot;%c&quot;, &quot;message&quot;:&quot;%msg&quot;, &quot;exception&quot;:&quot;%ex&quot;}" />
-
+            <PatternLayout pattern="%m" />
         </SplunkHttp>
+
     </Appenders>
 
     <Loggers>
-        <Root level="error">
+        <Root level="info">
             <AppenderRef ref="console" />
             <AppenderRef ref="splunkhttp" />
         </Root>
