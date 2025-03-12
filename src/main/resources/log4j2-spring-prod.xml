@@ -16,18 +16,7 @@
                 sourcetype="log4j"
                 messageFormat="json"
                 disableCertificateValidation="true">
-            <JsonTemplateLayout>
-                <EventTemplate>
-                    {
-                    "time": "%d{ISO8601}",
-                    "level": "%p",
-                    "thread": "%t",
-                    "logger": "%c",
-                    "message": "%m",
-                    "exception": "%ex"
-                    }
-                </EventTemplate>
-            </JsonTemplateLayout>
+            <PatternLayout pattern="{\"\":\"%d{ISO8601}\", \"level\":\"%p\", \"thread\":\"%t\", \"logger\":\"%c\", \"message\":\"%msg\", \"exception\":\"%ex\"}"/>
         </SplunkHttp>
 
     </Appenders>
