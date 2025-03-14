@@ -11,17 +11,22 @@
                 token="cc8b6dcd-1bc4-4078-90d9-39c0196aa5bf"
                 host="code4fun.xyz"
                 index="spring_dev"
-                type="raw"
-                source="source name"
+                type="event"
+                source="Blogs_Dev"
                 sourcetype="log4j"
-                messageFormat="text"
+                messageFormat="json"
                 disableCertificateValidation="true">
             <PatternLayout pattern="%m" />
         </SplunkHttp>
 
+
     </Appenders>
 
     <Loggers>
+        <!-- Suppress unwanted logs -->
+        <Logger name="org.hibernate" level="warn" />
+        <Logger name="org.springframework.security" level="warn" />
+        <Logger name="io.netty.resolver.dns" level="error" />
         <Root level="info">
             <AppenderRef ref="console" />
             <AppenderRef ref="splunkhttp" />

@@ -10,18 +10,23 @@
                 url="http://code4fun.xyz:8088"
                 token="d2cb1c66-d33e-4d27-a0cd-4ad90aa4999c"
                 host="code4fun.xyz"
-                index="spring_dev"
+                index="blogs_tech_index"
                 type="raw"
-                source="source name"
+                source="Blogs_Pro"
                 sourcetype="log4j"
-                messageFormat="text"
+                messageFormat="json"
                 disableCertificateValidation="true">
             <PatternLayout pattern="%m" />
         </SplunkHttp>
 
+
     </Appenders>
 
     <Loggers>
+        <!-- Suppress unwanted logs -->
+        <Logger name="org.hibernate" level="warn" />
+        <Logger name="org.springframework.security" level="warn" />
+        <Logger name="io.netty.resolver.dns" level="error" />
         <Root level="info">
             <AppenderRef ref="console" />
             <AppenderRef ref="splunkhttp" />
