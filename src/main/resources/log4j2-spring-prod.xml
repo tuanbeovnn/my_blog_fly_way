@@ -7,7 +7,7 @@
         </Console>
         <SplunkHttp
                 name="splunkhttp"
-                url="http://code4fun.xyz:8088"
+                url="https://code4fun.xyz:8088"
                 token="c3d943bd-854a-4409-8e8e-01a564a536e7"
                 host="code4fun.xyz"
                 index="blogs_prod"
