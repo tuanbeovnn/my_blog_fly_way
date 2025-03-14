@@ -8,17 +8,16 @@
         <SplunkHttp
                 name="splunkhttp"
                 url="http://code4fun.xyz:8088"
-                token="fa315885-205b-43ec-9b9d-0c8493eb74ae"
+                token="c3d943bd-854a-4409-8e8e-01a564a536e7"
                 host="code4fun.xyz"
-                index="spring_prod"
-                type="raw"
-                source="Blogs_Pro"
+                index="blogs_prod"
+                type="event"
+                source="Blogs_Prod"
                 sourcetype="log4j"
                 messageFormat="json"
                 disableCertificateValidation="true">
             <PatternLayout pattern="%m" />
         </SplunkHttp>
-
 
     </Appenders>
 
