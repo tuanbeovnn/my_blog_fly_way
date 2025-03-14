@@ -10,7 +10,6 @@
                 url="http://code4fun.xyz:8088"
                 token="fa315885-205b-43ec-9b9d-0c8493eb74ae"
                 host="code4fun.xyz"
-                index="blogs_tech_index"
                 index="spring_prod"
                 type="raw"
                 source="Blogs_Pro"
