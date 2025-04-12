@@ -2,6 +2,8 @@ package com.myblogbackend.blog.services.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.myblogbackend.blog.config.kafka.KafkaTopicManager;
+import com.myblogbackend.blog.config.kafka.MessageProducer;
 import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.enums.PostTag;
@@ -27,6 +29,7 @@ import com.myblogbackend.blog.repositories.FirebaseUserRepository;
 import com.myblogbackend.blog.repositories.FollowersRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.dtos.PostElasticRequest;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
@@ -83,9 +86,11 @@ public class PostServiceImpl implements PostService {
     private final FirebaseUserRepository firebaseUserRepository;
     private final CommentRepository commentRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final MessageProducer messageProducer;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
     private static final Duration DRAFT_EXPIRATION = Duration.ofHours(12);
+    private final KafkaTopicManager kafkaTopicManager;
 
     @Override
     @Transactional
@@ -107,8 +112,17 @@ public class PostServiceImpl implements PostService {
         postEntity.setTags(tagEntities);
 
         var createdPost = postRepository.save(postEntity);
-        logger.info("Post was created with id: {}", createdPost.getId());
 
+        logger.info("Post was created with id: {}", createdPost.getId());
+        // create PostElasticDTO
+        PostElasticRequest postElasticDto = new PostElasticRequest();
+        postElasticDto.setTitle(createdPost.getTitle());
+        postElasticDto.setContent(createdPost.getContent());
+        postElasticDto.setShortDescription(createdPost.getShortDescription());
+        postElasticDto.setId(createdPost.getId());
+
+        // kafkaTemplate.send(kafkaTopicManager.getNotificationSendPostElasticsDtoTopic(), postElasticDto);
+        messageProducer.sendMessage("notification-send-post-elastics-dto", postElasticDto);
         // Remove the draft from Redis after successful publishing
         redisTemplate.delete(getDraftRedisKey(userEntity.getEmail()));
         sendAMessageFromKafkaToNotificationService(userEntity, createdPost);

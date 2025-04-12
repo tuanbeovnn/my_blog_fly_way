@@ -36,6 +36,11 @@ spring:
                 enable.idempotence: true
                 max.in.flight.requests.per.connection: 5
                 request.timeout.ms: 100
+                spring:
+                    json:
+                        add:
+                            type:
+                                headers: false
     mvc:
         pathmatch:
             matching-strategy: ant_path_matcher
@@ -105,7 +110,7 @@ file:
 
 notifications:
     event:
-        url: https://notifications-be.code4fun.xyz
+        url: http://localhost:8092
 jwt:
     expiryMinutes: 60
     expiryDay: 14
