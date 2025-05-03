@@ -291,6 +291,12 @@ public class PostServiceImpl implements PostService {
         var post = postRepository.findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
 
+        var currentUserId = getUserId();
+
+        if (!post.getUser().getId().equals(currentUserId)) {
+            throw new BlogRuntimeException(ErrorCode.USER_NOT_ALLOWED);
+        }
+
         post.setTitle(postRequest.getTitle());
         post.setContent(postRequest.getContent());
         post.setThumbnails(GsonUtils.arrayToString(postRequest.getThumbnails()));
