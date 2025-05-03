@@ -95,7 +95,7 @@ public class PostServiceImpl implements PostService {
         var postEntity = postMapper.toPostEntity(postRequest);
         postEntity.setCategory(category);
         postEntity.setStatus(Boolean.TRUE);
-        postEntity.setPostType(PostType.APPROVED);
+        postEntity.setPostType(PostType.PENDING);
         postEntity.setFavourite(0L);
         postEntity.setSlug(makeSlug(postRequest.getTitle()));
         postEntity.setCreatedBy(userEntity.getName());
