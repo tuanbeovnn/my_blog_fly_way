@@ -1,5 +1,7 @@
 package com.myblogbackend.blog.mapper;
 
+import com.myblogbackend.blog.documents.PostElastic;
+import com.myblogbackend.blog.dtos.PostElasticRequest;
 import com.myblogbackend.blog.mapper.utils.MappingUtil;
 import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.request.PostRequest;
@@ -24,5 +26,8 @@ public interface PostMapper {
 
     List<PostResponse> toListPostResponse(List<PostEntity> postEntityList);
 
+    // mapping postEntity to postElastics
+    PostElastic toPostElastic(PostEntity postEntity);
 
+    PostResponse toPostResponse(PostElasticRequest postElasticRequest);
 }

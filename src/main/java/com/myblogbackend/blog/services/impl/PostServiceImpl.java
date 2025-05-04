@@ -38,6 +38,7 @@ import com.myblogbackend.blog.response.UserLikedPostResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
 import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
+import com.myblogbackend.blog.services.PostElasticsService;
 import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.specification.PostSpec;
 import com.myblogbackend.blog.utils.GsonUtils;
@@ -91,6 +92,7 @@ public class PostServiceImpl implements PostService {
     private final ObjectMapper objectMapper;
     private static final Duration DRAFT_EXPIRATION = Duration.ofHours(12);
     private final KafkaTopicManager kafkaTopicManager;
+    private final PostElasticsService postElasticsService;
 
     @Override
     @Transactional
@@ -120,6 +122,14 @@ public class PostServiceImpl implements PostService {
         postElasticDto.setContent(createdPost.getContent());
         postElasticDto.setShortDescription(createdPost.getShortDescription());
         postElasticDto.setId(createdPost.getId());
+        // save item in post elastics db
+        try {
+            postElasticsService.savePostElastic(postElasticDto);
+            logger.info("Post saved to Elasticsearch with id: {}", createdPost.getId());
+        } catch (Exception e) {
+            logger.error("Failed to save post to Elasticsearch: {}", e.getMessage());
+            throw new RuntimeException("Elasticsearch save failed", e);
+        }
 
         // kafkaTemplate.send(kafkaTopicManager.getNotificationSendPostElasticsDtoTopic(), postElasticDto);
         messageProducer.sendMessage("notification-send-post-elastics-dto", postElasticDto);
@@ -127,7 +137,6 @@ public class PostServiceImpl implements PostService {
         redisTemplate.delete(getDraftRedisKey(userEntity.getEmail()));
         sendAMessageFromKafkaToNotificationService(userEntity, createdPost);
         return buildPostResponse(createdPost, userEntity.getId());
-
     }
 
     public PostResponse saveDraft(final PostRequest postRequest) {
@@ -312,6 +321,23 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public List<PostResponse> searchPosts(String query, int page, int size) {
+        try {
+            List<PostElasticRequest> elasticsResult = postElasticsService.searchPostElastics(query, page, size);
+            return elasticsResult.stream()
+                    .map(post -> PostResponse.builder()
+                            .shortDescription(post.getShortDescription())
+                            .title(post.getTitle())
+                            .content(post.getContent()).build())
+                    .toList();
+
+        } catch (Exception e) {
+            logger.error("Failed to search posts: {}", e.getMessage());
+            throw new RuntimeException("Post search failed", e);
+        }
+    }
+
+    @Override
     public PostResponse getPostBySlug(final String slug) {
         var post = postRepository.findBySlug(slug)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
@@ -331,6 +357,14 @@ public class PostServiceImpl implements PostService {
         post.setCategory(category);
 
         var updatedPost = postRepository.save(post);
+        // update in Elasticsearch
+        PostElasticRequest postElasticRequest = new PostElasticRequest();
+        postElasticRequest.setId(updatedPost.getId());
+        postElasticRequest.setContent(postRequest.getContent());
+        postElasticRequest.setTitle(postRequest.getTitle());
+        postElasticRequest.setShortDescription(postRequest.getShortDescription());
+        postElasticsService.updatePostElastics(post.getId(), postElasticRequest);
+
         logger.info("Post updated successfully with id {}", id);
         return buildPostResponse(updatedPost, getUserId());
     }
