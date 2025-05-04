@@ -21,6 +21,7 @@ public enum ErrorCode implements CommonErrorCode {
     INVALID_AUTHORIZATION_CODE(HttpStatus.BAD_REQUEST, "The provided authorization code is invalid or expired."),
     GENERAL_AUTH_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred during authentication."),
     GOOGLE_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "Failed to authenticate with Google. Please try again later."),
+    USER_NOT_ALLOWED(HttpStatus.FORBIDDEN, "You are not allowed to update this post."),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "error.could not send email");
     
     private final HttpStatus status;

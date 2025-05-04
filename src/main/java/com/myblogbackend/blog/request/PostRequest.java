@@ -20,7 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PostRequest {
-    @NotBlank(message = "Title info cannot be blank")
+    @NotEmpty(message = "Title info cannot be blank")
     private String title;
     private String content;
     private UUID categoryId;
