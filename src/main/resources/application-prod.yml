@@ -111,7 +111,7 @@ flywaypf:
     active: blog_dbo2
 
 logging:
-    config: classpath:log4j2-spring-prod.xml
+    config: classpath:logback-spring-prod.xml
 
 
 outbound:

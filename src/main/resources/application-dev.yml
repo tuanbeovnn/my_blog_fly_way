@@ -117,7 +117,7 @@ springdoc:
         enabled: true
 # For development
 logging:
-    config: classpath:log4j2-spring-dev.xml
+    config: classpath:logback-spring-dev.xml
 
 outbound:
     identity:

@@ -1,31 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration>
+<configuration scan="true">
+
+    <!-- Load Spring profile into a usable property -->
+    <springProperty scope="context" name="springProfile" source="spring.profiles.active" defaultValue="default"/>
+
+    <!-- Include default Spring Boot logback configuration (optional) -->
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
-    <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <!-- <destination>localhost:5600</destination>--> <!--local env-->
-        <destination>${LOGSTASH_HOST:-localhost:5600}</destination> <!--docker env-->
+
+    <!-- Logstash appender -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>${LOGSTASH_HOST:-localhost:5600}</destination>
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
-                <mdc/>
-                <context/>
+                <timestamp/>
                 <logLevel/>
                 <loggerName/>
+                <threadName/>
+                <context/>
+                <mdc/>
+                <logstashMarkers/>
                 <pattern>
                     <pattern>
                         {
-                        "appName": "blogs-technology",
-                        "serviceName": "blogs-technology-local"
+                        "appName": "blogs-technology-local",
+                        "serviceName": "blogs-technology-${springProfile}",
+                        "env": "${springProfile}"
                         }
                     </pattern>
                 </pattern>
-                <threadName/>
                 <message/>
-                <logstashMarkers/>
                 <stackTrace/>
             </providers>
         </encoder>
     </appender>
-    <root level="info">
-        <appender-ref ref="logstash"/>
+
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="LOGSTASH"/>
     </root>
 </configuration>
