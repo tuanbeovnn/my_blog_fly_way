@@ -93,7 +93,7 @@ springdoc:
         enabled: true
 
 logging:
-    config: classpath:log4j2-spring-local.xml
+    config: classpath:logback-spring.xml
 
 outbound:
     identity:

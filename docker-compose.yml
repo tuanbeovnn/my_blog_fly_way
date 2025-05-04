@@ -153,6 +153,22 @@ services:
             resources:
                 limits:
                     memory: 2G # Adjust memory allocation
+    logstash:
+        image: logstash:8.16.4
+        container_name: logstash
+        restart: always
+        ports:
+            - "5600:5600"
+            - "9600:9600"  # Monitoring API
+        environment:
+            - ELASTICSEARCH_HOST=http://elasticsearch:9200
+            - XPACK_MONITORING_ENABLED=true
+        volumes:
+            - ./docker/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+        depends_on:
+            - elasticsearch
+        networks:
+            - elastic
 
     kibana:
         image: docker.elastic.co/kibana/kibana:8.16.4
