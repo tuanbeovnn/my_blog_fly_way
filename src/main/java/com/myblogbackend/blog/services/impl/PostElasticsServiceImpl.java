@@ -37,7 +37,7 @@ public class PostElasticsServiceImpl implements PostElasticsService {
     private final PostRepository postRepository;
     private final ElasticsearchClient elasticsearchClient;
     @Override
-    public void savePostElastic(PostElasticRequest postElasticRequest) {
+    public void savePostElastic(final PostElasticRequest postElasticRequest) {
         PostElastic postElastic = new PostElastic();
 
         postElastic.setId(postElasticRequest.getId());
@@ -50,7 +50,7 @@ public class PostElasticsServiceImpl implements PostElasticsService {
 
     @Retryable(value = {ElasticsearchException.class}, maxAttempts = 3, backoff = @Backoff(delay = 5000))
     @Override
-    public void updatePostElastics(UUID postId, PostElasticRequest postElasticRequest) {
+    public void updatePostElastics(final UUID postId, final PostElasticRequest postElasticRequest) {
     try {
         if (postId == null || postElasticRequest == null){
             log.error("Invalid input for updating post in Elasticsearch: postId={}, postRequest={}",
@@ -79,7 +79,7 @@ public class PostElasticsServiceImpl implements PostElasticsService {
     public void syncDatabaseToPostElastics() {
         try {
             long elasticCount = postElasticsRepository.count();
-            if(elasticCount > 0) {
+            if(elasticCount > 0){
                 log.info("Elastic count is {}", elasticCount);
             }
             int pageSize = 100;
@@ -87,7 +87,8 @@ public class PostElasticsServiceImpl implements PostElasticsService {
             long totalPosts = postRepository.count();
             long syncedPosts = 0;
             log.info("Starting sync of {} posts from MySQL to Elasticsearch", totalPosts);
-            while((long) pageable.getPageNumber() * pageSize < totalPosts) {
+
+            while((long) pageable.getPageNumber() * pageSize < totalPosts){
                 Page<PostEntity> postPage = postRepository.findAll(pageable);
                 List<PostElastic> postElasticList = postPage.getContent().stream()
                         .map(post -> new PostElastic(
@@ -110,7 +111,7 @@ public class PostElasticsServiceImpl implements PostElasticsService {
     }
 
     @Override
-    public List<PostElasticRequest> searchPostElastics(String query, int page, int size) {
+    public List<PostElasticRequest> searchPostElastics(final String query, final int page, final int size) {
         log.info("Searching products with fuzziness for keyword: {}", query);
 
         SearchResponse<PostElasticRequest> searchResponse;

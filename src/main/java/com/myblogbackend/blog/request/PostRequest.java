@@ -1,6 +1,5 @@
 package com.myblogbackend.blog.request;
 
-
 import com.myblogbackend.blog.enums.PostTag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

@@ -321,7 +321,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<PostResponse> searchPosts(String query, int page, int size) {
+    public List<PostResponse> searchPosts(final String query, final int page, final int size) {
         try {
             List<PostElasticRequest> elasticsResult = postElasticsService.searchPostElastics(query, page, size);
             return elasticsResult.stream()
