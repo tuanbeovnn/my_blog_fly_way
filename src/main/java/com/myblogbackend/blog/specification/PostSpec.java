@@ -39,17 +39,18 @@ public class PostSpec {
                 .and(hasStatusTrue());
     }
 
-    public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest) {
-        Specification<PostEntity> textSearch = Specification.where(
-                safe(hasTitleContaining(filterRequest.getTitle()))
-                        .or(safe(hasShortDescContaining(filterRequest.getShortDescription())))
-                        .or(safe(hasContentContaining(filterRequest.getContent())))
-        );
-
-        return Specification.where(textSearch)
+    public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest, final UUID excludeId) {
+        return Specification
+                .where(
+                        safe(hasTitleContaining(filterRequest.getTitle()))
+                                .or(safe(hasShortDescContaining(filterRequest.getShortDescription())))
+                                .or(safe(hasContentContaining(filterRequest.getContent())))
+                )
                 .and(hasApproved())
-                .and(hasStatusTrue());
+                .and(hasStatusTrue())
+                .and(notWithId(excludeId));
     }
+
 
     public static Specification<PostEntity> findAllArticles(final PostFilterRequest filterRequest) {
         return isPending();
@@ -117,6 +118,12 @@ public class PostSpec {
 
     private static boolean isBlank(final String s) {
         return s == null || s.trim().isEmpty();
+    }
+
+    private static Specification<PostEntity> notWithId(final UUID excludeId) {
+        return (excludeId == null)
+                ? null
+                : (root, query, cb) -> cb.notEqual(root.get("id"), excludeId);
     }
 
 

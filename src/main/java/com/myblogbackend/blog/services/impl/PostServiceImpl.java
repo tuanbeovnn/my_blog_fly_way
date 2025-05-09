@@ -27,6 +27,7 @@ import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.specification.PostSpec;
 import com.myblogbackend.blog.utils.GsonUtils;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -35,6 +36,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -249,12 +251,29 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PageList<PostResponse> relatedPosts(final Pageable pageable, final PostFilterRequest filter) {
-        var spec = PostSpec.findRelatedArticles(filter);
-        var pageableBuild = buildPageable(pageable, filter);
-        var postEntities = postRepository.findAll(spec, pageableBuild);
+    public PageList<PostResponse> relatedPosts(final UUID postId, final Pageable pageable) {
+        // 1. Fetch the original post
+        PostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new EntityNotFoundException("Post not found with ID: " + postId));
 
-        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
+        // 2. Create filter from the existing post
+        PostFilterRequest filter = PostFilterRequest.builder()
+                .title(post.getTitle())
+                .shortDescription(post.getShortDescription())
+                .content(post.getContent())
+                .build();
+
+        // 3. Build specification (excluding the original post itself)
+        Specification<PostEntity> spec = PostSpec.findRelatedArticles(filter, postId);
+
+        // 4. Optional: Build pageable with sorting logic if needed
+        Pageable finalPageable = buildPageable(pageable, filter); // Or just use `pageable`
+
+        // 5. Query related posts
+        Page<PostEntity> postEntities = postRepository.findAll(spec, finalPageable);
+
+        // 6. Convert to response format
+        return buildPaginatedPostResponse(postEntities, finalPageable.getPageSize(), finalPageable.getPageNumber());
     }
 
     @Override
