@@ -122,7 +122,7 @@ public class PostController {
                 .build();
         var pageable = PageRequest.of(offset, limit, Sort.Direction.fromString(sortDirection), sortField);
 
-        var postFeeds = postService.searchPosts(pageable, filter);
+        var postFeeds = postService.relatedPosts(pageable, filter);
 
         return ResponseEntityBuilder
                 .getBuilder()

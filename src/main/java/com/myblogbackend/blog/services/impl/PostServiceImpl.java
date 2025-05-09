@@ -268,7 +268,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter) {
+    public PageList<PostResponse> relatedPosts(final Pageable pageable, final PostFilterRequest filter) {
         var spec = PostSpec.findRelatedArticles(filter);
         var pageableBuild = buildPageable(pageable, filter);
         var postEntities = postRepository.findAll(spec, pageableBuild);

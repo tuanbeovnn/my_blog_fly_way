@@ -23,7 +23,7 @@ public interface PostService {
     PageList<PostResponse> getAllPostByFilter(final Pageable pageable, PostFilterRequest filter);
 
 
-    PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter);
+    PageList<PostResponse> relatedPosts(final Pageable pageable, final PostFilterRequest filter);
 
     void disablePost(UUID postId);
 
