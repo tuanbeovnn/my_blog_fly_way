@@ -64,7 +64,7 @@ public class PostSpec {
                 .and(hasApproved())
                 .and(hasStatusTrue());
     }
-    private static Specification<PostEntity> titleTokenMatch(String title) {
+    private static Specification<PostEntity> titleTokenMatch(final String title) {
         if (isBlank(title)) return null;
 
         String[] tokens = title.toLowerCase().split("\\s+");
