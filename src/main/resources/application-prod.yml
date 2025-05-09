@@ -63,7 +63,7 @@ spring:
         redis:
             host: code4fun.xyz
             port: 6379
-            database: 0
+            database: 1
             password: tuanbeovn17
             username: default
 oauth2:
@@ -111,7 +111,7 @@ flywaypf:
     active: blog_dbo2
 
 logging:
-    config: classpath:log4j2-spring-prod.xml
+    config: classpath:logback-spring-prod.xml
 
 
 outbound:

@@ -130,9 +130,9 @@ public class PostController {
                 .build();
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/posts/{id}")
     public ResponseEntity<?> updatePost(@PathVariable(value = "id") final UUID id,
-                                        final PostRequest postRequest) {
+                                        @Valid @RequestBody final PostRequest postRequest) {
         var post = postService.updatePost(id, postRequest);
         return ResponseEntityBuilder
                 .getBuilder()

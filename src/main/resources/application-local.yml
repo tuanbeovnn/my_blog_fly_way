@@ -86,8 +86,14 @@ app:
 flywaypf:
     active: blog_dbo2
 
+springdoc:
+    api-docs:
+        enabled: true
+    swagger-ui:
+        enabled: true
+
 logging:
-    config: classpath:log4j2-spring-local.xml
+    config: classpath:logback-spring-local.xml
 
 outbound:
     identity:
@@ -164,4 +170,3 @@ resilience4j:
         instances:
             uploadMinioProxyRetry:
                 baseConfig: default
-

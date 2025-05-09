@@ -12,21 +12,9 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.CategoryEntity;
-import com.myblogbackend.blog.models.FollowersEntity;
-import com.myblogbackend.blog.models.PostEntity;
-import com.myblogbackend.blog.models.ProfileEntity;
-import com.myblogbackend.blog.models.TagEntity;
-import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
-import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.models.*;
 import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.repositories.CategoryRepository;
-import com.myblogbackend.blog.repositories.CommentRepository;
-import com.myblogbackend.blog.repositories.FavoriteRepository;
-import com.myblogbackend.blog.repositories.FirebaseUserRepository;
-import com.myblogbackend.blog.repositories.FollowersRepository;
-import com.myblogbackend.blog.repositories.PostRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.repositories.*;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
@@ -54,14 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -95,7 +76,7 @@ public class PostServiceImpl implements PostService {
         var postEntity = postMapper.toPostEntity(postRequest);
         postEntity.setCategory(category);
         postEntity.setStatus(Boolean.TRUE);
-        postEntity.setPostType(PostType.APPROVED);
+        postEntity.setPostType(PostType.PENDING);
         postEntity.setFavourite(0L);
         postEntity.setSlug(makeSlug(postRequest.getTitle()));
         postEntity.setCreatedBy(userEntity.getName());
@@ -309,12 +290,17 @@ public class PostServiceImpl implements PostService {
     public PostResponse updatePost(final UUID id, final PostRequest postRequest) {
         var post = postRepository.findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
-        var category = validateCategory(postRequest.getCategoryId());
+
+        var currentUserId = getUserId();
+
+        if (!post.getUser().getId().equals(currentUserId)) {
+            throw new BlogRuntimeException(ErrorCode.USER_NOT_ALLOWED);
+        }
 
         post.setTitle(postRequest.getTitle());
         post.setContent(postRequest.getContent());
         post.setThumbnails(GsonUtils.arrayToString(postRequest.getThumbnails()));
-        post.setCategory(category);
+        post.setPostType(PostType.PENDING);
 
         var updatedPost = postRepository.save(post);
         logger.info("Post updated successfully with id {}", id);
