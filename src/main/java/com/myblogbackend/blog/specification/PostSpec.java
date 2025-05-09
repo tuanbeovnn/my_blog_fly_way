@@ -8,8 +8,10 @@ import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,16 +42,43 @@ public class PostSpec {
     }
 
     public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest, final UUID excludeId) {
-        return Specification
-                .where(
-                        safe(hasTitleContaining(filterRequest.getTitle()))
-                                .or(safe(hasShortDescContaining(filterRequest.getShortDescription())))
-                                .or(safe(hasContentContaining(filterRequest.getContent())))
-                )
+        Specification<PostEntity> spec = Specification.where(null);
+
+        if (!isBlank(filterRequest.getCategoryName())) {
+            spec = spec.and(Objects.requireNonNull(hasCategoryName(filterRequest.getCategoryName())));
+        }
+
+        if (!isBlank(filterRequest.getTitle())) {
+            spec = spec.and(Objects.requireNonNull(titleTokenMatch(filterRequest.getTitle())));
+        }
+
+        if (!isBlank(filterRequest.getShortDescription())) {
+            spec = spec.or(Objects.requireNonNull(hasShortDescContaining(filterRequest.getShortDescription())));
+        }
+        if (!isBlank(filterRequest.getContent())) {
+            spec = spec.or(Objects.requireNonNull(hasContentContaining(filterRequest.getContent())));
+        }
+
+        return spec
+                .and(notWithId(excludeId))
                 .and(hasApproved())
-                .and(hasStatusTrue())
-                .and(notWithId(excludeId));
+                .and(hasStatusTrue());
     }
+    private static Specification<PostEntity> titleTokenMatch(String title) {
+        if (isBlank(title)) return null;
+
+        String[] tokens = title.toLowerCase().split("\\s+");
+        return (root, query, cb) -> {
+            Predicate predicate = cb.disjunction();
+            for (String token : tokens) {
+                if (token.length() > 2 && !token.matches("\\p{Punct}+")) { // ignore trivial/short/punctuation tokens
+                    predicate = cb.or(predicate, cb.like(cb.lower(root.get(TITLE)), "%" + token + "%"));
+                }
+            }
+            return predicate;
+        };
+    }
+
 
 
     public static Specification<PostEntity> findAllArticles(final PostFilterRequest filterRequest) {
