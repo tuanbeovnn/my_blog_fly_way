@@ -12,9 +12,21 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.*;
+import com.myblogbackend.blog.models.CategoryEntity;
+import com.myblogbackend.blog.models.FollowersEntity;
+import com.myblogbackend.blog.models.PostEntity;
+import com.myblogbackend.blog.models.ProfileEntity;
+import com.myblogbackend.blog.models.TagEntity;
+import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
+import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.repositories.*;
+import com.myblogbackend.blog.repositories.CategoryRepository;
+import com.myblogbackend.blog.repositories.CommentRepository;
+import com.myblogbackend.blog.repositories.FavoriteRepository;
+import com.myblogbackend.blog.repositories.FirebaseUserRepository;
+import com.myblogbackend.blog.repositories.FollowersRepository;
+import com.myblogbackend.blog.repositories.PostRepository;
+import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
@@ -44,7 +56,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -252,28 +271,22 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PageList<PostResponse> relatedPosts(final UUID postId, final Pageable pageable) {
-        // 1. Fetch the original post
         PostEntity post = postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException("Post not found with ID: " + postId));
 
-        // 2. Create filter from the existing post
         PostFilterRequest filter = PostFilterRequest.builder()
                 .title(post.getTitle())
                 .shortDescription(post.getShortDescription())
                 .content(post.getContent())
+                .sortField(pageable.getSort().stream().findFirst().map(Sort.Order::getProperty).orElse("createdDate"))
+                .sortDirection(pageable.getSort().stream().findFirst().map(o -> o.getDirection().name()).orElse("DESC"))
                 .build();
 
-        // 3. Build specification (excluding the original post itself)
         Specification<PostEntity> spec = PostSpec.findRelatedArticles(filter, postId);
 
-        // 4. Optional: Build pageable with sorting logic if needed
-        Pageable finalPageable = buildPageable(pageable, filter); // Or just use `pageable`
+        Page<PostEntity> postEntities = postRepository.findAll(spec, pageable);
 
-        // 5. Query related posts
-        Page<PostEntity> postEntities = postRepository.findAll(spec, finalPageable);
-
-        // 6. Convert to response format
-        return buildPaginatedPostResponse(postEntities, finalPageable.getPageSize(), finalPageable.getPageNumber());
+        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
     }
 
     @Override
