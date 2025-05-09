@@ -278,6 +278,7 @@ public class PostServiceImpl implements PostService {
                 .title(post.getTitle())
                 .shortDescription(post.getShortDescription())
                 .content(post.getContent())
+                .categoryName(post.getCategory().getName())
                 .sortField(pageable.getSort().stream().findFirst().map(Sort.Order::getProperty).orElse("createdDate"))
                 .sortDirection(pageable.getSort().stream().findFirst().map(o -> o.getDirection().name()).orElse("DESC"))
                 .build();
