@@ -105,7 +105,7 @@ public class PostController {
                 .build();
     }
 
-    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/search-articles")
+    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/related-articles")
     public ResponseEntity<?> searchPost(
             @RequestParam(value = "offset", defaultValue = "0") final Integer offset,
             @RequestParam(value = "limit", defaultValue = "9") final Integer limit,
