@@ -2,11 +2,14 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.controllers.route.PostRoutes;
+import com.myblogbackend.blog.dtos.PostElasticRequest;
 import com.myblogbackend.blog.enums.PostTag;
+import com.myblogbackend.blog.repositories.PostElasticsRepository;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
+import com.myblogbackend.blog.services.PostElasticsService;
 import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.services.UserService;
 import jakarta.validation.Valid;
@@ -24,10 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static com.myblogbackend.blog.controllers.route.PostRoutes.PUBLIC_URL;
@@ -38,6 +38,8 @@ import static com.myblogbackend.blog.controllers.route.PostRoutes.PUBLIC_URL;
 public class PostController {
     private final PostService postService;
     private final UserService userService;
+    private final PostElasticsService postElasticsService;
+    private  final PostElasticsRepository postElasticsRepository;
 
     @PostMapping("/posts")
     public ResponseEntity<?> createPost(@RequestBody @Valid final PostRequest postRequest) throws ExecutionException, InterruptedException {
@@ -151,4 +153,24 @@ public class PostController {
                 .build();
     }
 
+    @GetMapping("/posts/search")
+    public ResponseEntity<List<PostResponse>> searchPosts(
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size
+    ) {
+        List<PostResponse> results = postService.searchPosts(query, page, size);
+        return ResponseEntity.ok((results));
+    }
+    // manually sync MYSQL data to Elasticsearch
+    @PostMapping("/sync")
+    public ResponseEntity<?> syncPosts(@RequestBody final PostRequest postRequest) {
+        postElasticsService.syncDatabaseToPostElastics();
+        return ResponseEntity.ok("Elastics sync successful");
+    }
+    // test to verify elastics synced and accessible
+    @GetMapping("/test-elastics")
+    public ResponseEntity<?> testElastics() {
+        return ResponseEntity.ok(postElasticsRepository.count());
+    }
 }

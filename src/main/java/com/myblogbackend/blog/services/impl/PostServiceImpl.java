@@ -2,7 +2,10 @@ package com.myblogbackend.blog.services.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.myblogbackend.blog.config.kafka.KafkaTopicManager;
+import com.myblogbackend.blog.config.kafka.MessageProducer;
 import com.myblogbackend.blog.config.security.UserPrincipal;
+import com.myblogbackend.blog.dtos.PostElasticRequest;
 import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.enums.PostType;
@@ -20,6 +23,7 @@ import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.PageList;
+
 import com.myblogbackend.blog.repositories.CategoryRepository;
 import com.myblogbackend.blog.repositories.CommentRepository;
 import com.myblogbackend.blog.repositories.FavoriteRepository;
@@ -27,6 +31,7 @@ import com.myblogbackend.blog.repositories.FirebaseUserRepository;
 import com.myblogbackend.blog.repositories.FollowersRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
+
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
@@ -35,6 +40,7 @@ import com.myblogbackend.blog.response.UserLikedPostResponse;
 import com.myblogbackend.blog.response.UserResponse;
 import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
 import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
+import com.myblogbackend.blog.services.PostElasticsService;
 import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.specification.PostSpec;
 import com.myblogbackend.blog.utils.GsonUtils;
@@ -85,9 +91,13 @@ public class PostServiceImpl implements PostService {
     private final FirebaseUserRepository firebaseUserRepository;
     private final CommentRepository commentRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final MessageProducer messageProducer;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
     private static final Duration DRAFT_EXPIRATION = Duration.ofHours(12);
+    private final KafkaTopicManager kafkaTopicManager;
+    private final PostElasticsService postElasticsService;
+
 
     @Override
     @Transactional
@@ -109,13 +119,29 @@ public class PostServiceImpl implements PostService {
         postEntity.setTags(tagEntities);
 
         var createdPost = postRepository.save(postEntity);
-        logger.info("Post was created with id: {}", createdPost.getId());
 
+        logger.info("Post was created with id: {}", createdPost.getId());
+        // create PostElasticDTO
+        PostElasticRequest postElasticDto = new PostElasticRequest();
+        postElasticDto.setTitle(createdPost.getTitle());
+        postElasticDto.setContent(createdPost.getContent());
+        postElasticDto.setShortDescription(createdPost.getShortDescription());
+        postElasticDto.setId(createdPost.getId());
+        // save item in post elastics db
+        try {
+            postElasticsService.savePostElastic(postElasticDto);
+            logger.info("Post saved to Elasticsearch with id: {}", createdPost.getId());
+        } catch (Exception e) {
+            logger.error("Failed to save post to Elasticsearch: {}", e.getMessage());
+            throw new RuntimeException("Elasticsearch save failed", e);
+        }
+
+        // kafkaTemplate.send(kafkaTopicManager.getNotificationSendPostElasticsDtoTopic(), postElasticDto);
+        messageProducer.sendMessage("notification-send-post-elastics-dto", postElasticDto);
         // Remove the draft from Redis after successful publishing
         redisTemplate.delete(getDraftRedisKey(userEntity.getEmail()));
         sendAMessageFromKafkaToNotificationService(userEntity, createdPost);
         return buildPostResponse(createdPost, userEntity.getId());
-
     }
 
     public PostResponse saveDraft(final PostRequest postRequest) {
@@ -270,25 +296,24 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PageList<PostResponse> relatedPosts(final UUID postId, final Pageable pageable) {
-        PostEntity post = postRepository.findById(postId)
-                .orElseThrow(() -> new EntityNotFoundException("Post not found with ID: " + postId));
-
-        PostFilterRequest filter = PostFilterRequest.builder()
-                .title(post.getTitle())
-                .shortDescription(post.getShortDescription())
-                .content(post.getContent())
-                .categoryName(post.getCategory().getName())
-                .sortField(pageable.getSort().stream().findFirst().map(Sort.Order::getProperty).orElse("createdDate"))
-                .sortDirection(pageable.getSort().stream().findFirst().map(o -> o.getDirection().name()).orElse("DESC"))
-                .build();
-
-        Specification<PostEntity> spec = PostSpec.findRelatedArticles(filter, postId);
-
-        Page<PostEntity> postEntities = postRepository.findAll(spec, pageable);
-
-        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
+    public List<PostResponse> searchPostsByElastics(String query, int page, int size) {
+        try {
+            List<PostElasticRequest> elasticResult = postElasticsService.searchPostElastics(query, page, size);
+            return elasticResult.stream()
+                    .map(postMapper::toPostResponse)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Exception occurred while searching posts by elastics: ", e);
+            throw new RuntimeException("Post search failed ", e);
+        }
     }
+//    @Override
+//    public PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter) {
+//        var spec = PostSpec.findRelatedArticles(filter);
+//        var pageableBuild = buildPageable(pageable, filter);
+//        var postEntities = postRepository.findAll(spec, pageableBuild);
+//        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
+//    }
 
     @Override
     @Transactional
@@ -312,10 +337,46 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public List<PostResponse> searchPosts(final String query, final int page, final int size) {
+        try {
+            List<PostElasticRequest> elasticsResult = postElasticsService.searchPostElastics(query, page, size);
+            return elasticsResult.stream()
+                    .map(post -> PostResponse.builder()
+                            .shortDescription(post.getShortDescription())
+                            .title(post.getTitle())
+                            .content(post.getContent()).build())
+                    .toList();
+
+        } catch (Exception e) {
+            logger.error("Failed to search posts: {}", e.getMessage());
+            throw new RuntimeException("Post search failed", e);
+        }
+    }
+
+    @Override
     public PostResponse getPostBySlug(final String slug) {
         var post = postRepository.findBySlug(slug)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
         return buildPostResponse(post, getUserId());
+    }
+    @Override
+    public PageList<PostResponse> relatedPosts(final UUID postId, final Pageable pageable) {
+        PostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new EntityNotFoundException("Post not found with ID: " + postId));
+
+        PostFilterRequest filter = PostFilterRequest.builder()
+                .title(post.getTitle())
+                .shortDescription(post.getShortDescription())
+                .content(post.getContent())
+                .categoryName(post.getCategory().getName())
+                .sortField(pageable.getSort().stream().findFirst().map(Sort.Order::getProperty).orElse("createdDate"))
+                .sortDirection(pageable.getSort().stream().findFirst().map(o -> o.getDirection().name()).orElse("DESC"))
+                .build();
+
+        Specification<PostEntity> spec = PostSpec.findRelatedArticles(filter, postId);
+
+        Page<PostEntity> postEntities = postRepository.findAll(spec, pageable);
+        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
     }
 
     @Override
@@ -336,6 +397,14 @@ public class PostServiceImpl implements PostService {
         post.setPostType(PostType.PENDING);
 
         var updatedPost = postRepository.save(post);
+        // update in Elasticsearch
+        PostElasticRequest postElasticRequest = new PostElasticRequest();
+        postElasticRequest.setId(updatedPost.getId());
+        postElasticRequest.setContent(postRequest.getContent());
+        postElasticRequest.setTitle(postRequest.getTitle());
+        postElasticRequest.setShortDescription(postRequest.getShortDescription());
+        postElasticsService.updatePostElastics(post.getId(), postElasticRequest);
+
         logger.info("Post updated successfully with id {}", id);
         return buildPostResponse(updatedPost, getUserId());
     }
