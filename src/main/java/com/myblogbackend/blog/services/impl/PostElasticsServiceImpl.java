@@ -21,6 +21,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,16 @@ public class PostElasticsServiceImpl implements PostElasticsService {
     private final PostElasticsRepository postElasticsRepository;
     private final PostRepository postRepository;
     private final ElasticsearchClient elasticsearchClient;
+
+    @PostConstruct
+    public void init() {
+        try {
+            syncDatabaseToPostElastics();
+        } catch (Exception e) {
+            log.error(e);
+        }
+
+    }
     @Override
     public void savePostElastic(final PostElasticRequest postElasticRequest) {
         PostElastic postElastic = new PostElastic();

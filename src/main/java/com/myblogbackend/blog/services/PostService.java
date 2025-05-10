@@ -37,6 +37,6 @@ public interface PostService {
 
     PostResponse approvePost(UUID id, PostType postType);
 
-
+    List<PostResponse> searchPostsByElastics (String query, int page, int size);
 
 }

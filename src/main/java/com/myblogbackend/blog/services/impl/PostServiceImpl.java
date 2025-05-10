@@ -85,6 +85,7 @@ public class PostServiceImpl implements PostService {
     private final KafkaTopicManager kafkaTopicManager;
     private final PostElasticsService postElasticsService;
 
+
     @Override
     @Transactional
     public PostResponse createPost(final PostRequest postRequest) throws ExecutionException, InterruptedException {
@@ -280,6 +281,19 @@ public class PostServiceImpl implements PostService {
 
         return buildPostResponse(updatedPost, getUserId());
     }
+
+    @Override
+    public List<PostResponse> searchPostsByElastics(String query, int page, int size) {
+        try {
+            List<PostElasticRequest> elasticResult = postElasticsService.searchPostElastics(query, page, size);
+            return elasticResult.stream()
+                    .map(postMapper::toPostResponse)
+                    .collect(Collectors.toList());
+        } catch (Exception e){
+            logger.error("Exception occurred while searching posts by elastics: ", e);
+            throw new RuntimeException("Post search failed ", e);
+        }
+     }
 
     @Override
     public PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter) {
