@@ -26,8 +26,6 @@ import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.dtos.PostElasticRequest;
 
-import com.myblogbackend.blog.repositories.*;
-
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
