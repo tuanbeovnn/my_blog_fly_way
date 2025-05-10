@@ -15,9 +15,17 @@ import com.myblogbackend.blog.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -107,30 +115,24 @@ public class PostController {
                 .build();
     }
 
-    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/search-articles")
-    public ResponseEntity<?> searchPost(
+    @GetMapping(PUBLIC_URL + PostRoutes.BASE_URL + "/{postId}/related-articles")
+    public ResponseEntity<?> getRelatedArticles(
+            @PathVariable final UUID postId,
             @RequestParam(value = "offset", defaultValue = "0") final Integer offset,
             @RequestParam(value = "limit", defaultValue = "9") final Integer limit,
-            @RequestParam(value = "search", required = true) final String search,
             @RequestParam(defaultValue = "createdDate") final String sortField,
             @RequestParam(defaultValue = "DESC") final String sortDirection) {
 
-        var filter = PostFilterRequest.builder()
-                .content(search)
-                .title(search)
-                .shortDescription(search)
-                .sortField(sortField)
-                .sortDirection(sortDirection)
-                .build();
-        var pageable = PageRequest.of(offset, limit, Sort.Direction.fromString(sortDirection), sortField);
+        Pageable pageable = PageRequest.of(offset, limit, Sort.Direction.fromString(sortDirection), sortField);
 
-        var postFeeds = postService.searchPosts(pageable, filter);
+        var postFeeds = postService.relatedPosts(postId, pageable);
 
         return ResponseEntityBuilder
                 .getBuilder()
                 .setDetails(postFeeds)
                 .build();
     }
+
 
     @PutMapping("/posts/{id}")
     public ResponseEntity<?> updatePost(@PathVariable(value = "id") final UUID id,

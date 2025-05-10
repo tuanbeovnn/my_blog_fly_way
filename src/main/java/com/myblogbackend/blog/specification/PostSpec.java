@@ -8,10 +8,13 @@ import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+
 
 public class PostSpec {
 
@@ -38,91 +41,118 @@ public class PostSpec {
                 .and(hasStatusTrue());
     }
 
-    public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest) {
-        return Specification
-                .where(hasTitleContaining(filterRequest.getTitle()))
-                .or(hasShortDescContaining(filterRequest.getShortDescription()))
-                .or(hasContentContaining(filterRequest.getContent()))
+    public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest, final UUID excludeId) {
+        Specification<PostEntity> spec = Specification.where(null);
+
+        if (!isBlank(filterRequest.getCategoryName())) {
+            spec = spec.and(Objects.requireNonNull(hasCategoryName(filterRequest.getCategoryName())));
+        }
+
+        if (!isBlank(filterRequest.getTitle())) {
+            spec = spec.and(Objects.requireNonNull(titleTokenMatch(filterRequest.getTitle())));
+        }
+
+        if (!isBlank(filterRequest.getShortDescription())) {
+            spec = spec.or(Objects.requireNonNull(hasShortDescContaining(filterRequest.getShortDescription())));
+        }
+        if (!isBlank(filterRequest.getContent())) {
+            spec = spec.or(Objects.requireNonNull(hasContentContaining(filterRequest.getContent())));
+        }
+
+        return spec
+                .and(notWithId(excludeId))
                 .and(hasApproved())
                 .and(hasStatusTrue());
     }
+    private static Specification<PostEntity> titleTokenMatch(final String title) {
+        if (isBlank(title)) return null;
+
+        String[] tokens = title.toLowerCase().split("\\s+");
+        return (root, query, cb) -> {
+            Predicate predicate = cb.disjunction();
+            for (String token : tokens) {
+                if (token.length() > 2 && !token.matches("\\p{Punct}+")) { // ignore trivial/short/punctuation tokens
+                    predicate = cb.or(predicate, cb.like(cb.lower(root.get(TITLE)), "%" + token + "%"));
+                }
+            }
+            return predicate;
+        };
+    }
+
+
 
     public static Specification<PostEntity> findAllArticles(final PostFilterRequest filterRequest) {
-        return Specification
-                .where(isPending());
+        return isPending();
     }
 
     private static Specification<PostEntity> hasStatusTrue() {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.isTrue(root.get(STATUS));
+        return (root, query, cb) -> cb.isTrue(root.get(STATUS));
     }
 
     private static Specification<PostEntity> isPending() {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("postType"), PostType.PENDING);
+        return (root, query, cb) -> cb.equal(root.get("postType"), PostType.PENDING);
     }
 
     private static Specification<PostEntity> hasApproved() {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("postType"), PostType.APPROVED);
+        return (root, query, cb) -> cb.equal(root.get("postType"), PostType.APPROVED);
     }
 
     private static Specification<PostEntity> hasCategoryName(final String categoryName) {
-        if (categoryName == null) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> {
+        return isBlank(categoryName) ? null : (root, query, cb) -> {
             Join<PostEntity, CategoryEntity> categoryJoin = root.join(CATEGORY);
-            return criteriaBuilder.equal(categoryJoin.get(NAME), categoryName);
+            return cb.equal(categoryJoin.get(NAME), categoryName);
         };
     }
 
     private static Specification<PostEntity> hasTags(final Set<PostTag> tags) {
-        if (tags == null || tags.isEmpty()) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> {
+        return (tags == null || tags.isEmpty()) ? null : (root, query, cb) -> {
             Join<PostEntity, TagEntity> tagJoin = root.join(TAGS);
             return tagJoin.get(NAME).in(tags);
         };
     }
 
     private static Specification<PostEntity> hasUserId(final UUID userId) {
-        if (userId == null) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> {
+        return userId == null ? null : (root, query, cb) -> {
             Join<PostEntity, UserEntity> userJoin = root.join(USER);
-            return criteriaBuilder.equal(userJoin.get(ID), userId);
+            return cb.equal(userJoin.get(ID), userId);
         };
     }
 
     private static Specification<PostEntity> hasUserName(final String userName) {
-        if (userName == null) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> {
+        return isBlank(userName) ? null : (root, query, cb) -> {
             Join<PostEntity, UserEntity> userJoin = root.join(USER);
-            return criteriaBuilder.equal(userJoin.get("userName"), userName);
+            return cb.equal(userJoin.get("userName"), userName);
         };
     }
 
     private static Specification<PostEntity> hasTitleContaining(final String title) {
-        if (title == null || title.isBlank()) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> criteriaBuilder.like(criteriaBuilder.lower(root.get(TITLE)), "%" + title.toLowerCase() + "%");
+        return isBlank(title) ? null : (root, query, cb) ->
+                cb.like(cb.lower(root.get(TITLE)), "%" + title.toLowerCase() + "%");
     }
 
-    private static Specification<PostEntity> hasContentContaining(final String title) {
-        if (title == null || title.isBlank()) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> criteriaBuilder.like(criteriaBuilder.lower(root.get("content")), "%" + title.toLowerCase() + "%");
+    private static Specification<PostEntity> hasContentContaining(final String content) {
+        return isBlank(content) ? null : (root, query, cb) ->
+                cb.like(cb.lower(root.get("content")), "%" + content.toLowerCase() + "%");
     }
 
-    private static Specification<PostEntity> hasShortDescContaining(final String title) {
-        if (title == null || title.isBlank()) {
-            return null;
-        }
-        return (root, query, criteriaBuilder) -> criteriaBuilder.like(criteriaBuilder.lower(root.get("shortDescription")), "%" + title.toLowerCase() + "%");
+    private static Specification<PostEntity> hasShortDescContaining(final String shortDesc) {
+        return isBlank(shortDesc) ? null : (root, query, cb) ->
+                cb.like(cb.lower(root.get("shortDescription")), "%" + shortDesc.toLowerCase() + "%");
+    }
+
+    // Helper to safely wrap null specs
+    private static <T> Specification<T> safe(final Specification<T> spec) {
+        return spec == null ? Specification.where(null) : spec;
+    }
+
+    private static boolean isBlank(final String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    private static Specification<PostEntity> notWithId(final UUID excludeId) {
+        return (excludeId == null)
+                ? null
+                : (root, query, cb) -> cb.notEqual(root.get("id"), excludeId);
     }
 
 

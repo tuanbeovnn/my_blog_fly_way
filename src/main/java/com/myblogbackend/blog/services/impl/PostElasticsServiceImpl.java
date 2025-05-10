@@ -10,6 +10,7 @@ import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.repositories.PostElasticsRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.services.PostElasticsService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,13 +22,10 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-
 
 
 @Service

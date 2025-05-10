@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myblogbackend.blog.config.kafka.KafkaTopicManager;
 import com.myblogbackend.blog.config.kafka.MessageProducer;
 import com.myblogbackend.blog.config.security.UserPrincipal;
+import com.myblogbackend.blog.dtos.PostElasticRequest;
 import com.myblogbackend.blog.enums.FollowType;
 import com.myblogbackend.blog.enums.PostTag;
 import com.myblogbackend.blog.enums.PostType;
@@ -14,7 +15,13 @@ import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
 import com.myblogbackend.blog.mapper.PostMapper;
 import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.*;
+import com.myblogbackend.blog.models.CategoryEntity;
+import com.myblogbackend.blog.models.FollowersEntity;
+import com.myblogbackend.blog.models.PostEntity;
+import com.myblogbackend.blog.models.ProfileEntity;
+import com.myblogbackend.blog.models.TagEntity;
+import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
+import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.pagination.PageList;
 
 import com.myblogbackend.blog.repositories.CategoryRepository;
@@ -24,7 +31,6 @@ import com.myblogbackend.blog.repositories.FirebaseUserRepository;
 import com.myblogbackend.blog.repositories.FollowersRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
-import com.myblogbackend.blog.dtos.PostElasticRequest;
 
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
@@ -39,6 +45,7 @@ import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.specification.PostSpec;
 import com.myblogbackend.blog.utils.GsonUtils;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -47,6 +54,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -54,7 +62,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -287,20 +302,18 @@ public class PostServiceImpl implements PostService {
             return elasticResult.stream()
                     .map(postMapper::toPostResponse)
                     .collect(Collectors.toList());
-        } catch (Exception e){
+        } catch (Exception e) {
             logger.error("Exception occurred while searching posts by elastics: ", e);
             throw new RuntimeException("Post search failed ", e);
         }
-     }
-
-    @Override
-    public PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter) {
-        var spec = PostSpec.findRelatedArticles(filter);
-        var pageableBuild = buildPageable(pageable, filter);
-        var postEntities = postRepository.findAll(spec, pageableBuild);
-
-        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
     }
+//    @Override
+//    public PageList<PostResponse> searchPosts(final Pageable pageable, final PostFilterRequest filter) {
+//        var spec = PostSpec.findRelatedArticles(filter);
+//        var pageableBuild = buildPageable(pageable, filter);
+//        var postEntities = postRepository.findAll(spec, pageableBuild);
+//        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
+//    }
 
     @Override
     @Transactional
@@ -345,6 +358,25 @@ public class PostServiceImpl implements PostService {
         var post = postRepository.findBySlug(slug)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
         return buildPostResponse(post, getUserId());
+    }
+    @Override
+    public PageList<PostResponse> relatedPosts(final UUID postId, final Pageable pageable) {
+        PostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new EntityNotFoundException("Post not found with ID: " + postId));
+
+        PostFilterRequest filter = PostFilterRequest.builder()
+                .title(post.getTitle())
+                .shortDescription(post.getShortDescription())
+                .content(post.getContent())
+                .categoryName(post.getCategory().getName())
+                .sortField(pageable.getSort().stream().findFirst().map(Sort.Order::getProperty).orElse("createdDate"))
+                .sortDirection(pageable.getSort().stream().findFirst().map(o -> o.getDirection().name()).orElse("DESC"))
+                .build();
+
+        Specification<PostEntity> spec = PostSpec.findRelatedArticles(filter, postId);
+
+        Page<PostEntity> postEntities = postRepository.findAll(spec, pageable);
+        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
     }
 
     @Override
