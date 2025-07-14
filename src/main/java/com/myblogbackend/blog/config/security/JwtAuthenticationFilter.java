@@ -39,7 +39,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final List<String> SKIP_PATHS = Arrays.asList(
             "/favicon.ico", "/static/", "/images/", "/css/", "/js/",
-            "/v3/api-docs", "/swagger-ui", "/api/v1/auth/", "/api/v1/public/", "/api/v2/public/"
+            "/v3/api-docs", "/swagger-ui", "/api/v1/auth/"
+    );
+
+    private static final List<String> OPTIONAL_AUTH_PATHS = Arrays.asList(
+            "/api/v1/public/", "/api/v2/public/"
     );
 
     @Override
@@ -53,11 +57,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NotNull final HttpServletResponse response,
                                     @NotNull final FilterChain filterChain) throws ServletException, IOException {
         try {
+            String path = request.getRequestURI();
+            boolean isOptionalAuth = OPTIONAL_AUTH_PATHS.stream().anyMatch(path::startsWith);
+
             getJwt(request).ifPresent(jwt -> {
-                if (tokenProvider.validateJwtToken(jwt, TokenType.ACCESS_TOKEN, request)) {
-                    String username = tokenProvider.getUserNameFromJwtToken(jwt, TokenType.ACCESS_TOKEN);
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                    setAuthentication(userDetails, request);
+                try {
+                    if (tokenProvider.validateJwtToken(jwt, TokenType.ACCESS_TOKEN, request)) {
+                        String username = tokenProvider.getUserNameFromJwtToken(jwt, TokenType.ACCESS_TOKEN);
+                        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                        setAuthentication(userDetails, request);
+                    }
+                } catch (Exception e) {
+                    // For optional auth paths, silently continue without authentication
+                    // For required auth paths, this will be handled by the outer catch block
+                    if (!isOptionalAuth) {
+                        throw e;
+                    }
                 }
             });
             filterChain.doFilter(request, response);

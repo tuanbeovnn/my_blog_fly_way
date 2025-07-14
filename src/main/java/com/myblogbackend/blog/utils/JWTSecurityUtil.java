@@ -10,9 +10,9 @@ import java.util.Optional;
 public final class JWTSecurityUtil {
     public static Optional<UserPrincipal> getJWTUserInfo() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (null != authentication && null != authentication.getDetails()) {
-            Object object = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            return object instanceof UserPrincipal ? Optional.of((UserPrincipal) object) : Optional.empty();
+        if (null != authentication && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            Object principal = authentication.getPrincipal();
+            return principal instanceof UserPrincipal ? Optional.of((UserPrincipal) principal) : Optional.empty();
         } else {
             return Optional.empty();
         }
