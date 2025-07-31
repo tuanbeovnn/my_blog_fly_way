@@ -8,10 +8,8 @@ import com.myblogbackend.blog.models.TagEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -41,45 +39,17 @@ public class PostSpec {
                 .and(hasStatusTrue());
     }
 
-    public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest, final UUID excludeId) {
-        Specification<PostEntity> spec = Specification.where(null);
+    public static Specification<PostEntity> findRelatedArticles(final PostFilterRequest filterRequest) {
+        Specification<PostEntity> textSearch = Specification.where(
+                safe(hasTitleContaining(filterRequest.getTitle()))
+                        .or(safe(hasShortDescContaining(filterRequest.getShortDescription())))
+                        .or(safe(hasContentContaining(filterRequest.getContent())))
+        );
 
-        if (!isBlank(filterRequest.getCategoryName())) {
-            spec = spec.and(Objects.requireNonNull(hasCategoryName(filterRequest.getCategoryName())));
-        }
-
-        if (!isBlank(filterRequest.getTitle())) {
-            spec = spec.and(Objects.requireNonNull(titleTokenMatch(filterRequest.getTitle())));
-        }
-
-        if (!isBlank(filterRequest.getShortDescription())) {
-            spec = spec.or(Objects.requireNonNull(hasShortDescContaining(filterRequest.getShortDescription())));
-        }
-        if (!isBlank(filterRequest.getContent())) {
-            spec = spec.or(Objects.requireNonNull(hasContentContaining(filterRequest.getContent())));
-        }
-
-        return spec
-                .and(notWithId(excludeId))
+        return Specification.where(textSearch)
                 .and(hasApproved())
                 .and(hasStatusTrue());
     }
-    private static Specification<PostEntity> titleTokenMatch(final String title) {
-        if (isBlank(title)) return null;
-
-        String[] tokens = title.toLowerCase().split("\\s+");
-        return (root, query, cb) -> {
-            Predicate predicate = cb.disjunction();
-            for (String token : tokens) {
-                if (token.length() > 2 && !token.matches("\\p{Punct}+")) { // ignore trivial/short/punctuation tokens
-                    predicate = cb.or(predicate, cb.like(cb.lower(root.get(TITLE)), "%" + token + "%"));
-                }
-            }
-            return predicate;
-        };
-    }
-
-
 
     public static Specification<PostEntity> findAllArticles(final PostFilterRequest filterRequest) {
         return isPending();
@@ -147,12 +117,6 @@ public class PostSpec {
 
     private static boolean isBlank(final String s) {
         return s == null || s.trim().isEmpty();
-    }
-
-    private static Specification<PostEntity> notWithId(final UUID excludeId) {
-        return (excludeId == null)
-                ? null
-                : (root, query, cb) -> cb.notEqual(root.get("id"), excludeId);
     }
 
 
