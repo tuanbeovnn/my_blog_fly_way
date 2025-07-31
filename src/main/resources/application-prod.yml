@@ -7,11 +7,11 @@ spring:
         import: optional:classpath:.env[.properties]
     datasource:
         password: ${DB_PASSWORD}
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.id.vn:5432/blogs_prod?currentSchema=blog_dbo2
         username: ${DB_USERNAME}
     flyway:
         password: ${DB_PASSWORD}
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs_prod?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.id.vn:5432/blogs_prod?currentSchema=blog_dbo2
         user: ${DB_USERNAME}
     jackson:
         deserialization:
@@ -29,7 +29,7 @@ spring:
         show-sql: false
     kafka:
         bootstrap-servers:
-            - http://code4fun.xyz:9092
+            - http://code4fun.id.vn:9092
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -61,7 +61,7 @@ spring:
             max-request-size: 25MB
     data:
         redis:
-            host: code4fun.xyz
+            host: code4fun.id.vn
             port: 6379
             database: 1
             password: tuanbeovn17
@@ -77,11 +77,11 @@ management:
     otlp:
         metrics:
             export:
-                url: https://otel-collectors.code4fun.xyz/v1/metrics
+                url: https://otel-collectors.code4fun.id.vn/v1/metrics
                 step: 3s
                 enabled: true
         tracing:
-            endpoint: https://otel-collectors.code4fun.xyz/v1/traces
+            endpoint: https://otel-collectors.code4fun.id.vn/v1/traces
     tracing:
         sampling:
             probability: 1.0
@@ -98,7 +98,7 @@ email:
         template: registration-confirmation-en.html
         subject: Registration Confirmation
         from: noreply@pezzie.com
-        base-url: https://blogs-be.code4fun.xyz/api/v1/auth/registrationConfirm?token=%s
+        base-url: https://blogs-be.code4fun.id.vn/api/v1/auth/registrationConfirm?token=%s
     forgot-password-email:
         template: password-forgot.html
         subject: New Password
@@ -118,7 +118,7 @@ outbound:
     identity:
         client-id: 720549923520-qbmtr8g24bptcp90659vh6ffc39j9se6.apps.googleusercontent.com
         client-secret: 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
-        redirect-uri: https://blogs.code4fun.xyz/authenticate
+        redirect-uri: https://blogs.code4fun.id.vn/authenticate
 
 api:
     username: admin
@@ -126,11 +126,11 @@ api:
 
 file:
     upload:
-        url: https://minio-be.code4fun.xyz
+        url: https://minio-be.code4fun.id.vn
 
 notifications:
     event:
-        url: https://notifications-be.code4fun.xyz
+        url: https://notifications-be.code4fun.id.vn
 jwt:
     expiryMinutes: 60
     expiryDay: 14

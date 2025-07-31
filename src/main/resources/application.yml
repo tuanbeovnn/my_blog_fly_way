@@ -5,11 +5,11 @@ spring:
         import: optional:classpath:.env[.properties]
     datasource:
         password: P@ssword*123
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.id.vn:5432/blogs?currentSchema=blog_dbo2
         username: dev
     flyway:
         password: P@ssword*123
-        url: jdbc:postgresql://code4fun.xyz:5432/blogs?currentSchema=blog_dbo2
+        url: jdbc:postgresql://code4fun.id.vn:5432/blogs?currentSchema=blog_dbo2
         user: dev
     jpa:
         generate-ddl: true
@@ -24,7 +24,7 @@ spring:
         show-sql: true
     kafka:
         bootstrap-servers:
-            - http://code4fun.xyz:9092
+            - http://code4fun.id.vn:9092
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -53,7 +53,7 @@ spring:
         active: local
     data:
         redis:
-            host: code4fun.xyz
+            host: code4fun.id.vn
             port: 6379
             database: 0
             password: tuanbeovn17
@@ -102,7 +102,7 @@ file:
 
 notifications:
     event:
-        url: http://code4fun.xyz:8090
+        url: http://code4fun.id.vn:8090
 jwt:
     expiryMinutes: 60
     expiryDay: 14
