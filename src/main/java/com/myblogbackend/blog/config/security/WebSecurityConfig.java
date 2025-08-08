@@ -21,10 +21,8 @@ public class WebSecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationEntryPoint unauthorizedHandler;
 
-
     public WebSecurityConfig(final UserDetailsServiceImpl userDetailsService,
-                             final JwtAuthenticationEntryPoint unauthorizedHandler
-
+            final JwtAuthenticationEntryPoint unauthorizedHandler
 
     ) {
         this.userDetailsService = userDetailsService;
@@ -82,7 +80,12 @@ public class WebSecurityConfig {
                     auth.anyRequest().authenticated();
                 });
 
-        http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+        http.headers(headers -> headers
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                .contentTypeOptions(contentTypeOptionsConfig -> {
+                })
+                .httpStrictTransportSecurity(
+                        hstsConfig -> hstsConfig.maxAgeInSeconds(31536000).includeSubDomains(true)));
 
         http.authenticationProvider(authenticationProvider());
 

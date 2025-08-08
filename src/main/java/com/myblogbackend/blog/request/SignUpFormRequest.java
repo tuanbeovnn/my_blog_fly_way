@@ -1,5 +1,7 @@
 package com.myblogbackend.blog.request;
 
+import com.myblogbackend.blog.validation.PasswordStrength;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -25,5 +27,6 @@ public class SignUpFormRequest {
     private String email;
 
     @NotEmpty(message = "The password is required.")
+    @PasswordStrength
     private String password;
 }
