@@ -1,23 +1,27 @@
 package com.myblogbackend.blog.login;
 
+import java.time.Instant;
+import java.util.UUID;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+
 import com.myblogbackend.blog.config.security.UserPrincipal;
 import com.myblogbackend.blog.enums.OAuth2Provider;
 import com.myblogbackend.blog.models.RefreshTokenEntity;
 import com.myblogbackend.blog.models.UserDeviceEntity;
 import com.myblogbackend.blog.models.UserEntity;
 import com.myblogbackend.blog.request.DeviceInfoRequest;
+import com.myblogbackend.blog.request.LoginFormOutboundRequest;
 import com.myblogbackend.blog.request.LoginFormRequest;
+import com.myblogbackend.blog.response.ExchangeTokenResponse;
 import com.myblogbackend.blog.response.JwtResponse;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-
-import java.time.Instant;
-import java.util.UUID;
+import com.myblogbackend.blog.response.OutboundUserResponse;
 
 public final class LoginTestApi {
     public static final long ONE_HOUR_IN_MILLIS = 3600000;
 
-    //create device info request for login request mock data
+    // create device info request for login request mock data
     public static DeviceInfoRequest deviceInfoSaving() {
         return DeviceInfoRequest.builder()
                 .deviceId("aaaa-aaaa-aaaa-aaaa")
@@ -25,7 +29,7 @@ public final class LoginTestApi {
                 .build();
     }
 
-    //create login request
+    // create login request
     public static LoginFormRequest loginDataForRequesting() {
         return LoginFormRequest.builder()
                 .email("test@gmail.com")
@@ -34,7 +38,7 @@ public final class LoginTestApi {
                 .build();
     }
 
-    //create refresh token
+    // create refresh token
     public static RefreshTokenEntity refreshTokenForSaving() {
         return RefreshTokenEntity.builder()
                 .id(UUID.randomUUID())
@@ -44,7 +48,7 @@ public final class LoginTestApi {
                 .build();
     }
 
-    //create the user entity after find by email successfully
+    // create the user entity after find by email successfully
     public static UserEntity userEntityForSaving(final UUID userId, final String password) {
         return UserEntity.builder()
                 .id(userId)
@@ -66,15 +70,16 @@ public final class LoginTestApi {
                 .build();
     }
 
-    //create the jwt response after login successfully
-    public static JwtResponse jwtResponseForSaving(final String jwtToken, final String refreshToken, final long expirationDuration) {
+    // create the jwt response after login successfully
+    public static JwtResponse jwtResponseForSaving(final String jwtToken, final String refreshToken,
+            final long expirationDuration) {
         return JwtResponse.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
                 .build();
     }
 
-    //create user device entity
+    // create user device entity
     public static UserDeviceEntity userDeviceForSaving(final DeviceInfoRequest deviceInfoRequest) {
         return UserDeviceEntity.builder()
                 .deviceId("aaaa-aaaa-aaaa-aaaa")
@@ -83,8 +88,9 @@ public final class LoginTestApi {
                 .build();
     }
 
-    //create refresh token with LoginRequest , User Entity
-    public static RefreshTokenEntity createRefreshTokenEntity(final LoginFormRequest loginFormRequest, final UserEntity userEntity) {
+    // create refresh token with LoginRequest , User Entity
+    public static RefreshTokenEntity createRefreshTokenEntity(final LoginFormRequest loginFormRequest,
+            final UserEntity userEntity) {
         var userDeviceEntity = userDeviceForSaving(deviceInfoSaving());
         var refreshTokenEntity = refreshTokenForSaving();
         userDeviceEntity.setUser(userEntity);
@@ -107,5 +113,47 @@ public final class LoginTestApi {
     public static UserPrincipal userPrincipal() {
         return new UserPrincipal(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"),
                 "test1@gmail.com", "123", "aaa", null);
+    }
+
+    // OAuth test helper methods
+    public static LoginFormOutboundRequest googleOAuthRequestForTesting() {
+        return LoginFormOutboundRequest.builder()
+                .code("mock-authorization-code")
+                .deviceInfo(deviceInfoSaving())
+                .build();
+    }
+
+    public static ExchangeTokenResponse mockExchangeTokenResponse() {
+        return ExchangeTokenResponse.builder()
+                .accessToken("mock-google-access-token")
+                .expiresIn(3600L)
+                .tokenType("Bearer")
+                .scope("openid email profile")
+                .build();
+    }
+
+    public static OutboundUserResponse mockGoogleUserResponse() {
+        return OutboundUserResponse.builder()
+                .id("google-user-123")
+                .email("googleuser@gmail.com")
+                .verifiedEmail(true)
+                .name("Google Test User")
+                .givenName("Google")
+                .familyName("User")
+                .picture("https://example.com/picture.jpg")
+                .locale("en")
+                .build();
+    }
+
+    public static UserEntity googleUserEntityForSaving() {
+        return UserEntity.builder()
+                .id(UUID.fromString("123e4567-e89b-12d3-a456-426614174001"))
+                .name("Google Test User")
+                .email("googleuser@gmail.com")
+                .active(true)
+                .provider(OAuth2Provider.GOOGLE)
+                .followers(0L)
+                .userName("googleuser")
+                .build();
     }
 }
