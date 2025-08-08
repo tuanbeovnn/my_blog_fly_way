@@ -1,5 +1,41 @@
 package com.myblogbackend.blog.comment;
 
+import static com.myblogbackend.blog.comment.CommentTestApi.createMockCommentList;
+import static com.myblogbackend.blog.comment.CommentTestApi.exsitingCommentEntity;
+import static com.myblogbackend.blog.comment.CommentTestApi.makeCommentForDisable;
+import static com.myblogbackend.blog.comment.CommentTestApi.makeCommentForSaving;
+import static com.myblogbackend.blog.comment.CommentTestApi.prepareCommentListSaving;
+import static com.myblogbackend.blog.comment.CommentTestApi.prepareCommentRequest;
+import static com.myblogbackend.blog.login.LoginTestApi.userEntityBasicInfo;
+import static com.myblogbackend.blog.login.LoginTestApi.userPrincipal;
+import static com.myblogbackend.blog.post.PostTestApi.makePostForSaving;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myblogbackend.blog.mapper.CommentMapper;
 import com.myblogbackend.blog.models.CommentEntity;
@@ -9,59 +45,27 @@ import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.repositories.UsersRepository;
 import com.myblogbackend.blog.response.CommentResponse;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.springframework.data.domain.Pageable;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static com.myblogbackend.blog.comment.CommentTestApi.*;
-import static com.myblogbackend.blog.login.LoginTestApi.userEntityBasicInfo;
-import static com.myblogbackend.blog.login.LoginTestApi.userPrincipal;
-import static com.myblogbackend.blog.post.PostTestApi.makePostForSaving;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 public class CommentDelegateImplTests {
         private static final String API_URL = "/api/v1/comments";
         private static final String API_URL_UPDATE = "/api/v1/comments/{id}";
-        private static final String API_URL_RETRIEVE_COMMENTS = "/api/v2/public/comments";
+        private static final String API_URL_RETRIEVE_COMMENTS = "/api/v2/public/comments/{postId}";
         private static final String API_URL_DISABLE_COMMENTS = "/api/v1/comments/disable/{commentId}";
         private static final String COMMENTS_BY_PARENTID_URL = "/api/v2/public/comments/child/{parentId}";
 
         @Autowired
         private MockMvc mockMvc;
 
-        @MockBean
+        @MockitoBean
         private CommentRepository commentRepository;
 
-        @MockBean
+        @MockitoBean
         private UsersRepository usersRepository;
 
-        @MockBean
+        @MockitoBean
         private PostRepository postRepository;
 
         @Autowired
@@ -181,7 +185,8 @@ public class CommentDelegateImplTests {
                 Pageable pageable = PageRequest.of(0, 9);
                 Page<CommentEntity> page = new PageImpl<>(commentListEntity, pageable, totalRecords);
 
-                when(commentRepository.findParentCommentsByPostIdAndStatusTrue(postId, pageable)).thenReturn(page);
+                when(commentRepository.findParentCommentsByPostIdAndStatusTrue(any(UUID.class), any(Pageable.class)))
+                                .thenReturn(page);
 
                 List<CommentResponse> commentResponses = commentListEntity.stream()
                                 .map(entity -> {
@@ -226,8 +231,8 @@ public class CommentDelegateImplTests {
                                         .thenReturn(Optional.of(userPrincipal()));
                         when(usersRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
                         // find comment is existed or not by userId and comment Id
-                        when(commentRepository.findByIdAndUserId(any(UUID.class), UUID.fromString(
-                                        "123e4567-e89b-12d3-a456-426614174000")))
+                        when(commentRepository.findByIdAndUserId(any(UUID.class), eq(UUID.fromString(
+                                        "123e4567-e89b-12d3-a456-426614174000"))))
                                         .thenReturn(Optional.of(makeCommentForSaving("comment is being disabled")));
                         // prepare comment to disable
                         var commentDisabled = makeCommentForDisable("comment is being disabled");
@@ -247,7 +252,8 @@ public class CommentDelegateImplTests {
                 Pageable pageable = PageRequest.of(0, 9);
                 Page<CommentEntity> page = new PageImpl<>(commentEntityList, pageable, totalRecords);
 
-                when(commentRepository.findChildCommentsByParentId(any(UUID.class), pageable)).thenReturn(page);
+                when(commentRepository.findChildCommentsByParentId(any(UUID.class), any(Pageable.class)))
+                                .thenReturn(page);
 
                 List<CommentResponse> commentResponses = commentEntityList.stream()
                                 .map(entity -> {
@@ -271,8 +277,8 @@ public class CommentDelegateImplTests {
                                 .build();
 
                 mockMvc.perform(MockMvcRequestBuilders.get(COMMENTS_BY_PARENTID_URL, parentCommentId)
-                                .param("page", "0")
-                                .param("size", "9"))
+                                .param("offset", "0")
+                                .param("limit", "9"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.details.records[0].content", is(
                                                 pageListCommentResponseMockData.getRecords().get(0).getContent())))
