@@ -1,17 +1,11 @@
 package com.myblogbackend.blog.config.security;
 
-import com.myblogbackend.blog.enums.TokenType;
-import com.myblogbackend.blog.exception.InvalidDataException;
-import com.myblogbackend.blog.exception.InvalidTokenRequestException;
-import com.myblogbackend.blog.exception.JwtTokenExpiredException;
-import com.myblogbackend.blog.models.RoleEntity;
-import com.myblogbackend.blog.models.UserEntity;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletRequest;
+import java.security.Key;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,12 +13,19 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Date;
-import java.util.Map;
+import com.myblogbackend.blog.enums.TokenType;
+import com.myblogbackend.blog.exception.InvalidDataException;
+import com.myblogbackend.blog.exception.InvalidTokenRequestException;
+import com.myblogbackend.blog.exception.JwtTokenExpiredException;
+import com.myblogbackend.blog.models.RoleEntity;
+import com.myblogbackend.blog.models.UserEntity;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Component
 public class JwtProvider {
@@ -59,16 +60,26 @@ public class JwtProvider {
         return generateToken(userEntity, expiryDay, TokenType.REFRESH_TOKEN, deviceId);
     }
 
-    private String generateToken(final UserEntity userEntity, final long expiryDuration, final TokenType tokenType, final String deviceId) {
-        logger.debug("Generating {} token for user: {} with expiry duration: {} minutes", tokenType, userEntity.getEmail(), expiryDuration);
+    private String generateToken(final UserEntity userEntity, final long expiryDuration, final TokenType tokenType,
+            final String deviceId) {
+        logger.debug("Generating {} token for user: {} with expiry duration: {} minutes", tokenType,
+                userEntity.getEmail(), expiryDuration);
         var claims = new java.util.HashMap<>(getClaimsFromUser(userEntity));
 
         // Add deviceId to claims
         claims.put("deviceId", deviceId);
 
+        // Add jti (unique token identifier) for better tracking
+        claims.put("jti", java.util.UUID.randomUUID().toString());
+
+        // Add token type
+        claims.put("tokenType", tokenType.name());
+
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(userEntity.getEmail())
+                .setIssuer("myblog-backend") // Add issuer
+                .setAudience("myblog-frontend") // Add audience
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * expiryDuration))
                 .signWith(getKey(tokenType), SignatureAlgorithm.HS256)
@@ -79,8 +90,7 @@ public class JwtProvider {
         logger.debug("Extracting claims for user: {}", userEntity.getEmail());
         return Map.of(
                 "userId", userEntity.getId(),
-                "roles", userEntity.getRoles().stream().map(RoleEntity::getName).toList()
-        );
+                "roles", userEntity.getRoles().stream().map(RoleEntity::getName).toList());
     }
 
     public String generateRefreshTokenToken(final Instant expiryDate) {

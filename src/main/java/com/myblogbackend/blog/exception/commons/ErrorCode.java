@@ -16,6 +16,7 @@ public enum ErrorCode implements CommonErrorCode {
     INVALID_TOKEN(HttpStatus.BAD_REQUEST, "Invalid token"),
     PASSWORD_DOES_NOT_MATCH(HttpStatus.UNAUTHORIZED, "Password does not match"),
     PASSWORD_WRONG(HttpStatus.UNAUTHORIZED, "Password was wrong"),
+    ACCOUNT_LOCKED(HttpStatus.LOCKED, "Account is temporarily locked due to multiple failed login attempts"),
     USER_ALREADY_LOGGED_IN(HttpStatus.FORBIDDEN, "User already logged in another device"),
     ACCOUNT_CREATED_LOCAL(HttpStatus.FORBIDDEN, "This account was created locally. Please use local login."),
     INVALID_AUTHORIZATION_CODE(HttpStatus.BAD_REQUEST, "The provided authorization code is invalid or expired."),
@@ -23,7 +24,7 @@ public enum ErrorCode implements CommonErrorCode {
     GOOGLE_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "Failed to authenticate with Google. Please try again later."),
     USER_NOT_ALLOWED(HttpStatus.FORBIDDEN, "You are not allowed to update this post."),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "error.could not send email");
-    
+
     private final HttpStatus status;
     private final String message;
 

@@ -1,7 +1,40 @@
 package com.myblogbackend.blog.services.impl;
 
+import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.myblogbackend.blog.config.kafka.KafkaTopicManager;
 import com.myblogbackend.blog.config.mail.EmailProperties;
+import com.myblogbackend.blog.config.security.AccountLockoutService;
 import com.myblogbackend.blog.config.security.JwtProvider;
 import com.myblogbackend.blog.enums.OAuth2Provider;
 import com.myblogbackend.blog.enums.RoleName;
@@ -30,40 +63,10 @@ import com.myblogbackend.blog.request.TokenRefreshRequest;
 import com.myblogbackend.blog.response.JwtResponse;
 import com.myblogbackend.blog.services.AuthService;
 import com.myblogbackend.blog.utils.GsonUtils;
+
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
-import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import static com.myblogbackend.blog.utils.SlugUtil.splitFromEmail;
 
 @Service
 @RequiredArgsConstructor
@@ -105,6 +108,7 @@ public class AuthServiceImpl implements AuthService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final KafkaTopicManager kafkaTopicManager;
     private final RedisTemplate<String, String> redisTemplate;
+    private final AccountLockoutService accountLockoutService;
 
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
@@ -127,7 +131,7 @@ public class AuthServiceImpl implements AuthService {
     public void registerUserV2(final SignUpFormRequest signUpRequest) {
         var email = signUpRequest.getEmail();
         if (usersRepository.existsByEmail(email) || Boolean.TRUE.equals(redisTemplate.hasKey(EMAIL_PREFIX + email))) {
-           throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
+            throw new BlogRuntimeException(ErrorCode.ALREADY_EXIST);
         }
         usersRepository.findByEmailAndIsPendingTrue(email).ifPresent(usersRepository::delete);
         var token = UUID.randomUUID().toString();
@@ -202,8 +206,7 @@ public class AuthServiceImpl implements AuthService {
 
         var confirmationLink = String.format(
                 emailProperties.getForgotPasswordConfirmation().getBaseUrl(),
-                email, token
-        );
+                email, token);
         var mailRequest = createMailRequest(userEntity.getEmail(), confirmationLink);
 
         kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest);
@@ -211,14 +214,14 @@ public class AuthServiceImpl implements AuthService {
         return null;
     }
 
-    public ResponseEntity<?> resetPassword(final String email, final String token)  throws IOException {
+    public ResponseEntity<?> resetPassword(final String email, final String token) throws IOException {
         var responseHeaders = new HttpHeaders();
         responseHeaders.setContentType(MediaType.TEXT_HTML);
 
         var redisKey = "password_reset:" + email;
         var storedToken = redisTemplate.opsForValue().get(redisKey);
         if (storedToken == null || !storedToken.equals(token)) {
-           return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
+            return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
         }
         var userEntity = usersRepository.findByEmail(email)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
@@ -236,7 +239,6 @@ public class AuthServiceImpl implements AuthService {
         logger.info("Password successfully reset for user '{}' and sent via email", email);
         return loadHtmlTemplate(TEMPLATES_NEW_PASSWORD_CREATED_HTML, responseHeaders);
     }
-
 
     private RoleEntity getUserRole() {
         return roleRepository.findByName(RoleName.ROLE_USER)
@@ -274,7 +276,8 @@ public class AuthServiceImpl implements AuthService {
             logger.info("Access token successfully received from Google: {}", response.getAccessToken());
 
             var userInfo = outboundUserClient.getUserInfo("json", response.getAccessToken());
-            logger.info("User info retrieved from Google: Email: {}, Name: {}", userInfo.getEmail(), userInfo.getName());
+            logger.info("User info retrieved from Google: Email: {}, Name: {}", userInfo.getEmail(),
+                    userInfo.getName());
 
             var user = usersRepository.findByEmail(userInfo.getEmail())
                     .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
@@ -325,7 +328,8 @@ public class AuthServiceImpl implements AuthService {
         var requestRefreshToken = tokenRefreshRequest.getRefreshToken();
 
         var refreshToken = refreshTokenRepository.findByToken(requestRefreshToken)
-                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database. Please login again"));
+                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken,
+                        "Missing refresh token in database. Please login again"));
 
         verifyExpiration(refreshToken);
         verifyRefreshAvailability(refreshToken);
@@ -337,7 +341,6 @@ public class AuthServiceImpl implements AuthService {
         return new JwtResponse(newAccessToken, requestRefreshToken);
     }
 
-
     private void verifyExpiration(final RefreshTokenEntity token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             throw new TokenRefreshException(token.getToken(), "Expired token. Please issue a new request");
@@ -346,9 +349,11 @@ public class AuthServiceImpl implements AuthService {
 
     private void verifyRefreshAvailability(final RefreshTokenEntity refreshTokenEntity) {
         var userDeviceEntity = userDeviceRepository.findByRefreshToken(refreshTokenEntity)
-                .orElseThrow(() -> new TokenRefreshException(refreshTokenEntity.getToken(), "No device found for the matching token. Please login again"));
+                .orElseThrow(() -> new TokenRefreshException(refreshTokenEntity.getToken(),
+                        "No device found for the matching token. Please login again"));
         if (!userDeviceEntity.getIsRefreshActive()) {
-            throw new TokenRefreshException(refreshTokenEntity.getToken(), "Refresh blocked for the device. Please login through a different device");
+            throw new TokenRefreshException(refreshTokenEntity.getToken(),
+                    "Refresh blocked for the device. Please login through a different device");
         }
     }
 
@@ -375,18 +380,29 @@ public class AuthServiceImpl implements AuthService {
 
     private Authentication authenticateUser(final LoginFormRequest loginRequest) {
         try {
-            return authenticationManager.authenticate(
+            // Check if account is locked
+            if (accountLockoutService.isAccountLocked(loginRequest.getEmail())) {
+                throw new BlogRuntimeException(ErrorCode.ACCOUNT_LOCKED);
+            }
+
+            Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
-                            loginRequest.getPassword()
-                    )
-            );
+                            loginRequest.getPassword()));
+
+            // Clear failed attempts on successful authentication
+            accountLockoutService.clearFailedAttempts(loginRequest.getEmail());
+
+            return authentication;
         } catch (BadCredentialsException e) {
+            // Record failed attempt
+            accountLockoutService.recordFailedAttempt(loginRequest.getEmail());
             throw new BlogRuntimeException(ErrorCode.UNAUTHORIZED);
         }
     }
 
-    private RefreshTokenEntity createRefreshToken(final DeviceInfoRequest deviceInfoRequest, final UserEntity userEntity) {
+    private RefreshTokenEntity createRefreshToken(final DeviceInfoRequest deviceInfoRequest,
+            final UserEntity userEntity) {
         userDeviceRepository.findByUserId(userEntity.getId())
                 .map(UserDeviceEntity::getRefreshToken)
                 .map(RefreshTokenEntity::getId)
@@ -402,7 +418,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private ResponseEntity<String> loadHtmlTemplate(final String templatePath,
-                                                    final HttpHeaders headers) throws IOException {
+            final HttpHeaders headers) throws IOException {
         try (InputStream in = getClass().getResourceAsStream(templatePath)) {
             if (in != null) {
                 String result = IOUtils.toString(in, StandardCharsets.UTF_8);
