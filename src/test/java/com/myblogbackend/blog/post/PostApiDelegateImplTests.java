@@ -1,131 +1,491 @@
 package com.myblogbackend.blog.post;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myblogbackend.blog.mapper.PostMapper;
-import com.myblogbackend.blog.models.PostEntity;
-import com.myblogbackend.blog.repositories.CategoryRepository;
-import com.myblogbackend.blog.repositories.PostRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
-import com.myblogbackend.blog.utils.JWTSecurityUtil;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-
-import java.util.Optional;
-import java.util.UUID;
-
 import static com.myblogbackend.blog.category.CategoryTestApi.makeCategoryForSaving;
 import static com.myblogbackend.blog.login.LoginTestApi.userEntityBasicInfo;
 import static com.myblogbackend.blog.login.LoginTestApi.userPrincipal;
 import static com.myblogbackend.blog.post.PostTestApi.makePostForSaving;
 import static com.myblogbackend.blog.post.PostTestApi.preparePostForRequest;
 import static com.myblogbackend.blog.post.PostTestApi.preparePostsEntitySaving;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringRunner.class)
+import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.MediaType;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.myblogbackend.blog.enums.PostTag;
+import com.myblogbackend.blog.mapper.PostMapper;
+import com.myblogbackend.blog.models.PostEntity;
+import com.myblogbackend.blog.repositories.CategoryRepository;
+import com.myblogbackend.blog.repositories.CommentRepository;
+import com.myblogbackend.blog.repositories.FavoriteRepository;
+import com.myblogbackend.blog.repositories.FollowersRepository;
+import com.myblogbackend.blog.repositories.PostRepository;
+import com.myblogbackend.blog.repositories.UsersRepository;
+import com.myblogbackend.blog.utils.JWTSecurityUtil;
+
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 public class PostApiDelegateImplTests {
-    private static final String API_URL = "/api/v1/posts";
-    private static final String PUBLIC_FEED_URL = "/api/v1/public/posts/feed";
+        private static final String API_URL = "/api/v1/posts";
+        private static final String PUBLIC_FEED_URL = "/api/v1/public/posts/feed";
+        private static final String DRAFT_URL = "/api/v1/posts/draft";
+        private static final String POST_TAGS_URL = "/api/v1/public/posts/post-tags";
+        private static final String SEARCH_URL = "/api/v1/public/posts/search-articles";
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockBean
-    private CategoryRepository categoryRepository;
+        @MockitoBean
+        private CategoryRepository categoryRepository;
 
-    @MockBean
-    private UsersRepository userRepository;
+        @MockitoBean
+        private UsersRepository userRepository;
 
-    @MockBean
-    private PostRepository postRepository;
+        @MockitoBean
+        private PostRepository postRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @MockitoBean
+        private CommentRepository commentRepository;
 
-    @Autowired
-    private PostMapper postMapper;
+        @MockitoBean
+        private FavoriteRepository favoriteRepository;
 
-    @Test
-    public void givenValidPostData_whenCreatingNewPost_thenPostIsSuccessfullyCreatedAndReturnsExpectedDetails() throws Exception {
-        // Mock JWTSecurityUtil
-        try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito.mockStatic(JWTSecurityUtil.class)) {
-            jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo).thenReturn(Optional.of(userPrincipal()));
+        @MockitoBean
+        private FollowersRepository followersRepository;
 
-            when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
-            when(categoryRepository.findById(any(UUID.class))).thenReturn(Optional.of(makeCategoryForSaving("Category A")));
+        @MockitoBean
+        private RedisTemplate<String, String> redisTemplate;
 
-            PostEntity savedPostEntity = makePostForSaving("Title A", "Description A");
-            when(postRepository.save(any(PostEntity.class))).thenReturn(savedPostEntity);
+        @MockitoBean
+        private ValueOperations<String, String> valueOperations;
 
-            var expectedPostResponse = postMapper.toPostResponse(savedPostEntity);
+        @MockitoBean
+        private KafkaTemplate<String, Object> kafkaTemplate;
 
-            mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
-                            .content(objectMapper.writeValueAsString(preparePostForRequest()))
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.details.id").value(expectedPostResponse.getId().toString()))
-                    .andExpect(jsonPath("$.details.title").value(expectedPostResponse.getTitle()));
+        @Autowired
+        private ObjectMapper objectMapper;
+
+        @Autowired
+        private PostMapper postMapper;
+
+        @Test
+        public void givenValidPostData_whenCreatingNewPost_thenPostIsSuccessfullyCreatedAndReturnsExpectedDetails()
+                        throws Exception {
+                // Mock JWTSecurityUtil
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+                        when(categoryRepository.findById(any(UUID.class)))
+                                        .thenReturn(Optional.of(makeCategoryForSaving("Category A")));
+
+                        PostEntity savedPostEntity = makePostForSaving("Title A", "Description A");
+                        when(postRepository.save(any(PostEntity.class))).thenReturn(savedPostEntity);
+
+                        var expectedPostResponse = postMapper.toPostResponse(savedPostEntity);
+
+                        mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
+                                        .content(objectMapper.writeValueAsString(preparePostForRequest()))
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.details.id")
+                                                        .value(expectedPostResponse.getId().toString()))
+                                        .andExpect(jsonPath("$.details.title").value(expectedPostResponse.getTitle()));
+                }
         }
-    }
 
-    @Test
-    public void givenEmptyShortDescription_whenCreatingNewPost_thenReturnsBadRequestWithValidationErrorMessage() throws Exception {
-        var postRequest = preparePostForRequest();
-        postRequest.setShortDescription("");
+        @Test
+        public void givenEmptyShortDescription_whenCreatingNewPost_thenReturnsBadRequestWithValidationErrorMessage()
+                        throws Exception {
+                var postRequest = preparePostForRequest();
+                postRequest.setShortDescription("");
 
-        mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
-                        .content(objectMapper.writeValueAsString(postRequest))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error[0].message").value("Short Description info cannot be blank"));
-    }
+                mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
+                                .content(objectMapper.writeValueAsString(postRequest))
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.error[0].message")
+                                                .value("Short Description info cannot be blank"));
+        }
 
-    @Test
-    public void givenUserRequestForListPost_whenRequestListPost_thenReturnsListPost() throws Exception {
-        // Prepare a list of post entities and specify total records
-        var postEntityList = preparePostsEntitySaving(); //This should return a list with the posts you want to test
-        int totalRecords = postEntityList.size(); // Assuming you want to test with all the posts in the list
-        Pageable pageable = PageRequest.of(0, 9); // Define pageable for the test
+        @Test
+        public void givenUserRequestForListPost_whenRequestListPost_thenReturnsListPost() throws Exception {
+                // Prepare a list of post entities and specify total records
+                var postEntityList = preparePostsEntitySaving(); // This should return a list with the posts you want to
+                                                                 // test
+                int totalRecords = postEntityList.size(); // Assuming you want to test with all the posts in the list
+                Pageable pageable = PageRequest.of(0, 9); // Define pageable for the test
 
-        // Create a PageImpl with the posts, pageable, and total record count
-        Page<PostEntity> page = new PageImpl<>(postEntityList, pageable, totalRecords);
+                // Create a PageImpl with the posts, pageable, and total record count
+                Page<PostEntity> page = new PageImpl<>(postEntityList, pageable, totalRecords);
 
-        // Mock the repository to return the PageImpl
-        when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
-                .thenReturn(page);
+                // Mock the repository to return the PageImpl
+                when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
+                                .thenReturn(page);
 
-        // Convert the post entities to post responses
-        var expectedPostList = postMapper.toListPostResponse(postEntityList);
+                // Convert the post entities to post responses
+                var expectedPostList = postMapper.toListPostResponse(postEntityList);
 
-        // Perform the request and assert the response
-        mockMvc.perform(MockMvcRequestBuilders.get(PUBLIC_FEED_URL)
-                        .param("page", "0")
-                        .param("size", "9"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.details.totalRecords", is(totalRecords)))
-                .andExpect(jsonPath("$.details.records[0].title", is(expectedPostList.get(0).getTitle())))
-                .andExpect(jsonPath("$.details.records[1].title", is(expectedPostList.get(1).getTitle())));
-    }
+                // Perform the request and assert the response
+                mockMvc.perform(MockMvcRequestBuilders.get(PUBLIC_FEED_URL)
+                                .param("page", "0")
+                                .param("size", "9"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.details.totalRecords", is(totalRecords)))
+                                .andExpect(jsonPath("$.details.records[0].title",
+                                                is(expectedPostList.get(0).getTitle())))
+                                .andExpect(jsonPath("$.details.records[1].title",
+                                                is(expectedPostList.get(1).getTitle())));
+        }
+
+        @Test
+        public void givenValidPostDraft_whenSavingDraft_thenReturnsSavedDraftSuccessfully() throws Exception {
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+                        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+                        var postRequest = preparePostForRequest();
+
+                        mockMvc.perform(MockMvcRequestBuilders.post(DRAFT_URL)
+                                        .content(objectMapper.writeValueAsString(postRequest))
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.details.title").value(postRequest.getTitle()));
+                }
+        }
+
+        @Test
+        public void givenSavedDraftExists_whenGettingSavedDraft_thenReturnsExistingDraft() throws Exception {
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+                        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+                        var postRequest = preparePostForRequest();
+                        var draftJson = objectMapper.writeValueAsString(postRequest);
+                        when(valueOperations.get(anyString())).thenReturn(draftJson);
+
+                        mockMvc.perform(MockMvcRequestBuilders.get(DRAFT_URL))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.details.title").value(postRequest.getTitle()));
+                }
+        }
+
+        @Test
+        public void givenNoDraftExists_whenGettingSavedDraft_thenReturnsEmptyDraft() throws Exception {
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+                        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+                        when(valueOperations.get(anyString())).thenReturn(null);
+
+                        mockMvc.perform(MockMvcRequestBuilders.get(DRAFT_URL))
+                                        .andExpect(status().isOk());
+                }
+        }
+
+        @Test
+        public void givenValidPostSlug_whenGettingPostBySlug_thenReturnsPostDetails() throws Exception {
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        var postEntity = makePostForSaving("Test Title", "Test Content");
+                        postEntity.setSlug("test-title");
+                        when(postRepository.findBySlug("test-title")).thenReturn(Optional.of(postEntity));
+                        when(favoriteRepository.findAllByPostId(any(UUID.class))).thenReturn(Collections.emptyList());
+                        when(favoriteRepository.findByUserIdAndPostId(any(UUID.class), any(UUID.class)))
+                                        .thenReturn(Optional.empty());
+                        when(commentRepository.countByPostIdAndStatusTrueOrderByCreatedDateDesc(any(UUID.class)))
+                                        .thenReturn(0);
+
+                        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/public/posts/slug/test-title"))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.details.title").value("Test Title"))
+                                        .andExpect(jsonPath("$.details.slug").value("test-title"));
+                }
+        }
+
+        @Test
+        public void givenInvalidPostSlug_whenGettingPostBySlug_thenReturnsNotFound() throws Exception {
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        when(postRepository.findBySlug("invalid-slug")).thenReturn(Optional.empty());
+
+                        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/public/posts/slug/invalid-slug"))
+                                        .andExpect(status().isNotFound());
+                }
+        }
+
+        @Test
+        public void whenGettingPostTags_thenReturnsAllAvailableTags() throws Exception {
+                mockMvc.perform(MockMvcRequestBuilders.get(POST_TAGS_URL))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.details", hasSize(PostTag.values().length)));
+        }
+
+        @Test
+        public void givenSearchQuery_whenSearchingPosts_thenReturnsMatchingPosts() throws Exception {
+                var postEntityList = preparePostsEntitySaving();
+                int totalRecords = postEntityList.size();
+                Pageable pageable = PageRequest.of(0, 9);
+                Page<PostEntity> page = new PageImpl<>(postEntityList, pageable, totalRecords);
+
+                when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
+                                .thenReturn(page);
+
+                mockMvc.perform(MockMvcRequestBuilders.get(SEARCH_URL)
+                                .param("offset", "0")
+                                .param("limit", "9")
+                                .param("search", "test"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.details.totalRecords", is(totalRecords)));
+        }
+
+        @Test
+        public void givenMissingSearchParameter_whenSearchingPosts_thenReturnsBadRequest() throws Exception {
+                mockMvc.perform(MockMvcRequestBuilders.get(SEARCH_URL)
+                                .param("offset", "0")
+                                .param("limit", "9"))
+                                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        public void givenValidPostUpdate_whenUpdatingPost_thenReturnsUpdatedPost() throws Exception {
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        var postEntity = makePostForSaving("Original Title", "Original Content");
+                        postEntity.setUser(userEntityBasicInfo());
+                        var postId = postEntity.getId();
+
+                        when(postRepository.findById(postId)).thenReturn(Optional.of(postEntity));
+                        when(postRepository.save(any(PostEntity.class))).thenReturn(postEntity);
+                        when(favoriteRepository.findAllByPostId(any(UUID.class))).thenReturn(Collections.emptyList());
+                        when(favoriteRepository.findByUserIdAndPostId(any(UUID.class), any(UUID.class)))
+                                        .thenReturn(Optional.empty());
+                        when(commentRepository.countByPostIdAndStatusTrueOrderByCreatedDateDesc(any(UUID.class)))
+                                        .thenReturn(0);
+
+                        var updateRequest = preparePostForRequest();
+                        updateRequest.setTitle("Updated Title");
+
+                        mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/posts/{id}", postId)
+                                        .content(objectMapper.writeValueAsString(updateRequest))
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.details.id").value(postId.toString()));
+                }
+        }
+
+        @Test
+        public void givenInvalidPostId_whenUpdatingPost_thenReturnsNotFound() throws Exception {
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        var nonExistentId = UUID.randomUUID();
+                        when(postRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+
+                        var updateRequest = preparePostForRequest();
+
+                        mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/posts/{id}", nonExistentId)
+                                        .content(objectMapper.writeValueAsString(updateRequest))
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                        .andExpect(status().isNotFound());
+                }
+        }
+
+        @Test
+        public void givenValidPostId_whenDisablingPost_thenReturnsSuccessMessage() throws Exception {
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        var postEntity = makePostForSaving("Test Title", "Test Content");
+                        postEntity.setUser(userEntityBasicInfo());
+                        var postId = postEntity.getId();
+
+                        when(postRepository.findByIdAndUserId(postId, userEntityBasicInfo().getId()))
+                                        .thenReturn(Optional.of(postEntity));
+                        when(postRepository.save(any(PostEntity.class))).thenReturn(postEntity);
+                        when(commentRepository.findByPostId(postId)).thenReturn(Collections.emptyList());
+
+                        mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/posts/disable/{postId}", postId))
+                                        .andExpect(status().isOk());
+                }
+        }
+
+        @Test
+        public void givenFilterByCategoryName_whenGettingPostsFeed_thenReturnsFilteredPosts() throws Exception {
+                var postEntityList = preparePostsEntitySaving();
+                int totalRecords = postEntityList.size();
+                Pageable pageable = PageRequest.of(0, 9);
+                Page<PostEntity> page = new PageImpl<>(postEntityList, pageable, totalRecords);
+
+                when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
+                                .thenReturn(page);
+
+                mockMvc.perform(MockMvcRequestBuilders.get(PUBLIC_FEED_URL)
+                                .param("offset", "0")
+                                .param("limit", "9")
+                                .param("categoryName", "Technology"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.details.totalRecords", is(totalRecords)));
+        }
+
+        @Test
+        public void givenFilterByTags_whenGettingPostsFeed_thenReturnsFilteredPosts() throws Exception {
+                var postEntityList = preparePostsEntitySaving();
+                int totalRecords = postEntityList.size();
+                Pageable pageable = PageRequest.of(0, 9);
+                Page<PostEntity> page = new PageImpl<>(postEntityList, pageable, totalRecords);
+
+                when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
+                                .thenReturn(page);
+
+                mockMvc.perform(MockMvcRequestBuilders.get(PUBLIC_FEED_URL)
+                                .param("offset", "0")
+                                .param("limit", "9")
+                                .param("tags", "AI,APACHE"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.details.totalRecords", is(totalRecords)));
+        }
+
+        @Test
+        public void givenFilterByUserId_whenGettingPostsFeed_thenReturnsUserPosts() throws Exception {
+                var postEntityList = preparePostsEntitySaving();
+                int totalRecords = postEntityList.size();
+                Pageable pageable = PageRequest.of(0, 9);
+                Page<PostEntity> page = new PageImpl<>(postEntityList, pageable, totalRecords);
+
+                when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
+                                .thenReturn(page);
+
+                var userId = UUID.randomUUID();
+
+                mockMvc.perform(MockMvcRequestBuilders.get(PUBLIC_FEED_URL)
+                                .param("offset", "0")
+                                .param("limit", "9")
+                                .param("userId", userId.toString()))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.details.totalRecords", is(totalRecords)));
+        }
+
+        @Test
+        public void givenFilterByUserName_whenGettingPostsFeed_thenReturnsUserPosts() throws Exception {
+                var postEntityList = preparePostsEntitySaving();
+                int totalRecords = postEntityList.size();
+                Pageable pageable = PageRequest.of(0, 9);
+                Page<PostEntity> page = new PageImpl<>(postEntityList, pageable, totalRecords);
+
+                when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
+                                .thenReturn(page);
+
+                mockMvc.perform(MockMvcRequestBuilders.get(PUBLIC_FEED_URL)
+                                .param("offset", "0")
+                                .param("limit", "9")
+                                .param("userName", "testuser"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.details.totalRecords", is(totalRecords)));
+        }
+
+        @Test
+        public void givenSortingParameters_whenGettingPostsFeed_thenReturnsSortedPosts() throws Exception {
+                var postEntityList = preparePostsEntitySaving();
+                int totalRecords = postEntityList.size();
+                Pageable pageable = PageRequest.of(0, 9);
+                Page<PostEntity> page = new PageImpl<>(postEntityList, pageable, totalRecords);
+
+                when(postRepository.findAll(Mockito.<Specification<PostEntity>>any(), Mockito.any(Pageable.class)))
+                                .thenReturn(page);
+
+                mockMvc.perform(MockMvcRequestBuilders.get(PUBLIC_FEED_URL)
+                                .param("offset", "0")
+                                .param("limit", "9")
+                                .param("sortField", "title")
+                                .param("sortDirection", "ASC"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.details.totalRecords", is(totalRecords)));
+        }
+
+        @Test
+        public void givenEmptyTitleField_whenCreatingNewPost_thenReturnsBadRequestWithValidationError()
+                        throws Exception {
+                var postRequest = preparePostForRequest();
+                postRequest.setTitle("");
+
+                mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
+                                .content(objectMapper.writeValueAsString(postRequest))
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        public void givenNullCategoryId_whenCreatingNewPost_thenReturnsBadRequestWithValidationError()
+                        throws Exception {
+                try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
+                                .mockStatic(JWTSecurityUtil.class)) {
+                        jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
+                                        .thenReturn(Optional.of(userPrincipal()));
+
+                        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userEntityBasicInfo()));
+
+                        var postRequest = preparePostForRequest();
+                        postRequest.setCategoryId(null);
+
+                        mockMvc.perform(MockMvcRequestBuilders.post(API_URL)
+                                        .content(objectMapper.writeValueAsString(postRequest))
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                        .andExpect(status().isNotFound());
+                }
+        }
 }

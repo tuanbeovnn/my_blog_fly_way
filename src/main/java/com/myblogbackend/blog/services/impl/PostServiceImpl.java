@@ -54,7 +54,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -73,6 +72,10 @@ import static com.myblogbackend.blog.utils.SlugUtil.makeSlug;
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
     private static final Logger logger = LogManager.getLogger(PostServiceImpl.class);
+    private static final Duration DRAFT_EXPIRATION = Duration.ofHours(12);
+    private static final String DRAFT_REDIS_KEY_PREFIX = "draft:";
+    private static final String NOTIFICATION_TOPIC = "notification-topic";
+
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
     private final UsersRepository usersRepository;
@@ -85,7 +88,6 @@ public class PostServiceImpl implements PostService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
-    private static final Duration DRAFT_EXPIRATION = Duration.ofHours(12);
 
     @Override
     @Transactional
@@ -143,20 +145,20 @@ public class PostServiceImpl implements PostService {
 
     // Helper method to generate Redis key for draft
     private String getDraftRedisKey(final String userEmail) {
-        return "draft:" + userEmail;
+        return DRAFT_REDIS_KEY_PREFIX + userEmail;
     }
 
     private void sendAMessageFromKafkaToNotificationService(final UserEntity userEntity, final PostEntity createdPost)
             throws ExecutionException, InterruptedException {
 
         var followers = followersRepository.findByFollowedUserId(userEntity.getId());
-        var usersFollowing = getUserFollowingResponses(followers);
-        logger.info("User {} has {} followers.", userEntity.getId(), usersFollowing.size());
-
-        if (usersFollowing.isEmpty()) {
+        if (followers.isEmpty()) {
             logger.info("User {} has no followers.", userEntity.getId());
             return;
         }
+
+        var usersFollowing = getUserFollowingResponses(followers);
+        logger.info("User {} has {} followers.", userEntity.getId(), usersFollowing.size());
 
         Map<String, Set<UUID>> tokenToUserMap = buildTokenToUserMap(usersFollowing);
         sendNotifications(tokenToUserMap, createdPost, userEntity);
@@ -165,52 +167,55 @@ public class PostServiceImpl implements PostService {
     private Map<String, Set<UUID>> buildTokenToUserMap(final List<UserFollowingResponse> usersFollowing) {
         Map<String, Set<UUID>> tokenToUserMap = new HashMap<>();
 
-        for (UserFollowingResponse follower : usersFollowing) {
-            List<UserDeviceFireBaseTokenEntity> userDeviceTokens = firebaseUserRepository.findAllByUserId(follower.getId());
-            for (UserDeviceFireBaseTokenEntity deviceTokenEntity : userDeviceTokens) {
+        usersFollowing.forEach(follower -> {
+            List<UserDeviceFireBaseTokenEntity> userDeviceTokens = firebaseUserRepository
+                    .findAllByUserId(follower.getId());
+            userDeviceTokens.forEach(deviceTokenEntity -> {
                 String token = deviceTokenEntity.getDeviceToken();
                 tokenToUserMap.computeIfAbsent(token, k -> new HashSet<>()).add(follower.getId());
-            }
-        }
+            });
+        });
 
         return tokenToUserMap;
     }
 
-    private void sendNotifications(final Map<String, Set<UUID>> tokenToUserMap, final PostEntity createdPost, final UserEntity userEntity) {
-        for (Map.Entry<String, Set<UUID>> entry : tokenToUserMap.entrySet()) {
-            String token = entry.getKey();
-            Set<UUID> userIds = entry.getValue();
+    private void sendNotifications(final Map<String, Set<UUID>> tokenToUserMap, final PostEntity createdPost,
+                                   final UserEntity userEntity) {
+        tokenToUserMap.forEach((token, userIds) -> {
             NotificationEvent notificationEvent = createNotificationEvent(token, userIds, createdPost, userEntity);
             sendNotificationEvent(notificationEvent, token);
-        }
+        });
     }
 
-    private NotificationEvent createNotificationEvent(final String token, final Set<UUID> userIds, final PostEntity createdPost, final UserEntity userEntity) {
+    private NotificationEvent createNotificationEvent(final String token, final Set<UUID> userIds,
+                                                      final PostEntity createdPost, final UserEntity userEntity) {
         NotificationEvent notificationEvent = new NotificationEvent();
         notificationEvent.setDeviceTokenId(token);
-        notificationEvent.setNotificationType(String.valueOf(NEW_POST));
+        notificationEvent.setNotificationType(NEW_POST.name());
 
         Map<String, String> data = new HashMap<>();
-        data.put("postId", String.valueOf(createdPost.getId()));
-        data.put("userIds", String.valueOf(new ArrayList<>(userIds)));
+        data.put("postId", createdPost.getId().toString());
+        data.put("userIds", userIds.toString());
         data.put("postSlug", createdPost.getSlug());
         data.put("postTitle", createdPost.getTitle());
         data.put("userName", userEntity.getUserName());
         data.put("userEmail", userEntity.getEmail());
         data.put("name", userEntity.getName());
-        data.put("createdDate", String.valueOf(createdPost.getCreatedDate()));
-        String avatarUrl = (userEntity.getProfile() != null && userEntity.getProfile().getAvatarUrl() != null)
-                ? userEntity.getProfile().getAvatarUrl()
-                : "";
-        data.put("userAvatar", avatarUrl);
-        notificationEvent.setData(data);
+        data.put("createdDate", createdPost.getCreatedDate().toString());
 
+        String avatarUrl = Optional.ofNullable(userEntity.getProfile())
+                .map(ProfileEntity::getAvatarUrl)
+                .orElse("");
+        data.put("userAvatar", avatarUrl);
+
+        notificationEvent.setData(data);
         return notificationEvent;
     }
 
     private void sendNotificationEvent(final NotificationEvent notificationEvent, final String token) {
         try {
-            CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("notification-topic", notificationEvent);
+            CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(NOTIFICATION_TOPIC,
+                    notificationEvent);
             future.whenComplete((result, ex) -> {
                 if (ex != null) {
                     logger.error("Error sending notification event to token {}: ", token, ex);
@@ -227,7 +232,7 @@ public class PostServiceImpl implements PostService {
     private @NotNull List<UserFollowingResponse> getUserFollowingResponses(final List<FollowersEntity> followers) {
         return followers.stream()
                 .map(follower -> {
-                    var followerUser = usersRepository.findById(follower.getFollower().getId()).orElseThrow();
+                    var followerUser = follower.getFollower(); // Use the already loaded entity
                     return UserFollowingResponse.builder()
                             .id(followerUser.getId())
                             .name(followerUser.getName())
@@ -290,11 +295,11 @@ public class PostServiceImpl implements PostService {
 
     private void disableAllComments(final UUID postId) {
         var comments = commentRepository.findByPostId(postId);
-        comments.forEach(comment -> {
-            comment.setStatus(false);
-            commentRepository.save(comment);
-        });
-        logger.info("Disabled all comments for post {}", postId);
+        if (!comments.isEmpty()) {
+            comments.forEach(comment -> comment.setStatus(false));
+            commentRepository.saveAll(comments);
+            logger.info("Disabled {} comments for post {}", comments.size(), postId);
+        }
     }
 
     @Override
@@ -337,7 +342,8 @@ public class PostServiceImpl implements PostService {
         return postResponse;
     }
 
-    private PageList<PostResponse> buildPaginatedPostResponse(final Page<PostEntity> postEntities, final int pageSize, final int currentPage) {
+    private PageList<PostResponse> buildPaginatedPostResponse(final Page<PostEntity> postEntities, final int pageSize,
+                                                              final int currentPage) {
         var postResponses = postEntities.getContent().stream()
                 .map(post -> buildPostResponse(post, getUserId()))
                 .toList();
@@ -368,7 +374,8 @@ public class PostServiceImpl implements PostService {
     }
 
     private UserResponse getUserResponse(final UserEntity user, final UUID userId) {
-        if (user == null) return null;
+        if (user == null)
+            return null;
         var userResponse = userMapper.toUserDTO(user);
         userResponse.setFollowType(getUserFollowingType(userId, user.getId()));
         return enrichUserProfile(user, userResponse);
@@ -376,7 +383,8 @@ public class PostServiceImpl implements PostService {
 
     private UserResponse enrichUserProfile(final UserEntity user, final UserResponse response) {
         var profile = user.getProfile();
-        if (profile == null) return response;
+        if (profile == null)
+            return response;
 
         var profileResponse = ProfileResponseDTO.builder()
                 .bio(profile.getBio())
@@ -390,6 +398,9 @@ public class PostServiceImpl implements PostService {
     }
 
     private SocialLinksDTO buildSocialLinks(final ProfileEntity profile) {
+        if (profile.getSocial() == null) {
+            return SocialLinksDTO.builder().build();
+        }
         return SocialLinksDTO.builder()
                 .twitter(profile.getSocial().getTwitter())
                 .linkedin(profile.getSocial().getLinkedin())
@@ -398,7 +409,8 @@ public class PostServiceImpl implements PostService {
     }
 
     private FollowType getUserFollowingType(final UUID followerId, final UUID followedUserId) {
-        if (followerId == null || followedUserId == null) return FollowType.UNFOLLOW;
+        if (followerId == null || followedUserId == null)
+            return FollowType.UNFOLLOW;
         return followersRepository.findByFollowerIdAndFollowedUserId(followerId, followedUserId)
                 .map(FollowersEntity::getType)
                 .orElse(FollowType.UNFOLLOW);
@@ -426,7 +438,8 @@ public class PostServiceImpl implements PostService {
                 Sort.Direction.fromString(filter.getSortDirection().toUpperCase()), filter.getSortField());
     }
 
-    private PageList<PostResponse> buildPaginatingResponse(final List<PostResponse> responses, final int pageSize, final int currentPage, final long total) {
+    private PageList<PostResponse> buildPaginatingResponse(final List<PostResponse> responses, final int pageSize,
+                                                           final int currentPage, final long total) {
         return PageList.<PostResponse>builder()
                 .records(responses)
                 .limit(pageSize)
