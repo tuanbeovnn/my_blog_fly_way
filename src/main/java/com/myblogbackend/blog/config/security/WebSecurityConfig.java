@@ -14,6 +14,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableMethodSecurity
@@ -22,7 +27,7 @@ public class WebSecurityConfig {
     private final JwtAuthenticationEntryPoint unauthorizedHandler;
 
     public WebSecurityConfig(final UserDetailsServiceImpl userDetailsService,
-            final JwtAuthenticationEntryPoint unauthorizedHandler
+                             final JwtAuthenticationEntryPoint unauthorizedHandler
 
     ) {
         this.userDetailsService = userDetailsService;
@@ -55,6 +60,35 @@ public class WebSecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // Allow specific origins
+        configuration.setAllowedOrigins(Arrays.asList(
+                "https://blogs.code4fun.id.vn",
+                "https://blogs-fe-dev.code4fun.id.vn",
+                "http://localhost:3000", // for development
+                "http://localhost:3001" // for development
+        ));
+
+        // Allow all HTTP methods
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+        // Allow all headers
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        // Allow credentials
+        configuration.setAllowCredentials(true);
+
+        // Set max age for preflight requests
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
     private static final String[] AUTH_WHITELIST = {
             "/v3/api-docs/**", "/v3/api-docs.yaml", "/swagger-ui/**",
             "/swagger-ui.html", "/favicon.ico", "/**/*.json",
@@ -65,6 +99,7 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
