@@ -68,6 +68,7 @@ public class WebSecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://blogs.code4fun.id.vn",
                 "https://blogs-fe-dev.code4fun.id.vn",
+                "https://blogs-admin-prod.code4fun.id.vn",
                 "http://localhost:3000", // for development
                 "http://localhost:3001" // for development
         ));
