@@ -3,9 +3,8 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.controllers.route.FavoriteRoutes;
-import com.myblogbackend.blog.enums.FavoriteObjectType;
+
 import com.myblogbackend.blog.enums.RatingType;
-import com.myblogbackend.blog.models.FavoriteEntity;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.FavoriteService;
 import lombok.RequiredArgsConstructor;

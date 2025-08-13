@@ -1,8 +1,6 @@
 package com.myblogbackend.blog.services;
 
-import com.myblogbackend.blog.enums.FavoriteObjectType;
 import com.myblogbackend.blog.enums.RatingType;
-import com.myblogbackend.blog.models.FavoriteEntity;
 
 import java.util.UUID;
 

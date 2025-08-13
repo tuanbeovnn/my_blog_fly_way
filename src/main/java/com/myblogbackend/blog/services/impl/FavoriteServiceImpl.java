@@ -84,7 +84,7 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional
-    public void createFavorite(UUID targetId, String objectType, RatingType type) {
+    public void createFavorite(final UUID targetId, final String objectType, final RatingType type) {
         var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
         var favoriteObject = FavoriteObjectType.valueOf(objectType.toUpperCase());
         switch (favoriteObject) {
@@ -94,7 +94,7 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     }
 
-    private void handlePostFavorite(UUID userId, UUID postId, RatingType type) {
+    private void handlePostFavorite(final UUID userId, final UUID postId, final RatingType type) {
         PostEntity post = postRepository.findById(postId).orElseThrow(() ->
                 new RuntimeException("Post not found"));
         var existingFavoritePostByUser = favoriteRepository.findByUserIdAndPostId(userId, postId);
@@ -117,7 +117,7 @@ public class FavoriteServiceImpl implements FavoriteService {
         );
     }
 
-    private void handleCommentFavorite(UUID userId, UUID commentId, RatingType type) {
+    private void handleCommentFavorite(final UUID userId, final UUID commentId, final RatingType type) {
         CommentEntity comment = commentRepository.findById(commentId).orElseThrow(() ->
                 new RuntimeException("Comment not found"));
         var existingFavoriteComment = favoriteRepository.findByUserIdAndCommentId(userId, commentId);
