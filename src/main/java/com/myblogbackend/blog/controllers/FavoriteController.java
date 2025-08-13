@@ -3,14 +3,14 @@ package com.myblogbackend.blog.controllers;
 
 import com.myblogbackend.blog.controllers.route.CommonRoutes;
 import com.myblogbackend.blog.controllers.route.FavoriteRoutes;
+import com.myblogbackend.blog.enums.FavoriteObjectType;
+import com.myblogbackend.blog.enums.RatingType;
+import com.myblogbackend.blog.models.FavoriteEntity;
 import com.myblogbackend.blog.response.ResponseEntityBuilder;
 import com.myblogbackend.blog.services.FavoriteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -29,4 +29,12 @@ public class FavoriteController {
                 .build();
     }
 
+    @PostMapping("/{objectType}/{targetId}")
+    public ResponseEntity<?> createFavorite(@PathVariable final UUID targetId, @PathVariable final String objectType,
+                                            @RequestParam("type") RatingType type) {
+        favoriteService.createFavorite(targetId, objectType, type);
+        return ResponseEntityBuilder
+                .getBuilder()
+                .build();
+    }
 }

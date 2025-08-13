@@ -1,15 +1,19 @@
 package com.myblogbackend.blog.services.impl;
 
+import com.myblogbackend.blog.enums.FavoriteObjectType;
 import com.myblogbackend.blog.enums.RatingType;
 import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
 import com.myblogbackend.blog.exception.commons.ErrorCode;
+import com.myblogbackend.blog.models.CommentEntity;
 import com.myblogbackend.blog.models.FavoriteEntity;
 import com.myblogbackend.blog.models.PostEntity;
 import com.myblogbackend.blog.models.UserEntity;
+import com.myblogbackend.blog.repositories.CommentRepository;
 import com.myblogbackend.blog.repositories.FavoriteRepository;
 import com.myblogbackend.blog.repositories.PostRepository;
 import com.myblogbackend.blog.services.FavoriteService;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,6 +30,7 @@ public class FavoriteServiceImpl implements FavoriteService {
     private final FavoriteRepository favoriteRepository;
     private final PostRepository postRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final CommentRepository commentRepository;
 
     @Override
     public void persistOrDelete(final UUID postId) {
@@ -77,7 +82,64 @@ public class FavoriteServiceImpl implements FavoriteService {
         });
     }
 
-    // Flush the cache every 5 minutes
+    @Override
+    @Transactional
+    public void createFavorite(UUID targetId, String objectType, RatingType type) {
+        var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
+        var favoriteObject = FavoriteObjectType.valueOf(objectType.toUpperCase());
+        switch (favoriteObject) {
+            case POST -> handlePostFavorite(signedInUser.getId(), targetId, type);
+            case COMMENT -> handleCommentFavorite(signedInUser.getId(), targetId, type);
+        }
+
+    }
+
+    private void handlePostFavorite(UUID userId, UUID postId, RatingType type) {
+        PostEntity post = postRepository.findById(postId).orElseThrow(() ->
+                new RuntimeException("Post not found"));
+        var existingFavoritePostByUser = favoriteRepository.findByUserIdAndPostId(userId, postId);
+
+        existingFavoritePostByUser.ifPresentOrElse(favorite -> {
+                    if (favoriteRepository.deleteByUserIdAndPostId(userId, postId) > -0) {
+                        post.setFavourite(Math.max(0, post.getFavourite() - 1));
+                    }
+                }
+                , () -> {
+                    post.setFavourite(post.getFavourite() + 1);
+                    var favoriteSaved = FavoriteEntity.builder()
+                            .user(UserEntity.builder().id(userId).build())
+                            .objectType(FavoriteObjectType.POST)
+                            .type(type)
+                            .post(post)
+                            .build();
+                    favoriteRepository.save(favoriteSaved);
+                }
+        );
+    }
+
+    private void handleCommentFavorite(UUID userId, UUID commentId, RatingType type) {
+        CommentEntity comment = commentRepository.findById(commentId).orElseThrow(() ->
+                new RuntimeException("Comment not found"));
+        var existingFavoriteComment = favoriteRepository.findByUserIdAndCommentId(userId, commentId);
+
+        existingFavoriteComment.ifPresentOrElse(favorite -> {
+            if (favoriteRepository.deleteByUserIdAndCommentId(userId, commentId) > 0) {
+                comment.setLikes(Math.max(0, comment.getLikes() - 1));
+            }
+        }, () -> {
+            comment.setLikes(comment.getLikes() + 1);
+            var favoriteSaved = FavoriteEntity.builder()
+                    .user(UserEntity.builder().id(userId).build())
+                    .objectType(FavoriteObjectType.COMMENT)
+                    .type(type)
+                    .comment(comment)
+                    .build();
+            favoriteRepository.save(favoriteSaved);
+        });
+    }
+
+}
+// Flush the cache every 5 minutes
 //    @Scheduled(fixedRate = 5 * 60 * 1000)
 //    public void flushFavoritesToDatabase() {
 //        Optional.ofNullable(redisTemplate.keys(FAVOURITE_COUNT_KEY + "*"))
@@ -93,4 +155,3 @@ public class FavoriteServiceImpl implements FavoriteService {
 //
 //    }
 
-}

@@ -112,8 +112,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtResponse userLogin(final LoginFormRequest loginRequest) {
-        var userEntity = usersRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.USER_COULD_NOT_FOUND));
+        var userEntity = usersRepository.findByEmail(loginRequest.getEmail()).orElseThrow(() -> new BlogRuntimeException(ErrorCode.USER_COULD_NOT_FOUND));
 
         if (!userEntity.getActive()) {
             throw new BlogRuntimeException(ErrorCode.USER_ACCOUNT_IS_NOT_ACTIVE);
@@ -135,9 +134,13 @@ public class AuthServiceImpl implements AuthService {
         }
         usersRepository.findByEmailAndIsPendingTrue(email).ifPresent(usersRepository::delete);
         var token = UUID.randomUUID().toString();
-        saveVerificationToken(token, signUpRequest);
-        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(),
-                createMailRequest(email, emailProperties.getRegistrationConfirmation().getBaseUrl() + token));
+//        saveVerificationToken(token, signUpRequest);
+//        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(),
+//                createMailRequest(email, emailProperties.getRegistrationConfirmation().getBaseUrl() + token));
+
+        var newUser = UserEntity.builder().email(signUpRequest.getEmail()).password(encoder.encode(signUpRequest.getPassword())).active(true).isPending(false).followers(0L).name(signUpRequest.getName()).userName(splitFromEmail(signUpRequest.getEmail())).provider(OAuth2Provider.LOCAL).roles(Set.of(getUserRole())).build();
+
+        usersRepository.save(newUser);
     }
 
     public void saveVerificationToken(final String token, final SignUpFormRequest user) {
@@ -174,17 +177,7 @@ public class AuthServiceImpl implements AuthService {
 
         usersRepository.findByEmailAndIsPendingTrue(signUpRequest.getEmail()).ifPresent(usersRepository::delete);
 
-        var newUser = UserEntity.builder()
-                .email(signUpRequest.getEmail())
-                .password(encoder.encode(signUpRequest.getPassword()))
-                .active(true)
-                .isPending(false)
-                .followers(0L)
-                .name(signUpRequest.getName())
-                .userName(splitFromEmail(signUpRequest.getEmail()))
-                .provider(OAuth2Provider.LOCAL)
-                .roles(Set.of(getUserRole()))
-                .build();
+        var newUser = UserEntity.builder().email(signUpRequest.getEmail()).password(encoder.encode(signUpRequest.getPassword())).active(true).isPending(false).followers(0L).name(signUpRequest.getName()).userName(splitFromEmail(signUpRequest.getEmail())).provider(OAuth2Provider.LOCAL).roles(Set.of(getUserRole())).build();
 
         usersRepository.save(newUser);
         logger.info("User activated successfully: {}", newUser);
@@ -196,17 +189,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public ResponseEntity<?> sendEmailForgotPassword(final String email) {
-        var userEntity = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        var userEntity = usersRepository.findByEmail(email).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
 
         var token = UUID.randomUUID().toString();
         var redisKey = "password_reset:" + email;
 
         redisTemplate.opsForValue().set(redisKey, token, 15, TimeUnit.MINUTES);
 
-        var confirmationLink = String.format(
-                emailProperties.getForgotPasswordConfirmation().getBaseUrl(),
-                email, token);
+        var confirmationLink = String.format(emailProperties.getForgotPasswordConfirmation().getBaseUrl(), email, token);
         var mailRequest = createMailRequest(userEntity.getEmail(), confirmationLink);
 
         kafkaTemplate.send(kafkaTopicManager.getNotificationForgotPasswordTopic(), mailRequest);
@@ -223,8 +213,7 @@ public class AuthServiceImpl implements AuthService {
         if (storedToken == null || !storedToken.equals(token)) {
             return loadHtmlTemplate(TEMPLATES_INVALIDTOKEN_HTML, responseHeaders);
         }
-        var userEntity = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
+        var userEntity = usersRepository.findByEmail(email).orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
 
         var newPassword = UUID.randomUUID().toString();
         userEntity.setPassword(encoder.encode(newPassword));
@@ -241,8 +230,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private RoleEntity getUserRole() {
-        return roleRepository.findByName(RoleName.ROLE_USER)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        return roleRepository.findByName(RoleName.ROLE_USER).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
     }
 
     private MailRequest createMailRequest(final String email, final String confirmationLink) {
@@ -257,16 +245,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public JwtResponse outboundAuthentication(final LoginFormOutboundRequest loginFormOutboundRequest) {
         try {
-            logger.info("Starting OAuth authentication for user. Code: {}, Client ID: {}, Redirect URI: {}",
-                    loginFormOutboundRequest.getCode(), CLIENT_ID, REDIRECT_URI);
+            logger.info("Starting OAuth authentication for user. Code: {}, Client ID: {}, Redirect URI: {}", loginFormOutboundRequest.getCode(), CLIENT_ID, REDIRECT_URI);
 
-            var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
-                    .code(loginFormOutboundRequest.getCode())
-                    .clientId(CLIENT_ID)
-                    .clientSecret(CLIENT_SECRET)
-                    .redirectUri(REDIRECT_URI)
-                    .grantType("authorization_code")
-                    .build());
+            var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder().code(loginFormOutboundRequest.getCode()).clientId(CLIENT_ID).clientSecret(CLIENT_SECRET).redirectUri(REDIRECT_URI).grantType("authorization_code").build());
 
             if (response == null || response.getAccessToken() == null) {
                 logger.error("Failed to retrieve access token from Google.");
@@ -276,11 +257,9 @@ public class AuthServiceImpl implements AuthService {
             logger.info("Access token successfully received from Google: {}", response.getAccessToken());
 
             var userInfo = outboundUserClient.getUserInfo("json", response.getAccessToken());
-            logger.info("User info retrieved from Google: Email: {}, Name: {}", userInfo.getEmail(),
-                    userInfo.getName());
+            logger.info("User info retrieved from Google: Email: {}, Name: {}", userInfo.getEmail(), userInfo.getName());
 
-            var user = usersRepository.findByEmail(userInfo.getEmail())
-                    .orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
+            var user = usersRepository.findByEmail(userInfo.getEmail()).orElseGet(() -> createNewUser(userInfo.getEmail(), userInfo.getName()));
 
             if (user.getProvider() == OAuth2Provider.LOCAL) {
                 logger.error("User account is registered locally, cannot authenticate with Google.");
@@ -291,10 +270,7 @@ public class AuthServiceImpl implements AuthService {
 
             var refreshTokenEntity = createRefreshToken(loginFormOutboundRequest.getDeviceInfo(), user);
 
-            return JwtResponse.builder()
-                    .accessToken(jwtToken)
-                    .refreshToken(refreshTokenEntity.getToken())
-                    .build();
+            return JwtResponse.builder().accessToken(jwtToken).refreshToken(refreshTokenEntity.getToken()).build();
         } catch (FeignException.BadRequest e) {
             logger.error("Invalid grant error during token exchange: {}", e.responseBody());
             throw new BlogRuntimeException(ErrorCode.INVALID_AUTHORIZATION_CODE, e);
@@ -306,19 +282,9 @@ public class AuthServiceImpl implements AuthService {
 
     private UserEntity createNewUser(final String email, final String name) {
         var roles = new HashSet<RoleEntity>();
-        var userRole = roleRepository.findByName(RoleName.ROLE_USER)
-                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
+        var userRole = roleRepository.findByName(RoleName.ROLE_USER).orElseThrow(() -> new BlogRuntimeException(ErrorCode.COULD_NOT_FOUND));
         roles.add(userRole);
-        var user = UserEntity.builder()
-                .provider(OAuth2Provider.GOOGLE)
-                .email(email)
-                .followers(0L)
-                .name(name)
-                .userName(splitFromEmail(email))
-                .active(false)
-                .isPending(false)
-                .roles(roles)
-                .build();
+        var user = UserEntity.builder().provider(OAuth2Provider.GOOGLE).email(email).followers(0L).name(name).userName(splitFromEmail(email)).active(false).isPending(false).roles(roles).build();
         usersRepository.save(user);
         return user;
     }
@@ -327,9 +293,7 @@ public class AuthServiceImpl implements AuthService {
     public JwtResponse refreshJwtToken(final TokenRefreshRequest tokenRefreshRequest) {
         var requestRefreshToken = tokenRefreshRequest.getRefreshToken();
 
-        var refreshToken = refreshTokenRepository.findByToken(requestRefreshToken)
-                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken,
-                        "Missing refresh token in database. Please login again"));
+        var refreshToken = refreshTokenRepository.findByToken(requestRefreshToken).orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Missing refresh token in database. Please login again"));
 
         verifyExpiration(refreshToken);
         verifyRefreshAvailability(refreshToken);
@@ -348,12 +312,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void verifyRefreshAvailability(final RefreshTokenEntity refreshTokenEntity) {
-        var userDeviceEntity = userDeviceRepository.findByRefreshToken(refreshTokenEntity)
-                .orElseThrow(() -> new TokenRefreshException(refreshTokenEntity.getToken(),
-                        "No device found for the matching token. Please login again"));
+        var userDeviceEntity = userDeviceRepository.findByRefreshToken(refreshTokenEntity).orElseThrow(() -> new TokenRefreshException(refreshTokenEntity.getToken(), "No device found for the matching token. Please login again"));
         if (!userDeviceEntity.getIsRefreshActive()) {
-            throw new TokenRefreshException(refreshTokenEntity.getToken(),
-                    "Refresh blocked for the device. Please login through a different device");
+            throw new TokenRefreshException(refreshTokenEntity.getToken(), "Refresh blocked for the device. Please login through a different device");
         }
     }
 
@@ -363,19 +324,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private UserDeviceEntity createUserDevice(final DeviceInfoRequest deviceInfoRequest) {
-        return UserDeviceEntity.builder()
-                .deviceId(deviceInfoRequest.getDeviceId())
-                .deviceType(deviceInfoRequest.getDeviceType())
-                .isRefreshActive(true)
-                .build();
+        return UserDeviceEntity.builder().deviceId(deviceInfoRequest.getDeviceId()).deviceType(deviceInfoRequest.getDeviceType()).isRefreshActive(true).build();
     }
 
     private RefreshTokenEntity createRefreshToken() {
-        return RefreshTokenEntity.builder()
-                .expiryDate(Instant.now().plusMillis(ONE_DAY_IN_MILLIS))
-                .token(jwtProvider.generateRefreshTokenToken(Instant.now().plusMillis(ONE_DAY_IN_MILLIS)))
-                .refreshCount(0L)
-                .build();
+        return RefreshTokenEntity.builder().expiryDate(Instant.now().plusMillis(ONE_DAY_IN_MILLIS)).token(jwtProvider.generateRefreshTokenToken(Instant.now().plusMillis(ONE_DAY_IN_MILLIS))).refreshCount(0L).build();
     }
 
     private Authentication authenticateUser(final LoginFormRequest loginRequest) {
@@ -385,10 +338,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new BlogRuntimeException(ErrorCode.ACCOUNT_LOCKED);
             }
 
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getEmail(),
-                            loginRequest.getPassword()));
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
             // Clear failed attempts on successful authentication
             accountLockoutService.clearFailedAttempts(loginRequest.getEmail());
@@ -401,12 +351,8 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private RefreshTokenEntity createRefreshToken(final DeviceInfoRequest deviceInfoRequest,
-            final UserEntity userEntity) {
-        userDeviceRepository.findByUserId(userEntity.getId())
-                .map(UserDeviceEntity::getRefreshToken)
-                .map(RefreshTokenEntity::getId)
-                .ifPresent(refreshTokenRepository::deleteById);
+    private RefreshTokenEntity createRefreshToken(final DeviceInfoRequest deviceInfoRequest, final UserEntity userEntity) {
+        userDeviceRepository.findByUserId(userEntity.getId()).map(UserDeviceEntity::getRefreshToken).map(RefreshTokenEntity::getId).ifPresent(refreshTokenRepository::deleteById);
 
         var userDeviceEntity = createUserDevice(deviceInfoRequest);
         var refreshTokenEntity = createRefreshToken();
@@ -417,8 +363,7 @@ public class AuthServiceImpl implements AuthService {
         return refreshTokenEntity;
     }
 
-    private ResponseEntity<String> loadHtmlTemplate(final String templatePath,
-            final HttpHeaders headers) throws IOException {
+    private ResponseEntity<String> loadHtmlTemplate(final String templatePath, final HttpHeaders headers) throws IOException {
         try (InputStream in = getClass().getResourceAsStream(templatePath)) {
             if (in != null) {
                 String result = IOUtils.toString(in, StandardCharsets.UTF_8);
