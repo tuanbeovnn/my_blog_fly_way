@@ -20,8 +20,9 @@ import lombok.RequiredArgsConstructor;
 public class RateLimitingFilter implements Filter {
 
     private final RedisTemplate<String, String> redisTemplate;
-    private static final int MAX_REQUESTS_PER_MINUTE = 5;
 
+    private static final int MAX_REQUESTS_PER_MINUTE = 5;
+    private static final int MAX_FAVORITE_REQUESTS_PER_MINUTE = 4;
     @Override
     public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
             throws IOException, ServletException {
@@ -51,7 +52,24 @@ public class RateLimitingFilter implements Filter {
                 }
             }
         }
-
+        if(isFavoritesEndpoint(path)) {
+            String clientIp = getClientIp(httpRequest);
+            String key = "rate_limit:auth:" + clientIp + ":" + path;
+            String current = redisTemplate.opsForValue().get(key);
+            if(current == null) {
+                redisTemplate.opsForValue().set(key, "1", 1, TimeUnit.MINUTES);
+            } else {
+                int count = Integer.parseInt(current);
+                if (count >= MAX_FAVORITE_REQUESTS_PER_MINUTE) {
+                    httpResponse.setStatus(429);
+                    httpResponse.setContentType("application/json");
+                    httpResponse.getWriter().write("{\"error\":\"Too many requests. Please try again later.\"}");
+                    return;
+                } else {
+                    redisTemplate.opsForValue().increment(key);
+                }
+            }
+        }
         chain.doFilter(request, response);
     }
 
@@ -60,6 +78,9 @@ public class RateLimitingFilter implements Filter {
                 path.contains("/auth/signup") ||
                 path.contains("/auth/forgot") ||
                 path.contains("/auth/reset-password");
+    }
+    private boolean isFavoritesEndpoint(final String path) {
+        return path.contains("/favorites") || path.startsWith("/favorites");
     }
 
     private String getClientIp(final HttpServletRequest request) {
