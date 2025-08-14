@@ -35,7 +35,7 @@ public class FavoriteEntity extends BaseEntity {
 
     @ManyToOne(optional = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "comment_id", nullable = true)
-    private CommentEntity  comment;
+    private CommentEntity comment;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

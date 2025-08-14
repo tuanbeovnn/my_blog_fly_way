@@ -30,7 +30,7 @@ public class FavoriteController {
 
     @PostMapping("/{objectType}/{targetId}")
     public ResponseEntity<?> createFavorite(@PathVariable final UUID targetId, @PathVariable final String objectType,
-                                            @RequestParam("type") RatingType type) {
+                                            @RequestParam("type") final RatingType type) {
         favoriteService.createFavorite(targetId, objectType, type);
         return ResponseEntityBuilder
                 .getBuilder()

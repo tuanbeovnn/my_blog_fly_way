@@ -52,11 +52,11 @@ public class RateLimitingFilter implements Filter {
                 }
             }
         }
-        if(isFavoritesEndpoint(path)) {
+        if (isFavoritesEndpoint(path)) {
             String clientIp = getClientIp(httpRequest);
             String key = "rate_limit:auth:" + clientIp + ":" + path;
             String current = redisTemplate.opsForValue().get(key);
-            if(current == null) {
+            if (current == null) {
                 redisTemplate.opsForValue().set(key, "1", 1, TimeUnit.MINUTES);
             } else {
                 int count = Integer.parseInt(current);

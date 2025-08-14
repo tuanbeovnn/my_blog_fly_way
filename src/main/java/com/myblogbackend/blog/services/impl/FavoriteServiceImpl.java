@@ -20,7 +20,12 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @Service
 @RequiredArgsConstructor
@@ -95,49 +100,63 @@ public class FavoriteServiceImpl implements FavoriteService {
     }
 
     private void handlePostFavorite(final UUID userId, final UUID postId, final RatingType type) {
-        PostEntity post = postRepository.findById(postId).orElseThrow(() ->
-                new RuntimeException("Post not found"));
-        var existingFavoritePostByUser = favoriteRepository.findByUserIdAndPostId(userId, postId);
-
-        existingFavoritePostByUser.ifPresentOrElse(favorite -> {
-                    if (favoriteRepository.deleteByUserIdAndPostId(userId, postId) > -0) {
-                        post.setFavourite(Math.max(0, post.getFavourite() - 1));
-                    }
-                }
-                , () -> {
-                    post.setFavourite(post.getFavourite() + 1);
-                    var favoriteSaved = FavoriteEntity.builder()
-                            .user(UserEntity.builder().id(userId).build())
-                            .objectType(FavoriteObjectType.POST)
-                            .type(type)
-                            .post(post)
-                            .build();
-                    favoriteRepository.save(favoriteSaved);
-                }
+        handleFavorite(
+                userId,
+                postId,
+                type,
+                () -> postRepository.findById(postId).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND)),
+                favoriteRepository::findByUserIdAndPostId,
+                favoriteRepository::deleteByUserIdAndPostId,
+                PostEntity::getFavourite,
+                PostEntity::setFavourite,
+                FavoriteObjectType.POST,
+                FavoriteEntity.FavoriteEntityBuilder::post
         );
     }
 
     private void handleCommentFavorite(final UUID userId, final UUID commentId, final RatingType type) {
-        CommentEntity comment = commentRepository.findById(commentId).orElseThrow(() ->
-                new RuntimeException("Comment not found"));
-        var existingFavoriteComment = favoriteRepository.findByUserIdAndCommentId(userId, commentId);
-
-        existingFavoriteComment.ifPresentOrElse(favorite -> {
-            if (favoriteRepository.deleteByUserIdAndCommentId(userId, commentId) > 0) {
-                comment.setLikes(Math.max(0, comment.getLikes() - 1));
-            }
-        }, () -> {
-            comment.setLikes(comment.getLikes() + 1);
-            var favoriteSaved = FavoriteEntity.builder()
-                    .user(UserEntity.builder().id(userId).build())
-                    .objectType(FavoriteObjectType.COMMENT)
-                    .type(type)
-                    .comment(comment)
-                    .build();
-            favoriteRepository.save(favoriteSaved);
-        });
+        handleFavorite(
+                userId,
+                commentId,
+                type,
+                () -> commentRepository.findById(commentId).orElseThrow(() -> new BlogRuntimeException(ErrorCode.COMMENT_NOT_FOUND)),
+                favoriteRepository::findByUserIdAndCommentId,
+                favoriteRepository::deleteByUserIdAndCommentId,
+                CommentEntity::getLikes,
+                CommentEntity::setLikes,
+                FavoriteObjectType.COMMENT,
+                FavoriteEntity.FavoriteEntityBuilder::comment
+        );
     }
 
+    private <T> void handleFavorite(
+            final UUID userId,
+            final UUID entityId,
+            final RatingType type,
+            final Supplier<T> entitySupplier,
+            final BiFunction<UUID, UUID, Optional<FavoriteEntity>> findExisting,
+            final BiFunction<UUID, UUID, Integer> deleter,
+            final Function<T, Long> getCount,
+            final BiConsumer<T, Long> setCount,
+            final FavoriteObjectType objectType,
+            final BiConsumer<FavoriteEntity.FavoriteEntityBuilder, T> entitySetter) {
+        T entity = entitySupplier.get();
+        var existingFavorite = findExisting.apply(userId, entityId);
+        existingFavorite.ifPresentOrElse((favorite) -> {
+            if (deleter.apply(userId, entityId) > 0) {
+                setCount.accept(entity, Math.max(0, getCount.apply(entity) - 1));
+            }
+        }, () -> {
+            setCount.accept(entity, getCount.apply(entity) + 1);
+            var favoriteBuilder = FavoriteEntity.builder()
+                    .user(UserEntity.builder().id(userId).build())
+                    .objectType(objectType)
+                    .type(type);
+            entitySetter.accept(favoriteBuilder, entity);
+            favoriteRepository.save(favoriteBuilder.build());
+
+        });
+    }
 }
 // Flush the cache every 5 minutes
 //    @Scheduled(fixedRate = 5 * 60 * 1000)

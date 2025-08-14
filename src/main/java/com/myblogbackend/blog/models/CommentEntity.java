@@ -2,7 +2,7 @@ package com.myblogbackend.blog.models;
 
 import com.myblogbackend.blog.models.base.BaseEntity;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
