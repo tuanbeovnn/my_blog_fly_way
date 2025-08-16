@@ -136,8 +136,7 @@ public class AuthServiceImpl implements AuthService {
         usersRepository.findByEmailAndIsPendingTrue(email).ifPresent(usersRepository::delete);
         var token = UUID.randomUUID().toString();
         saveVerificationToken(token, signUpRequest);
-        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(),
-                createMailRequest(email, emailProperties.getRegistrationConfirmation().getBaseUrl() + token));
+        kafkaTemplate.send(kafkaTopicManager.getNotificationRegisterTopic(), createMailRequest(email, emailProperties.getRegistrationConfirmation().getBaseUrl() + token));
     }
 
     public void saveVerificationToken(final String token, final SignUpFormRequest user) {
