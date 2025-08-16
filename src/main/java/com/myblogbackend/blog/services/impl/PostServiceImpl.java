@@ -1,5 +1,34 @@
 package com.myblogbackend.blog.services.impl;
 
+import static com.myblogbackend.blog.enums.NotificationType.NEW_POST;
+import static com.myblogbackend.blog.utils.SlugUtil.makeSlug;
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myblogbackend.blog.config.security.UserPrincipal;
@@ -39,34 +68,9 @@ import com.myblogbackend.blog.services.PostService;
 import com.myblogbackend.blog.specification.PostSpec;
 import com.myblogbackend.blog.utils.GsonUtils;
 import com.myblogbackend.blog.utils.JWTSecurityUtil;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-
-import static com.myblogbackend.blog.enums.NotificationType.NEW_POST;
-import static com.myblogbackend.blog.utils.SlugUtil.makeSlug;
 
 @Service
 @RequiredArgsConstructor
@@ -91,6 +95,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "relatedPosts", allEntries = true) // Clear all related posts cache when new post is created
     public PostResponse createPost(final PostRequest postRequest) throws ExecutionException, InterruptedException {
         var userEntity = usersRepository.findById(getUserId()).orElseThrow();
         var category = validateCategory(postRequest.getCategoryId());
@@ -109,7 +114,7 @@ public class PostServiceImpl implements PostService {
         postEntity.setTags(tagEntities);
 
         var createdPost = postRepository.save(postEntity);
-        logger.info("Post was created with id: {}", createdPost.getId());
+        logger.info("Post was created with id: {} - Cache invalidated", createdPost.getId());
 
         // Remove the draft from Redis after successful publishing
         redisTemplate.delete(getDraftRedisKey(userEntity.getEmail()));
@@ -180,7 +185,7 @@ public class PostServiceImpl implements PostService {
     }
 
     private void sendNotifications(final Map<String, Set<UUID>> tokenToUserMap, final PostEntity createdPost,
-                                   final UserEntity userEntity) {
+            final UserEntity userEntity) {
         tokenToUserMap.forEach((token, userIds) -> {
             NotificationEvent notificationEvent = createNotificationEvent(token, userIds, createdPost, userEntity);
             sendNotificationEvent(notificationEvent, token);
@@ -188,7 +193,7 @@ public class PostServiceImpl implements PostService {
     }
 
     private NotificationEvent createNotificationEvent(final String token, final Set<UUID> userIds,
-                                                      final PostEntity createdPost, final UserEntity userEntity) {
+            final PostEntity createdPost, final UserEntity userEntity) {
         NotificationEvent notificationEvent = new NotificationEvent();
         notificationEvent.setDeviceTokenId(token);
         notificationEvent.setNotificationType(NEW_POST.name());
@@ -273,6 +278,44 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Cacheable(value = "relatedPosts", key = "#postId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize + '_' + #pageable.sort.toString()", unless = "#result.totalRecords == 0", condition = "#pageable.pageSize <= 50" // Only
+                                                                                                                                                                                                                               // cache
+                                                                                                                                                                                                                               // reasonable
+                                                                                                                                                                                                                               // page
+                                                                                                                                                                                                                               // sizes
+    )
+    public PageList<PostResponse> getRelatedPosts(final UUID postId, final Pageable pageable) {
+        // First, get the current post to understand what to relate to
+        var currentPost = postRepository.findById(postId)
+                .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+
+        // Build specification for related posts
+        var spec = PostSpec.findRelatedPostsByPostEntity(currentPost);
+
+        // Create a custom pageable that prioritizes by created date but could be
+        // enhanced with relevance scoring
+        var customPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Order.desc("createdDate")));
+
+        var postEntities = postRepository.findAll(spec, customPageable);
+
+        return buildPaginatedPostResponse(postEntities, pageable.getPageSize(), pageable.getPageNumber());
+    }
+
+    // Cache invalidation methods
+    @CacheEvict(value = "relatedPosts", allEntries = true)
+    public void invalidateRelatedPostsCache() {
+        logger.info("Invalidating all related posts cache");
+    }
+
+    @CacheEvict(value = "relatedPosts", key = "#postId + '_*'")
+    public void invalidateRelatedPostsCacheForPost(final UUID postId) {
+        logger.info("Invalidating related posts cache for post: {}", postId);
+    }
+
+    @Override
     public PageList<PostResponse> relatedPosts(final Pageable pageable, final PostFilterRequest filter) {
         var spec = PostSpec.findRelatedArticles(filter);
         var pageableBuild = buildPageable(pageable, filter);
@@ -283,6 +326,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "relatedPosts", allEntries = true) // Clear cache when post is disabled
     public void disablePost(final UUID postId) {
         var post = postRepository.findByIdAndUserId(postId, getUserId())
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
@@ -290,7 +334,7 @@ public class PostServiceImpl implements PostService {
         post.setStatus(false);
         postRepository.save(post);
         disableAllComments(postId);
-        logger.info("Post disabled successfully by id {}", postId);
+        logger.info("Post disabled successfully by id {} - Cache invalidated", postId);
     }
 
     private void disableAllComments(final UUID postId) {
@@ -311,6 +355,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "relatedPosts", allEntries = true) // Clear cache when post is updated
     public PostResponse updatePost(final UUID id, final PostRequest postRequest) {
         var post = postRepository.findById(id)
                 .orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
@@ -327,7 +372,7 @@ public class PostServiceImpl implements PostService {
         post.setPostType(PostType.PENDING);
 
         var updatedPost = postRepository.save(post);
-        logger.info("Post updated successfully with id {}", id);
+        logger.info("Post updated successfully with id {} - Cache invalidated", id);
         return buildPostResponse(updatedPost, getUserId());
     }
 
@@ -343,7 +388,7 @@ public class PostServiceImpl implements PostService {
     }
 
     private PageList<PostResponse> buildPaginatedPostResponse(final Page<PostEntity> postEntities, final int pageSize,
-                                                              final int currentPage) {
+            final int currentPage) {
         var postResponses = postEntities.getContent().stream()
                 .map(post -> buildPostResponse(post, getUserId()))
                 .toList();
@@ -439,7 +484,7 @@ public class PostServiceImpl implements PostService {
     }
 
     private PageList<PostResponse> buildPaginatingResponse(final List<PostResponse> responses, final int pageSize,
-                                                           final int currentPage, final long total) {
+            final int currentPage, final long total) {
         return PageList.<PostResponse>builder()
                 .records(responses)
                 .limit(pageSize)

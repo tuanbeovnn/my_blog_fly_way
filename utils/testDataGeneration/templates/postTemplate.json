@@ -34,7 +34,7 @@
             ],
             "tags": [
                 "WEB",
-                "INFORMATION"
+                "APACHE"
             ]
         },
         {
@@ -46,8 +46,8 @@
                 "machine_learning_thumbnail.png"
             ],
             "tags": [
-                "TECHNOLOGY",
-                "AI"
+                "CLOUD",
+                "REDIS"
             ]
         },
         {
@@ -72,7 +72,7 @@
             ],
             "tags": [
                 "WEB",
-                "TECHNOLOGY"
+                "REDIS"
             ]
         },
         {
@@ -85,7 +85,7 @@
             ],
             "tags": [
                 "AI",
-                "TECHNOLOGY"
+                "CLOUD"
             ]
         },
         {
@@ -98,7 +98,7 @@
             ],
             "tags": [
                 "MOBILE",
-                "TECHNOLOGY"
+                "KUBERNETES"
             ]
         }
     ]
