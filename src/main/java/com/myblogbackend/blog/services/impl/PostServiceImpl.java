@@ -1,20 +1,34 @@
 package com.myblogbackend.blog.services.impl;
 
-import static com.myblogbackend.blog.enums.NotificationType.NEW_POST;
-import static com.myblogbackend.blog.utils.SlugUtil.makeSlug;
-
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.myblogbackend.blog.config.security.UserPrincipal;
+import com.myblogbackend.blog.enums.FollowType;
+import com.myblogbackend.blog.enums.PostTag;
+import com.myblogbackend.blog.enums.PostType;
+import com.myblogbackend.blog.enums.RatingType;
+import com.myblogbackend.blog.event.dto.NotificationEvent;
+import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
+import com.myblogbackend.blog.exception.commons.ErrorCode;
+import com.myblogbackend.blog.mapper.PostMapper;
+import com.myblogbackend.blog.mapper.UserMapper;
+import com.myblogbackend.blog.models.*;
+import com.myblogbackend.blog.pagination.PageList;
+import com.myblogbackend.blog.repositories.*;
+import com.myblogbackend.blog.request.PostFilterRequest;
+import com.myblogbackend.blog.request.PostRequest;
+import com.myblogbackend.blog.response.PostResponse;
+import com.myblogbackend.blog.response.UserFollowingResponse;
+import com.myblogbackend.blog.response.UserLikedPostResponse;
+import com.myblogbackend.blog.response.UserResponse;
+import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
+import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
+import com.myblogbackend.blog.services.PostService;
+import com.myblogbackend.blog.specification.PostSpec;
+import com.myblogbackend.blog.utils.GsonUtils;
+import com.myblogbackend.blog.utils.JWTSecurityUtil;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.cache.annotation.CacheEvict;
@@ -29,48 +43,14 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myblogbackend.blog.config.security.UserPrincipal;
-import com.myblogbackend.blog.enums.FollowType;
-import com.myblogbackend.blog.enums.PostTag;
-import com.myblogbackend.blog.enums.PostType;
-import com.myblogbackend.blog.enums.RatingType;
-import com.myblogbackend.blog.event.dto.NotificationEvent;
-import com.myblogbackend.blog.exception.commons.BlogRuntimeException;
-import com.myblogbackend.blog.exception.commons.ErrorCode;
-import com.myblogbackend.blog.mapper.PostMapper;
-import com.myblogbackend.blog.mapper.UserMapper;
-import com.myblogbackend.blog.models.CategoryEntity;
-import com.myblogbackend.blog.models.FollowersEntity;
-import com.myblogbackend.blog.models.PostEntity;
-import com.myblogbackend.blog.models.ProfileEntity;
-import com.myblogbackend.blog.models.TagEntity;
-import com.myblogbackend.blog.models.UserDeviceFireBaseTokenEntity;
-import com.myblogbackend.blog.models.UserEntity;
-import com.myblogbackend.blog.pagination.PageList;
-import com.myblogbackend.blog.repositories.CategoryRepository;
-import com.myblogbackend.blog.repositories.CommentRepository;
-import com.myblogbackend.blog.repositories.FavoriteRepository;
-import com.myblogbackend.blog.repositories.FirebaseUserRepository;
-import com.myblogbackend.blog.repositories.FollowersRepository;
-import com.myblogbackend.blog.repositories.PostRepository;
-import com.myblogbackend.blog.repositories.UsersRepository;
-import com.myblogbackend.blog.request.PostFilterRequest;
-import com.myblogbackend.blog.request.PostRequest;
-import com.myblogbackend.blog.response.PostResponse;
-import com.myblogbackend.blog.response.UserFollowingResponse;
-import com.myblogbackend.blog.response.UserLikedPostResponse;
-import com.myblogbackend.blog.response.UserResponse;
-import com.myblogbackend.blog.response.UserResponse.ProfileResponseDTO;
-import com.myblogbackend.blog.response.UserResponse.SocialLinksDTO;
-import com.myblogbackend.blog.services.PostService;
-import com.myblogbackend.blog.specification.PostSpec;
-import com.myblogbackend.blog.utils.GsonUtils;
-import com.myblogbackend.blog.utils.JWTSecurityUtil;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
-import jakarta.validation.constraints.NotNull;
-import lombok.RequiredArgsConstructor;
+import static com.myblogbackend.blog.enums.NotificationType.NEW_POST;
+import static com.myblogbackend.blog.utils.SlugUtil.makeSlug;
 
 @Service
 @RequiredArgsConstructor
@@ -185,7 +165,7 @@ public class PostServiceImpl implements PostService {
     }
 
     private void sendNotifications(final Map<String, Set<UUID>> tokenToUserMap, final PostEntity createdPost,
-            final UserEntity userEntity) {
+                                   final UserEntity userEntity) {
         tokenToUserMap.forEach((token, userIds) -> {
             NotificationEvent notificationEvent = createNotificationEvent(token, userIds, createdPost, userEntity);
             sendNotificationEvent(notificationEvent, token);
@@ -193,7 +173,7 @@ public class PostServiceImpl implements PostService {
     }
 
     private NotificationEvent createNotificationEvent(final String token, final Set<UUID> userIds,
-            final PostEntity createdPost, final UserEntity userEntity) {
+                                                      final PostEntity createdPost, final UserEntity userEntity) {
         NotificationEvent notificationEvent = new NotificationEvent();
         notificationEvent.setDeviceTokenId(token);
         notificationEvent.setNotificationType(NEW_POST.name());
@@ -278,12 +258,9 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    @Cacheable(value = "relatedPosts", key = "#postId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize + '_' + #pageable.sort.toString()", unless = "#result.totalRecords == 0", condition = "#pageable.pageSize <= 50" // Only
-                                                                                                                                                                                                                               // cache
-                                                                                                                                                                                                                               // reasonable
-                                                                                                                                                                                                                               // page
-                                                                                                                                                                                                                               // sizes
-    )
+    @Cacheable(value = "relatedPosts",
+            key = "#postId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize + '_' + #pageable.sort.toString()",
+            unless = "#result.totalRecords == 0", condition = "#pageable.pageSize <= 50")
     public PageList<PostResponse> getRelatedPosts(final UUID postId, final Pageable pageable) {
         // First, get the current post to understand what to relate to
         var currentPost = postRepository.findById(postId)
@@ -388,7 +365,7 @@ public class PostServiceImpl implements PostService {
     }
 
     private PageList<PostResponse> buildPaginatedPostResponse(final Page<PostEntity> postEntities, final int pageSize,
-            final int currentPage) {
+                                                              final int currentPage) {
         var postResponses = postEntities.getContent().stream()
                 .map(post -> buildPostResponse(post, getUserId()))
                 .toList();
@@ -484,7 +461,7 @@ public class PostServiceImpl implements PostService {
     }
 
     private PageList<PostResponse> buildPaginatingResponse(final List<PostResponse> responses, final int pageSize,
-            final int currentPage, final long total) {
+                                                           final int currentPage, final long total) {
         return PageList.<PostResponse>builder()
                 .records(responses)
                 .limit(pageSize)
