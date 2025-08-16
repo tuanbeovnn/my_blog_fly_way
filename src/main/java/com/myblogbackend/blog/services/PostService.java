@@ -1,18 +1,20 @@
 package com.myblogbackend.blog.services;
 
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+
+import org.springframework.data.domain.Pageable;
+
 import com.myblogbackend.blog.enums.PostType;
 import com.myblogbackend.blog.pagination.PageList;
 import com.myblogbackend.blog.request.PostFilterRequest;
 import com.myblogbackend.blog.request.PostRequest;
 import com.myblogbackend.blog.response.PostResponse;
-import org.springframework.data.domain.Pageable;
-
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 public interface PostService {
 
-//    PaginationPage<PostResponse> getAllPostsByCategoryId(Integer offset, Integer limited, UUID categoryId);
+    // PaginationPage<PostResponse> getAllPostsByCategoryId(Integer offset, Integer
+    // limited, UUID categoryId);
 
     PostResponse getPostBySlug(String slug);
 
@@ -21,7 +23,6 @@ public interface PostService {
     PostResponse updatePost(UUID id, PostRequest postRequest);
 
     PageList<PostResponse> getAllPostByFilter(final Pageable pageable, PostFilterRequest filter);
-
 
     PageList<PostResponse> relatedPosts(final Pageable pageable, final PostFilterRequest filter);
 
@@ -35,6 +36,6 @@ public interface PostService {
 
     PostResponse approvePost(UUID id, PostType postType);
 
-
+    PageList<PostResponse> getRelatedPosts(UUID postId, final Pageable pageable);
 
 }
