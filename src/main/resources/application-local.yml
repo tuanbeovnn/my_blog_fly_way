@@ -4,7 +4,7 @@ spring:
     application:
         name: blogs-technology
     datasource:
-        url: jdbc:postgresql://localhost:5432/blogs?currentSchema=blog_dbo2
+        url: jdbc:postgresql://localhost:5435/blogs?currentSchema=blog_dbo2
         username: admin
         password: P@ssword112233
     flyway:
