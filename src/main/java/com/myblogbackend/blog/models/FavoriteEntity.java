@@ -45,7 +45,3 @@ public class FavoriteEntity extends BaseEntity {
     @Column(nullable = false)
     private FavoriteObjectType objectType = FavoriteObjectType.POST;
 }
-
-// rate limit - user  like post/comment
-// do not allow user : too many requests if user sends like post/comment continuously
-// create another class
