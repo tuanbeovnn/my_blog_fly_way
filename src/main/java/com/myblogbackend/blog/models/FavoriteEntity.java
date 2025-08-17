@@ -30,7 +30,7 @@ public class FavoriteEntity extends BaseEntity {
     private UserEntity user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = true)
+    @JoinColumn(name = "post_id", unique = true)
     private PostEntity post;
 
     @ManyToOne(optional = true, fetch = FetchType.LAZY)
