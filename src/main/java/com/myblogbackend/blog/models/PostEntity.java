@@ -56,6 +56,7 @@ public class PostEntity extends BaseEntity {
     private String slug;
     @Column(name = "status")
     private Boolean status;
+
     @NotNull
     @Column(name = "favourite")
     private Long favourite = 0L;
