@@ -26,11 +26,11 @@ public class FavoriteEntity extends BaseEntity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", unique = true)
+    @JoinColumn(name = "user_id")
     private UserEntity user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", unique = true)
+    @JoinColumn(name = "post_id")
     private PostEntity post;
 
     @ManyToOne(optional = true, fetch = FetchType.LAZY)

@@ -47,6 +47,7 @@ public class CommentServiceImpl implements CommentService {
         var userFound = usersRepository.findById(signedInUser.getId()).orElseThrow();
         commentEntity.setUser(userFound);
         commentEntity.setPost(post);
+        commentEntity.setLikes(0);
         commentEntity.setParentComment(parentComment);
         commentEntity.setStatus(true);
         commentEntity.setCreatedBy(signedInUser.getName());

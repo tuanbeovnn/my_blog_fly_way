@@ -9,5 +9,5 @@ public interface FavoriteService {
 
     void persistOrDeleteV2(UUID postId);
     void createFavorite(UUID targetId, String objectType,
-                                  RatingType type);
+                                  RatingType type, UUID postId);
 }

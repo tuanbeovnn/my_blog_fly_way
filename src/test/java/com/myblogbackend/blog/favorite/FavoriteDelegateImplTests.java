@@ -37,8 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 public class FavoriteDelegateImplTests {
-    private static final String API_URL_FAVORITE_COMMENT = "/api/v1/favorites/comment";
-    private static final String API_URL_FAVORITE_POST = "/api/v1/favorites/post";
+    private static final String API_URL_FAVORITE_COMMENT = "/api/v1/favorites";
+    private static final String API_URL_FAVORITE_POST = "/api/v1/favorites";
 
     @Autowired
     private MockMvc mockMvc;
@@ -60,11 +60,12 @@ public class FavoriteDelegateImplTests {
 
     private final UUID targetId = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
-
+    private final UUID postId = UUID.randomUUID();
     @Test
     public void givenNonExistingCommentFavorite_whenCreatingNewFavorite_thenIncrementLike() throws Exception {
         var commentEntity = makeCommentForSaving("this post is great");
         var favoriteEntity = makeFavoriteCommentForSaving();
+        var postEntity = makePostForSaving("Title A", "Description A");
 
         try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
                 .mockStatic(JWTSecurityUtil.class)) {
@@ -72,14 +73,18 @@ public class FavoriteDelegateImplTests {
             jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
                     .thenReturn(Optional.of(userPrincipal()));
 
+            when(postRepository.findById(postId)).thenReturn(Optional.ofNullable(postEntity));
             when(commentRepository.findById(targetId)).thenReturn(Optional.of(commentEntity));
             when(favoriteRepository.findByUserIdAndCommentId(userId, targetId))
                     .thenReturn(Optional.empty());
             when(favoriteRepository.save(any(FavoriteEntity.class))).thenReturn(favoriteEntity);
 
             commentEntity.setLikes(commentEntity.getLikes() + 1);
-            mockMvc.perform(MockMvcRequestBuilders.post(API_URL_FAVORITE_COMMENT + "/{targetId}", targetId)
+            mockMvc.perform(MockMvcRequestBuilders.put(API_URL_FAVORITE_COMMENT)
                             .param("type", "LIKE")
+                            .param("objectType", "COMMENT")
+                            .param("targetId", String.valueOf(targetId))
+                            .param("postId", String.valueOf(postId))
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk());
         }
@@ -89,6 +94,7 @@ public class FavoriteDelegateImplTests {
     public void givenExistedCommentFavorite_whenCreatingNewFavorite_thenDecrementLike() throws Exception {
         var commentEntity = makeCommentForSaving("this post is great");
         var favoriteEntity = makeFavoriteCommentForSaving();
+        var postEntity = makePostForSaving("Title A", "Description A");
 
         try (MockedStatic<JWTSecurityUtil> jwtSecurityUtilMockedStatic = Mockito
                 .mockStatic(JWTSecurityUtil.class)) {
@@ -96,6 +102,7 @@ public class FavoriteDelegateImplTests {
             jwtSecurityUtilMockedStatic.when(JWTSecurityUtil::getJWTUserInfo)
                     .thenReturn(Optional.of(userPrincipal()));
 
+            when(postRepository.findById(postId)).thenReturn(Optional.ofNullable(postEntity));
             when(commentRepository.findById(targetId)).thenReturn(Optional.of(commentEntity));
             when(favoriteRepository.findByUserIdAndCommentId(userId, targetId))
                     .thenReturn(Optional.ofNullable(favoriteEntity));
@@ -103,8 +110,11 @@ public class FavoriteDelegateImplTests {
 
             commentEntity.setLikes(Math.max(commentEntity.getLikes() - 1,  0 ));
 
-            mockMvc.perform(MockMvcRequestBuilders.post(API_URL_FAVORITE_COMMENT + "/{targetId}", targetId)
+            mockMvc.perform(MockMvcRequestBuilders.put(API_URL_FAVORITE_COMMENT)
                             .param("type", "LIKE")
+                            .param("objectType", "COMMENT")
+                            .param("targetId", String.valueOf(targetId))
+                            .param("postId", String.valueOf(postId))
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk());
         }
@@ -128,8 +138,11 @@ public class FavoriteDelegateImplTests {
 
             postEntity.setFavourite(postEntity.getFavourite() + 1);
 
-            mockMvc.perform(MockMvcRequestBuilders.post(API_URL_FAVORITE_POST + "/{targetId}", targetId)
+            mockMvc.perform(MockMvcRequestBuilders.put(API_URL_FAVORITE_POST)
                             .param("type", "LIKE")
+                            .param("objectType", "POST")
+                            .param("targetId", String.valueOf(targetId))
+                            .param("postId", String.valueOf(postId))
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk());
         }
@@ -155,8 +168,11 @@ public class FavoriteDelegateImplTests {
 
             postEntity.setFavourite(Math.max(postEntity.getFavourite() - 1,  0 ));
 
-            mockMvc.perform(MockMvcRequestBuilders.post(API_URL_FAVORITE_POST + "/{targetId}", targetId)
+            mockMvc.perform(MockMvcRequestBuilders.put(API_URL_FAVORITE_POST)
                             .param("type", "LIKE")
+                            .param("objectType", "POST")
+                            .param("targetId", String.valueOf(targetId))
+                            .param("postId", String.valueOf(postId))
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk());
         }

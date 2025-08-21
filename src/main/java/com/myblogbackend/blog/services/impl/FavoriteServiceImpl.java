@@ -89,12 +89,13 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional
-    public void createFavorite(final UUID targetId, final String objectType, final RatingType type) {
+    public void createFavorite(final UUID targetId, final String objectType, final RatingType type,
+                               final UUID postId) {
         var signedInUser = JWTSecurityUtil.getJWTUserInfo().orElseThrow();
         var favoriteObject = FavoriteObjectType.valueOf(objectType.toUpperCase());
         switch (favoriteObject) {
             case POST -> handlePostFavorite(signedInUser.getId(), targetId, type);
-            case COMMENT -> handleCommentFavorite(signedInUser.getId(), targetId, type);
+            case COMMENT -> handleCommentFavorite(signedInUser.getId(), targetId, type, postId);
         }
 
     }
@@ -114,18 +115,21 @@ public class FavoriteServiceImpl implements FavoriteService {
         );
     }
 
-    private void handleCommentFavorite(final UUID userId, final UUID commentId, final RatingType type) {
+    private void handleCommentFavorite(final UUID userId, final UUID commentId, final RatingType type, final UUID postId) {
+        var postFound = postRepository.findById(postId).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+        var comment = commentRepository.findById(commentId).orElseThrow(() -> new BlogRuntimeException(ErrorCode.ID_NOT_FOUND));
+
         handleFavorite(
                 userId,
                 commentId,
                 type,
-                () -> commentRepository.findById(commentId).orElseThrow(() -> new BlogRuntimeException(ErrorCode.COMMENT_NOT_FOUND)),
+                () -> comment,
                 favoriteRepository::findByUserIdAndCommentId,
                 favoriteRepository::deleteByUserIdAndCommentId,
                 CommentEntity::getLikes,
                 CommentEntity::setLikes,
                 FavoriteObjectType.COMMENT,
-                FavoriteEntity.FavoriteEntityBuilder::comment
+                (builder, c) -> builder.comment(c).post(postFound)
         );
     }
 

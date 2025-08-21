@@ -28,10 +28,12 @@ public class FavoriteController {
                 .build();
     }
 
-    @PostMapping("/{objectType}/{targetId}")
-    public ResponseEntity<?> createFavorite(@PathVariable final UUID targetId, @PathVariable final String objectType,
-                                            @RequestParam("type") final RatingType type) {
-        favoriteService.createFavorite(targetId, objectType, type);
+    @PutMapping()
+    public ResponseEntity<?> createFavorite(@RequestParam("objectType") final String objectType,
+                                            @RequestParam("type") final RatingType type,
+                                            @RequestParam("targetId") final UUID targetId,
+                                            @RequestParam("postId") final UUID postId) {
+        favoriteService.createFavorite(targetId, objectType, type, postId);
         return ResponseEntityBuilder
                 .getBuilder()
                 .build();
