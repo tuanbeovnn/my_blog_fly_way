@@ -20,13 +20,13 @@ import java.util.UUID;
 public class FavoriteController {
     private final FavoriteService favoriteService;
 
-    @PutMapping("/{postId}")
-    public ResponseEntity<?> favourite(@PathVariable final UUID postId) {
-        favoriteService.persistOrDelete(postId);
-        return ResponseEntityBuilder
-                .getBuilder()
-                .build();
-    }
+//    @PutMapping("/{postId}")
+//    public ResponseEntity<?> favourite(@PathVariable final UUID postId) {
+//        favoriteService.persistOrDelete(postId);
+//        return ResponseEntityBuilder
+//                .getBuilder()
+//                .build();
+//    }
 
     @PutMapping()
     public ResponseEntity<?> createFavorite(@RequestParam("objectType") final String objectType,
