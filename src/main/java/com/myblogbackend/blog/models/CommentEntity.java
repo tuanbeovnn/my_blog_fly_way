@@ -2,6 +2,7 @@ package com.myblogbackend.blog.models;
 
 import com.myblogbackend.blog.models.base.BaseEntity;
 import jakarta.persistence.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -30,6 +31,9 @@ public class CommentEntity extends BaseEntity {
 
     @Column(name = "status")
     private Boolean status;
+
+    @Column(name="likes", nullable = false)
+    private long likes = 0L;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

@@ -1,6 +1,7 @@
 package com.myblogbackend.blog.models;
 
 
+import com.myblogbackend.blog.enums.FavoriteObjectType;
 import com.myblogbackend.blog.enums.RatingType;
 import com.myblogbackend.blog.models.base.BaseEntity;
 import jakarta.persistence.*;
@@ -25,15 +26,22 @@ public class FavoriteEntity extends BaseEntity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", unique = true)
+    @JoinColumn(name = "user_id")
     private UserEntity user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", unique = true)
+    @JoinColumn(name = "post_id")
     private PostEntity post;
+
+    @ManyToOne(optional = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id", nullable = true)
+    private CommentEntity comment;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RatingType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private FavoriteObjectType objectType = FavoriteObjectType.POST;
 }
