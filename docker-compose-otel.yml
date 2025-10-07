@@ -9,14 +9,8 @@ services:
         volumes:
             - ./docker/collector/otel-collector.yml:/etc/otelcol-contrib/otel-collector.yml
             - /srv/services/otel/data:/otel/data
-        ports:
-            - "1888:1888"
-            - "8888:8888"
-            - "8889:8889"
-            - "13133:13133"
-            - "4317:4317"
-            - "4318:4318"
-            - "55679:55679"
+        networks:
+            - backend-network
         depends_on:
             - jaeger-all-in-one
 
@@ -31,6 +25,8 @@ services:
             - /srv/services/prometheus:/prometheus
         ports:
             - "9090:9090"
+        networks:
+            - backend-network
 
     grafana:
         container_name: grafana
