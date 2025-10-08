@@ -1,6 +1,20 @@
 version: '3.9'
 
 services:
+    backend:
+        build: .
+        container_name: blogs-technology-production
+        ports:
+            - "8080:8080"
+        environment:
+            - SPRING_PROFILES_ACTIVE=prod
+            - OTLP_METRICS_ENDPOINT=http://otel-collector:4318/v1/metrics
+            - OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
+        depends_on:
+            - otel-collector
+        networks:
+            - backend-network
+
     otel-collector:
         image: otel/opentelemetry-collector-contrib:0.82.0
         restart: always
@@ -9,6 +23,12 @@ services:
         volumes:
             - ./docker/collector/otel-collector.yml:/etc/otelcol-contrib/otel-collector.yml
             - /srv/services/otel/data:/otel/data
+        # No external ports exposed - only accessible via internal Docker network
+        expose:
+            - "4317"  # OTLP gRPC receiver
+            - "4318"  # OTLP HTTP receiver
+            - "8888"  # Prometheus metrics endpoint
+            - "13133" # Health check endpoint
         networks:
             - backend-network
         depends_on:
@@ -36,6 +56,8 @@ services:
             - "3003:3000"
         volumes:
             - /srv/services/grafana/data:/var/lib/grafana
+        networks:
+            - backend-network
 
     jaeger-all-in-one:
         image: jaegertracing/all-in-one:latest
@@ -46,6 +68,8 @@ services:
             - "14250"
         volumes:
             - /srv/services/jaeger/data:/badger
+        networks:
+            - backend-network
 
     elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
