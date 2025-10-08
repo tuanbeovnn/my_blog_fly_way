@@ -77,11 +77,11 @@ management:
     otlp:
         metrics:
             export:
-                url: ${OTLP_METRICS_ENDPOINT:http://otel-collector:4318/v1/metrics}
+                url: ${OTLP_METRICS_ENDPOINT:http://host.docker.internal:4318/v1/metrics}
                 step: 3s
                 enabled: true
         tracing:
-            endpoint: ${OTLP_TRACES_ENDPOINT:http://otel-collector:4318/v1/traces}
+            endpoint: ${OTLP_TRACES_ENDPOINT:http://host.docker.internal:4318/v1/traces}
     tracing:
         sampling:
             probability: 1.0
