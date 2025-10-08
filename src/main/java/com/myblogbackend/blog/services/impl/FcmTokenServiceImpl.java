@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,27 +29,45 @@ public class FcmTokenServiceImpl implements FcmTokenService {
     private final OutboundNotificationsList outboundNotificationsList;
 
     @Override
+    @Transactional
     public UserFirebaseDeviceResponse saveFcmUserTokenDevice(final UserFirebaseDeviceRequest userFirebaseDeviceRequest) {
-        // Check if the user already has an FCM token stored for the specified device
-        var existingToken = firebaseUserRepository.findByUserId(userFirebaseDeviceRequest.getUserId());
+        var existingToken = firebaseUserRepository.findByUserIdAndDeviceToken(
+                userFirebaseDeviceRequest.getUserId(),
+                userFirebaseDeviceRequest.getDeviceToken()
+        );
 
-        // If the user already has a token stored, update it if it's different
         if (existingToken.isPresent()) {
-            var existingEntity = existingToken.get();
-            // Update only if the new token is different
-            if (!existingEntity.getDeviceToken().equals(userFirebaseDeviceRequest.getDeviceToken())) {
-                existingEntity.setDeviceToken(userFirebaseDeviceRequest.getDeviceToken());
-                firebaseUserRepository.save(existingEntity);
+            LOGGER.debug("FCM token already exists for user {}", userFirebaseDeviceRequest.getUserId());
+            return userFirebaseDeviceTokenMapper.toUserFirebaseDeviceTokenResponse(existingToken.get());
+        }
+
+        var entityToSave = userFirebaseDeviceTokenMapper
+                .toUserFirebaseDeviceTokenEntity(userFirebaseDeviceRequest);
+
+        var result = firebaseUserRepository.save(entityToSave);
+        LOGGER.info("New FCM token saved for user {} - device will receive notifications",
+                userFirebaseDeviceRequest.getUserId());
+
+        cleanupOldTokensIfNeeded(userFirebaseDeviceRequest.getUserId());
+
+        return userFirebaseDeviceTokenMapper.toUserFirebaseDeviceTokenResponse(result);
+    }
+
+    private void cleanupOldTokensIfNeeded(final UUID userId) {
+        try {
+            var allTokens = firebaseUserRepository.findAllByUserId(userId);
+
+            if (allTokens.size() > 10) {
+                var tokensToDelete = allTokens.stream()
+                        .sorted((a, b) -> b.getCreatedDate().compareTo(a.getCreatedDate()))
+                        .skip(10)
+                        .toList();
+
+                firebaseUserRepository.deleteAll(tokensToDelete);
+                LOGGER.info("Cleaned up {} old FCM tokens for user {}", tokensToDelete.size(), userId);
             }
-
-            return userFirebaseDeviceTokenMapper.toUserFirebaseDeviceTokenResponse(existingEntity);
-        } else {
-            // If no existing token is found for the user, save a new token
-            var userDeviceFireBaseTokenEntity = userFirebaseDeviceTokenMapper
-                    .toUserFirebaseDeviceTokenEntity(userFirebaseDeviceRequest);
-            var result = firebaseUserRepository.save(userDeviceFireBaseTokenEntity);
-
-            return userFirebaseDeviceTokenMapper.toUserFirebaseDeviceTokenResponse(result);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to cleanup old tokens for user {}: {}", userId, e.getMessage());
         }
     }
 
