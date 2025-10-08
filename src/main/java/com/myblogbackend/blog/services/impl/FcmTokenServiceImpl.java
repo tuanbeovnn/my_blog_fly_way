@@ -37,38 +37,12 @@ public class FcmTokenServiceImpl implements FcmTokenService {
         );
 
         if (existingToken.isPresent()) {
-            LOGGER.debug("FCM token already exists for user {}", userFirebaseDeviceRequest.getUserId());
             return userFirebaseDeviceTokenMapper.toUserFirebaseDeviceTokenResponse(existingToken.get());
         }
 
-        var entityToSave = userFirebaseDeviceTokenMapper
-                .toUserFirebaseDeviceTokenEntity(userFirebaseDeviceRequest);
-
+        var entityToSave = userFirebaseDeviceTokenMapper.toUserFirebaseDeviceTokenEntity(userFirebaseDeviceRequest);
         var result = firebaseUserRepository.save(entityToSave);
-        LOGGER.info("New FCM token saved for user {} - device will receive notifications",
-                userFirebaseDeviceRequest.getUserId());
-
-        cleanupOldTokensIfNeeded(userFirebaseDeviceRequest.getUserId());
-
         return userFirebaseDeviceTokenMapper.toUserFirebaseDeviceTokenResponse(result);
-    }
-
-    private void cleanupOldTokensIfNeeded(final UUID userId) {
-        try {
-            var allTokens = firebaseUserRepository.findAllByUserId(userId);
-
-            if (allTokens.size() > 10) {
-                var tokensToDelete = allTokens.stream()
-                        .sorted((a, b) -> b.getCreatedDate().compareTo(a.getCreatedDate()))
-                        .skip(10)
-                        .toList();
-
-                firebaseUserRepository.deleteAll(tokensToDelete);
-                LOGGER.info("Cleaned up {} old FCM tokens for user {}", tokensToDelete.size(), userId);
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Failed to cleanup old tokens for user {}: {}", userId, e.getMessage());
-        }
     }
 
     @Override
