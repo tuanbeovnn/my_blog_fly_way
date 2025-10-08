@@ -86,6 +86,17 @@ management:
         sampling:
             probability: 1.0
         enabled: true
+            
+# OpenTelemetry configuration
+otel:
+    resource:
+        attributes:
+            service.name: ${spring.application.name:blogs-technology-production}
+            service.version: 1.0.0
+    exporter:
+        otlp:
+            endpoint: ${OTLP_TRACES_ENDPOINT:http://172.17.0.1:4318}
+            protocol: http/protobuf
     endpoint:
         health:
             show-details: always

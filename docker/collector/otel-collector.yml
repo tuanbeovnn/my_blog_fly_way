@@ -25,6 +25,10 @@ exporters:
     tls:
       insecure: true
 
+  # Add logging exporter for debugging
+  logging:
+    loglevel: debug
+
 # https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/README.md
 extensions:
   # responsible for responding to health check calls on behalf of the collector.
@@ -44,5 +48,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-#      exporters: [zipkin,jaeger]
-      exporters: [jaeger]
+      exporters: [jaeger, logging]
