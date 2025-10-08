@@ -9,9 +9,11 @@ services:
         volumes:
             - ./docker/collector/otel-collector.yml:/etc/otelcol-contrib/otel-collector.yml
             - /srv/services/otel/data:/otel/data
-        network_mode: "host"
-        depends_on:
-            - jaeger-all-in-one
+        ports:
+            - "4317:4317"
+            - "4318:4318"
+        networks:
+            - backend-network
 
     prometheus:
         container_name: prometheus
