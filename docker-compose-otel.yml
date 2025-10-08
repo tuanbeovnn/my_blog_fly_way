@@ -10,8 +10,6 @@ services:
             - ./docker/collector/otel-collector.yml:/etc/otelcol-contrib/otel-collector.yml
             - /srv/services/otel/data:/otel/data
         network_mode: "host"
-        depends_on:
-            - jaeger-all-in-one
 
     prometheus:
         container_name: prometheus
