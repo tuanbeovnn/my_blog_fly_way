@@ -9,15 +9,7 @@ services:
         volumes:
             - ./docker/collector/otel-collector.yml:/etc/otelcol-contrib/otel-collector.yml
             - /srv/services/otel/data:/otel/data
-        ports:
-            - "4317:4317"  # OTLP gRPC receiver - for backend connection
-            - "4318:4318"  # OTLP HTTP receiver - for backend connection
-        # Internal monitoring ports (not exposed externally)
-        expose:
-            - "8888"  # Prometheus metrics endpoint
-            - "13133" # Health check endpoint
-        networks:
-            - backend-network
+        network_mode: "host"
         depends_on:
             - jaeger-all-in-one
 
